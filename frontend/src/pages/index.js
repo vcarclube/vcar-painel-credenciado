@@ -9,3 +9,4 @@ export { default as ExecucaoOS } from './ExecucaoOS';
 export { default as Avaliacoes } from './Avaliacoes';
 export { default as RetornoServico } from './RetornoServico';
 export { default as DadosBancarios } from './DadosBancarios';
+export { default as EspelhoFinanceiro } from './EspelhoFinanceiro';

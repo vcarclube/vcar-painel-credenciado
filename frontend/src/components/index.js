@@ -9,3 +9,4 @@ export { default as SearchableSelect } from './SearchableSelect';
 export { default as MediaUpload } from './MediaUpload';
 export { default as LaudosModal } from './Modal/LaudosModal';
 export { default as RecibosModal } from './Modal/RecibosModal';
+export { default as EspelhoFinanceiroViewModal } from './Modal/EspelhoFinanceiroViewModal';

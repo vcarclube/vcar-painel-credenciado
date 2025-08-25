@@ -96,3 +96,4 @@ const Modal = ({
 export default Modal;
 export { default as VideoInicialModal } from './VideoInicialModal';
 export { default as VideoFinalizacaoModal } from './VideoFinalizacaoModal';
+export { default as EspelhoFinanceiroViewModal } from './EspelhoFinanceiroViewModal';

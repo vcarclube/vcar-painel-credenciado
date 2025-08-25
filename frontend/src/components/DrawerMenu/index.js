@@ -68,7 +68,7 @@ const DrawerMenu = ({ isOpen, onClose }) => {
       icon: FiDollarSign,
       hasDropdown: true,
       subItems: [
-        { id: 'espelho', label: 'Dados Bancários', icon: FiFileText, path: '/dados-bancarios' },
+        { id: 'dados-bancarios', label: 'Dados Bancários', icon: FiFileText, path: '/dados-bancarios' },
         { id: 'espelho', label: 'Espelho', icon: FiFileText, path: '/espelho' },
       ]
     },

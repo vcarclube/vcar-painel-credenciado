@@ -91,7 +91,7 @@ function Sidebar() {
           </div>
           {openDropdowns.financeiro && (
             <div className="dropdown-menu">
-              <div className="dropdown-item">
+              <div className="dropdown-item" onClick={() => navigate('/espelho')}>
                 <span>Espelho</span>
               </div>
               <div className="dropdown-item" onClick={() => navigate('/dados-bancarios')}>
