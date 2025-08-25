@@ -264,22 +264,22 @@ const Scanner = () => {
       <Sidebar />
       <div className="main-content">
         <Header />
-        <div className="scanner-container">
-          <div className="scanner-header">
+        <div className="scan-container">
+          <div className="scan-header">
             <h1>Scanner de Placas</h1>
             <p>Posicione a placa do veículo dentro do quadro para escaneamento</p>
           </div>
 
-          <div className="scanner-content">
+          <div className="scan-content">
             {cameraPermission === 'denied' || (error && !isScanning) ? (
-              <div className="scanner-error">
-                <div className="error-icon">
+              <div className="scan-error">
+                <div className="scan-error-icon">
                   <FiAlertCircle size={64} />
                 </div>
                 <h2>Problema com a Câmera</h2>
                 <p>{error}</p>
                 {cameraPermission === 'denied' && (
-                  <div className="permission-help">
+                  <div className="scan-permission-help">
                     <h3>Como permitir acesso à câmera:</h3>
                     <ol>
                       <li>Clique no ícone da câmera na barra de endereços</li>
@@ -288,47 +288,47 @@ const Scanner = () => {
                     </ol>
                   </div>
                 )}
-                <button className="btn-retry-camera" onClick={startCamera}>
+                <button className="scan-btn-retry" onClick={startCamera}>
                   <FiRefreshCw />
                   Tentar Novamente
                 </button>
               </div>
             ) : (
-              <div className="scanner-active">
+              <div className="scan-active">
                 {cameraPermission === 'checking' || !isScanning ? (
-                  <div className="scanner-loading-overlay">
-                    <div className="loading-icon">
-                      <FiCamera size={64} className="spinning" />
+                  <div className="scan-loading-overlay">
+                    <div className="scan-loading-icon">
+                      <FiCamera size={64} className="scan-spinning" />
                     </div>
                     <h2>Iniciando Câmera...</h2>
                     <p>Aguarde enquanto ativamos a câmera para escaneamento</p>
-                    <button className="btn-manual-start" onClick={startCamera}>
+                    <button className="scan-btn-manual" onClick={startCamera}>
                       <FiCamera />
                       Iniciar Câmera Manualmente
                     </button>
                   </div>
                 ) : null}
                 
-                <div className="video-container">
+                <div className="scan-video-container">
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
-                    className="scanner-video"
+                    className="scan-video"
                     style={{ opacity: isScanning ? 1 : 0 }}
                   />
                   <div className="scan-overlay">
                     <div className="scan-frame">
                       <div className="scan-corners">
-                        <div className="corner top-left"></div>
-                        <div className="corner top-right"></div>
-                        <div className="corner bottom-left"></div>
-                        <div className="corner bottom-right"></div>
+                        <div className="scan-corner scan-corner-top-left"></div>
+                        <div className="scan-corner scan-corner-top-right"></div>
+                        <div className="scan-corner scan-corner-bottom-left"></div>
+                        <div className="scan-corner scan-corner-bottom-right"></div>
                       </div>
                       {isProcessing && (
-                        <div className="processing-indicator">
-                          <FiRefreshCw className="spinning" />
+                        <div className="scan-processing">
+                          <FiRefreshCw className="scan-spinning" />
                           <span>Processando...</span>
                         </div>
                       )}
@@ -338,19 +338,19 @@ const Scanner = () => {
 
                 <canvas ref={canvasRef} style={{ display: 'none' }} />
 
-                <div className="scanner-controls">
+                <div className="scan-controls">
                   {detectedPlate ? (
-                    <div className="plate-detected">
-                      <div className="detected-plate">
-                        <FiCheck className="check-icon" />
-                        <span className="plate-text">{detectedPlate}</span>
+                    <div className="scan-plate-detected">
+                      <div className="scan-detected-plate">
+                        <FiCheck className="scan-check-icon" />
+                        <span className="scan-plate-text">{detectedPlate}</span>
                       </div>
-                      <div className="plate-actions">
-                        <button className="btn-confirm" onClick={confirmarPlaca}>
+                      <div className="scan-plate-actions">
+                        <button className="scan-btn-confirm" onClick={confirmarPlaca}>
                           <FiCheck />
                           Confirmar
                         </button>
-                        <button className="btn-retry" onClick={tentarNovamente}>
+                        <button className="scan-btn-retry" onClick={tentarNovamente}>
                           <FiRefreshCw />
                           Tentar Novamente
                         </button>
@@ -359,14 +359,14 @@ const Scanner = () => {
                   ) : (
                     <div className="scan-actions">
                       <button 
-                        className="btn-capture" 
+                        className="scan-btn-capture" 
                         onClick={captureFrame}
                         disabled={isProcessing}
                       >
                         <FiCamera />
                         {isProcessing ? 'Processando...' : 'Capturar Placa'}
                       </button>
-                      <button className="btn-stop" onClick={stopCamera}>
+                      <button className="scan-btn-stop" onClick={stopCamera}>
                         <FiX />
                         Parar
                       </button>
