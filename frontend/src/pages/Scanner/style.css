@@ -94,6 +94,51 @@
   box-shadow: 0 6px 12px rgba(231, 76, 60, 0.3);
 }
 
+.permission-help {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  text-align: left;
+}
+
+.permission-help h3 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.permission-help ol {
+  color: #555;
+  line-height: 1.6;
+  padding-left: 20px;
+}
+
+.permission-help li {
+  margin-bottom: 8px;
+}
+
+.btn-manual-start {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px auto 0;
+  transition: all 0.3s ease;
+}
+
+.btn-manual-start:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(52, 152, 219, 0.3);
+}
+
 /* Scanner Active Screen */
 .scanner-active {
   padding: 0;

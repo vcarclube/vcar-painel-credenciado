@@ -16,33 +16,143 @@ const Scanner = () => {
   const [showAgendamentoModal, setShowAgendamentoModal] = useState(false);
   const [vehicleData, setVehicleData] = useState(null);
   const [error, setError] = useState('');
+  const [cameraPermission, setCameraPermission] = useState('checking'); // 'checking', 'granted', 'denied'
+
+  // Verificar permissões da câmera
+  const checkCameraPermissions = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraPermission('denied');
+        setError('Seu navegador não suporta acesso à câmera');
+        return false;
+      }
+
+      // Verificar se está em HTTPS (necessário para câmera)
+        const isSecure = window.location.protocol === 'https:' || 
+                        window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' ||
+                        window.location.hostname === '0.0.0.0';
+        
+        if (!isSecure) {
+          setCameraPermission('denied');
+          setError('Acesso à câmera requer conexão segura (HTTPS) ou localhost');
+          return false;
+        }
+        
+        console.log('Protocolo verificado:', window.location.protocol, 'Host:', window.location.hostname);
+
+      return true;
+    } catch (err) {
+      console.error('Erro ao verificar permissões:', err);
+      setCameraPermission('denied');
+      setError('Erro ao verificar permissões da câmera');
+      return false;
+    }
+  };
 
   // Iniciar câmera
   const startCamera = async () => {
     try {
+      console.log('Tentando iniciar câmera...');
       setError('');
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment', // Câmera traseira no mobile
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
+      setCameraPermission('checking');
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
+      const hasPermission = await checkCameraPermissions();
+      if (!hasPermission) return;
+      
+      // Tentar primeiro com configurações básicas
+      let mediaStream;
+      try {
+        // Tentar com configurações específicas
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'environment', // Câmera traseira no mobile
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        });
+      } catch (specificError) {
+        console.log('Erro com configurações específicas, tentando configuração básica:', specificError);
+        // Fallback para configuração básica
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: true
+        });
+      }
+      
+      console.log('Stream obtido:', mediaStream);
+      setCameraPermission('granted');
+      
+      // Aguardar o elemento de vídeo estar disponível
+      const waitForVideoElement = () => {
+        return new Promise((resolve, reject) => {
+          let attempts = 0;
+          const maxAttempts = 20; // 2 segundos máximo
+          
+          const checkElement = () => {
+            if (videoRef.current) {
+              resolve(videoRef.current);
+            } else if (attempts < maxAttempts) {
+              attempts++;
+              setTimeout(checkElement, 100);
+            } else {
+              reject(new Error('Elemento de vídeo não encontrado após 2 segundos'));
+            }
+          };
+          
+          checkElement();
+        });
+      };
+      
+      try {
+        const videoElement = await waitForVideoElement();
+        console.log('Elemento de vídeo encontrado:', videoElement);
+        
+        videoElement.srcObject = mediaStream;
         setStream(mediaStream);
-        setIsScanning(true);
+        
+        // Aguardar o vídeo estar pronto
+        videoElement.onloadedmetadata = () => {
+          console.log('Metadados do vídeo carregados');
+          videoElement.play().then(() => {
+            console.log('Vídeo iniciado com sucesso');
+            setIsScanning(true);
+          }).catch(playError => {
+            console.error('Erro ao reproduzir vídeo:', playError);
+            setError(`Erro ao reproduzir vídeo: ${playError.message}`);
+          });
+        };
+        
+        console.log('Stream atribuído ao vídeo');
+      } catch (elementError) {
+        console.error('Erro ao aguardar elemento de vídeo:', elementError);
+        setError('Erro interno: elemento de vídeo não disponível');
+        // Parar o stream se não conseguir usar
+        if (mediaStream) {
+          mediaStream.getTracks().forEach(track => track.stop());
+        }
       }
     } catch (err) {
       console.error('Erro ao acessar câmera:', err);
-      setError('Não foi possível acessar a câmera. Verifique as permissões.');
+      setCameraPermission('denied');
+      if (err.name === 'NotAllowedError') {
+        setError('Permissão para acessar a câmera foi negada. Clique no ícone da câmera na barra de endereços e permita o acesso.');
+      } else if (err.name === 'NotFoundError') {
+        setError('Nenhuma câmera foi encontrada no dispositivo.');
+      } else {
+        setError(`Não foi possível acessar a câmera: ${err.message}`);
+      }
     }
   };
 
   // Iniciar câmera automaticamente ao carregar a página
   useEffect(() => {
-    startCamera();
+    console.log('Componente Scanner montado, iniciando câmera...');
+    // Adicionar um pequeno delay para garantir que o DOM esteja pronto
+    const timer = setTimeout(() => {
+      startCamera();
+    }, 500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // Parar câmera
@@ -161,25 +271,39 @@ const Scanner = () => {
           </div>
 
           <div className="scanner-content">
-            {error && !isScanning ? (
+            {cameraPermission === 'denied' || (error && !isScanning) ? (
               <div className="scanner-error">
                 <div className="error-icon">
                   <FiAlertCircle size={64} />
                 </div>
-                <h2>Erro ao Acessar Câmera</h2>
+                <h2>Problema com a Câmera</h2>
                 <p>{error}</p>
+                {cameraPermission === 'denied' && (
+                  <div className="permission-help">
+                    <h3>Como permitir acesso à câmera:</h3>
+                    <ol>
+                      <li>Clique no ícone da câmera na barra de endereços</li>
+                      <li>Selecione "Permitir" para este site</li>
+                      <li>Recarregue a página ou clique em "Tentar Novamente"</li>
+                    </ol>
+                  </div>
+                )}
                 <button className="btn-retry-camera" onClick={startCamera}>
                   <FiRefreshCw />
                   Tentar Novamente
                 </button>
               </div>
-            ) : !isScanning ? (
+            ) : cameraPermission === 'checking' || !isScanning ? (
               <div className="scanner-loading">
                 <div className="loading-icon">
                   <FiCamera size={64} className="spinning" />
                 </div>
                 <h2>Iniciando Câmera...</h2>
                 <p>Aguarde enquanto ativamos a câmera para escaneamento</p>
+                <button className="btn-manual-start" onClick={startCamera}>
+                  <FiCamera />
+                  Iniciar Câmera Manualmente
+                </button>
               </div>
             ) : (
               <div className="scanner-active">
