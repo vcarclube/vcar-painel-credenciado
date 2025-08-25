@@ -293,20 +293,22 @@ const Scanner = () => {
                   Tentar Novamente
                 </button>
               </div>
-            ) : cameraPermission === 'checking' || !isScanning ? (
-              <div className="scanner-loading">
-                <div className="loading-icon">
-                  <FiCamera size={64} className="spinning" />
-                </div>
-                <h2>Iniciando Câmera...</h2>
-                <p>Aguarde enquanto ativamos a câmera para escaneamento</p>
-                <button className="btn-manual-start" onClick={startCamera}>
-                  <FiCamera />
-                  Iniciar Câmera Manualmente
-                </button>
-              </div>
             ) : (
               <div className="scanner-active">
+                {cameraPermission === 'checking' || !isScanning ? (
+                  <div className="scanner-loading-overlay">
+                    <div className="loading-icon">
+                      <FiCamera size={64} className="spinning" />
+                    </div>
+                    <h2>Iniciando Câmera...</h2>
+                    <p>Aguarde enquanto ativamos a câmera para escaneamento</p>
+                    <button className="btn-manual-start" onClick={startCamera}>
+                      <FiCamera />
+                      Iniciar Câmera Manualmente
+                    </button>
+                  </div>
+                ) : null}
+                
                 <div className="video-container">
                   <video
                     ref={videoRef}
@@ -314,6 +316,7 @@ const Scanner = () => {
                     playsInline
                     muted
                     className="scanner-video"
+                    style={{ opacity: isScanning ? 1 : 0 }}
                   />
                   <div className="scan-overlay">
                     <div className="scan-frame">

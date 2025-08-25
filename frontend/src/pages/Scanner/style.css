@@ -139,9 +139,36 @@
   box-shadow: 0 6px 12px rgba(52, 152, 219, 0.3);
 }
 
+.scanner-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  color: white;
+  text-align: center;
+}
+
+.scanner-loading-overlay h2 {
+  margin: 20px 0 10px 0;
+  color: white;
+}
+
+.scanner-loading-overlay p {
+  margin-bottom: 30px;
+  color: #ccc;
+}
+
 /* Scanner Active Screen */
 .scanner-active {
   padding: 0;
+  position: relative;
 }
 
 .video-container {
