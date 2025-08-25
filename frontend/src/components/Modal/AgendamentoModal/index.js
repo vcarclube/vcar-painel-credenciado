@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiX, FiCalendar, FiClock, FiUser, FiCar, FiPhone, FiMail } from 'react-icons/fi';
+import { FiX, FiCalendar, FiClock, FiUser, FiTruck, FiPhone, FiMail } from 'react-icons/fi';
 import './style.css';
 
 const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
@@ -139,7 +139,7 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
         <div className="modal-content">
           <div className="vehicle-info">
             <div className="vehicle-plate">
-              <FiCar />
+              <FiTruck />
               <span>Placa: <strong>{formData.placa}</strong></span>
             </div>
             <p className="info-text">
@@ -207,7 +207,7 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="modelo">
-                    <FiCar />
+                    <FiTruck />
                     Modelo *
                   </label>
                   <input

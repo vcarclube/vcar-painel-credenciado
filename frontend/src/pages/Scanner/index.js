@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiCamera, FiX, FiRefreshCw, FiCheck, FiAlertCircle } from 'react-icons/fi';
-import { Header, Sidebar, BottomNavigation } from '../../components';
-import AgendamentoModal from '../../components/Modal/AgendamentoModal';
+import { Header, Sidebar, BottomNavigation, AgendamentoModal } from '../../components';
 import '../Home/style.css';
 import './style.css';
 
@@ -40,6 +39,11 @@ const Scanner = () => {
       setError('Não foi possível acessar a câmera. Verifique as permissões.');
     }
   };
+
+  // Iniciar câmera automaticamente ao carregar a página
+  useEffect(() => {
+    startCamera();
+  }, []);
 
   // Parar câmera
   const stopCamera = () => {
@@ -143,7 +147,7 @@ const Scanner = () => {
     return () => {
       stopCamera();
     };
-  }, []);
+  }, [stream]);
 
   return (
     <div className="home-container">
@@ -157,23 +161,25 @@ const Scanner = () => {
           </div>
 
           <div className="scanner-content">
-            {!isScanning ? (
-              <div className="scanner-start">
-                <div className="scanner-icon">
-                  <FiCamera size={64} />
+            {error && !isScanning ? (
+              <div className="scanner-error">
+                <div className="error-icon">
+                  <FiAlertCircle size={64} />
                 </div>
-                <h2>Iniciar Escaneamento</h2>
-                <p>Toque no botão abaixo para ativar a câmera e começar a escanear placas</p>
-                <button className="btn-start-scan" onClick={startCamera}>
-                  <FiCamera />
-                  Ativar Câmera
+                <h2>Erro ao Acessar Câmera</h2>
+                <p>{error}</p>
+                <button className="btn-retry-camera" onClick={startCamera}>
+                  <FiRefreshCw />
+                  Tentar Novamente
                 </button>
-                {error && (
-                  <div className="error-message">
-                    <FiAlertCircle />
-                    {error}
-                  </div>
-                )}
+              </div>
+            ) : !isScanning ? (
+              <div className="scanner-loading">
+                <div className="loading-icon">
+                  <FiCamera size={64} className="spinning" />
+                </div>
+                <h2>Iniciando Câmera...</h2>
+                <p>Aguarde enquanto ativamos a câmera para escaneamento</p>
               </div>
             ) : (
               <div className="scanner-active">

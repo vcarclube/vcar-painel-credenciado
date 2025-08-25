@@ -27,31 +27,54 @@
   overflow: hidden;
 }
 
-/* Scanner Start Screen */
-.scanner-start {
+/* Scanner Loading Screen */
+.scanner-loading {
   padding: 60px 40px;
   text-align: center;
 }
 
-.scanner-icon {
+.loading-icon {
   color: #3498db;
   margin-bottom: 20px;
 }
 
-.scanner-start h2 {
+.scanner-loading h2 {
   color: #2c3e50;
   margin-bottom: 15px;
   font-size: 1.5rem;
 }
 
-.scanner-start p {
+.scanner-loading p {
   color: #7f8c8d;
   margin-bottom: 30px;
   line-height: 1.6;
 }
 
-.btn-start-scan {
-  background: linear-gradient(135deg, #3498db, #2980b9);
+/* Scanner Error Screen */
+.scanner-error {
+  padding: 60px 40px;
+  text-align: center;
+}
+
+.error-icon {
+  color: #e74c3c;
+  margin-bottom: 20px;
+}
+
+.scanner-error h2 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+  font-size: 1.5rem;
+}
+
+.scanner-error p {
+  color: #7f8c8d;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.btn-retry-camera {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
   color: white;
   border: none;
   padding: 15px 30px;
@@ -66,21 +89,9 @@
   transition: all 0.3s ease;
 }
 
-.btn-start-scan:hover {
+.btn-retry-camera:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(52, 152, 219, 0.3);
-}
-
-.error-message {
-  background: #fee;
-  color: #e74c3c;
-  padding: 15px;
-  border-radius: 8px;
-  margin-top: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid #fadbd8;
+  box-shadow: 0 6px 12px rgba(231, 76, 60, 0.3);
 }
 
 /* Scanner Active Screen */
@@ -330,7 +341,8 @@
     font-size: 1.5rem;
   }
   
-  .scanner-start {
+  .scanner-loading,
+  .scanner-error {
     padding: 40px 20px;
   }
   
