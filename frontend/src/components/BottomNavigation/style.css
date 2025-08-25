@@ -1,0 +1,79 @@
+.bottom-navigation {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+  z-index: 1000;
+  display: none; /* Oculto por padrão */
+}
+
+/* Mostrar apenas em dispositivos móveis */
+@media (max-width: 768px) {
+  .bottom-navigation {
+    display: block;
+  }
+}
+
+.bottom-nav-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 0;
+  max-width: 100%;
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 8px 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #666;
+  min-width: 0;
+  flex: 1;
+}
+
+.bottom-nav-item:hover {
+  color: var(--primary);
+}
+
+.bottom-nav-item.active {
+  color: var(--primary);
+}
+
+.bottom-nav-icon {
+  font-size: 20px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-nav-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Ajustar padding do body quando bottom navigation estiver visível */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 70px;
+  }
+}
+
+/* Garantir que o conteúdo principal não seja sobreposto */
+@media (max-width: 768px) {
+  .main-content {
+    margin-bottom: 70px;
+  }
+}

@@ -1,0 +1,11 @@
+export { default as Loading } from './Loading';
+export { default as Login } from './Login';
+export { default as PageNotFound } from './PageNotFound';
+export { default as Terms } from './Terms';
+export { default as Privacy } from './Privacy';
+export { default as Home } from './Home';
+export { default as Agenda } from './Agenda';
+export { default as ExecucaoOS } from './ExecucaoOS';
+export { default as Avaliacoes } from './Avaliacoes';
+export { default as RetornoServico } from './RetornoServico';
+export { default as DadosBancarios } from './DadosBancarios';

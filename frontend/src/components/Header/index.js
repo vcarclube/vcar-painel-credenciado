@@ -1,0 +1,106 @@
+import React, { useState, useContext, useRef, useEffect } from 'react';
+import { MainContext } from '../../helpers/MainContext';
+import './style.css';
+
+export default function Header() {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { user, logout } = useContext(MainContext);
+  const dropdownRef = useRef(null);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    setDropdownOpen(false);
+  };
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <header className="header-container">
+      <div className="header-content">
+        <div className="header-logo-mobile">
+          <img src="/logo_black.png" alt="Logo" className="logo-mobile" />
+        </div>
+        <div className="header-user" ref={dropdownRef}>
+          <div className="user-info" onClick={toggleDropdown}>
+            <img 
+              src={user.avatar || '/logo_black.png'} 
+              alt={user.name} 
+              className="user-avatar"
+            />
+            <span className="user-name">{user.name}</span>
+            <svg 
+              className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`}
+              width="16" 
+              height="16" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <polyline points="6,9 12,15 18,9"></polyline>
+            </svg>
+          </div>
+
+          {dropdownOpen && (
+            <div className="user-dropdown">
+              <div className="dropdown-header">
+                <img 
+                  src={user.avatar || '/logo_black.png'} 
+                  alt={user.name} 
+                  className="dropdown-avatar"
+                />
+                <div className="dropdown-user-info">
+                  <span className="dropdown-name">{user.name}</span>
+                  <span className="dropdown-email">{user.email}</span>
+                </div>
+              </div>
+              
+              <div className="dropdown-divider"></div>
+              
+              <div className="dropdown-menu-header">
+                <button className="dropdown-item" style={{padding: '16px 8px'}}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                  Dados Cadastrais
+                </button>
+                
+                <button className="dropdown-item logout" style={{padding: '16px 8px'}} onClick={handleLogout}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16,17 21,12 16,7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                  Sair
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}

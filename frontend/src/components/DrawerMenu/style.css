@@ -1,0 +1,223 @@
+/* Overlay do drawer */
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1500;
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--transition);
+}
+
+.drawer-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Container principal do drawer */
+.drawer-menu {
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 280px;
+  height: 100vh;
+  background: var(--white);
+  z-index: 1600;
+  transition: right var(--transition);
+  box-shadow: var(--shadow-lg);
+  overflow-y: auto;
+}
+
+.drawer-menu.open {
+  right: 0;
+}
+
+/* Header do drawer */
+.drawer-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--primary-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin: 0;
+}
+
+.drawer-close {
+  background: none;
+  border: none;
+  padding: var(--spacing-sm);
+  cursor: pointer;
+  color: var(--gray-600);
+  border-radius: var(--radius-md);
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drawer-close:hover {
+  background: var(--gray-100);
+  color: var(--gray-800);
+}
+
+/* Conteúdo do drawer */
+.drawer-content {
+  padding: var(--spacing-md) 0;
+}
+
+/* Seções do menu */
+.drawer-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.drawer-section-title {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+/* Itens do menu */
+.drawer-item {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--gray-700);
+  font-size: 0.9rem;
+  border-left: 3px solid transparent;
+}
+
+.drawer-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+
+
+.drawer-item-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer-item-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.drawer-item-icon {
+  font-size: 1.125rem;
+  color: var(--gray-500);
+  transition: color var(--transition);
+}
+
+
+
+.drawer-item-text {
+  font-weight: 500;
+}
+
+.drawer-item-arrow {
+  font-size: 1rem;
+  color: var(--gray-400);
+  transition: all var(--transition);
+}
+
+.drawer-item.expanded .drawer-item-arrow {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+/* Dropdown dos itens */
+.drawer-dropdown {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--transition);
+  background: var(--gray-50);
+}
+
+.drawer-dropdown.open {
+  max-height: 300px;
+}
+
+.drawer-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-sm) 3.5rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition);
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  border-left: 3px solid transparent;
+}
+
+.drawer-dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+
+
+/* Responsividade */
+@media (max-width: 480px) {
+  .drawer-menu {
+    width: 100vw;
+    right: -100vw;
+  }
+  
+  .drawer-menu.open {
+    right: 0;
+  }
+}
+
+/* Animações suaves */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.drawer-menu.open {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Scroll customizado */
+.drawer-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.drawer-menu::-webkit-scrollbar-track {
+  background: var(--gray-100);
+}
+
+.drawer-menu::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: var(--radius-full);
+}
+
+.drawer-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}

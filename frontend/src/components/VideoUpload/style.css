@@ -1,0 +1,298 @@
+.video-upload {
+  margin-bottom: 20px;
+}
+
+.video-upload__label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.video-upload__required {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+.video-upload__dropzone {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f9fafb;
+}
+
+.video-upload__dropzone:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.video-upload__icon {
+  font-size: 48px;
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.video-upload__text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.video-upload__hint {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.video-upload__preview {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.video-upload__file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.video-upload__file-icon {
+  font-size: 24px;
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.video-upload__file-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.video-upload__file-name {
+  display: block;
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.video-upload__file-size {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.video-upload__success-icon {
+  font-size: 20px;
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.video-upload__remove-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #6b7280;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.video-upload__remove-btn:hover {
+  background: #f3f4f6;
+  color: #ef4444;
+}
+
+.video-upload__progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.video-upload__progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.video-upload__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.video-upload__progress-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #3b82f6;
+  min-width: 35px;
+  text-align: right;
+}
+
+.video-upload__success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #10b981;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.video-upload__success-check {
+  font-size: 16px;
+}
+
+.video-upload__input {
+  display: none;
+}
+
+/* Video Recording Styles */
+.video-upload__options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.video-upload__divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 8px 0;
+}
+
+.video-upload__divider::before,
+.video-upload__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #d1d5db;
+}
+
+.video-upload__divider span {
+  padding: 0 16px;
+  color: #6b7280;
+  font-size: 14px;
+  background: white;
+}
+
+.video-upload__record-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.video-upload__record-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.video-upload__record-btn--stop {
+  background: var(--success);
+}
+
+.video-upload__record-btn--stop:hover {
+  background: #059669;
+}
+
+.video-upload__record-btn--cancel {
+  background: var(--error);
+}
+
+.video-upload__record-btn--cancel:hover {
+  background: #dc2626;
+}
+
+.video-upload__record-icon {
+  font-size: 16px;
+}
+
+.video-upload__recording {
+  border: 2px solid var(--primary);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+
+.video-upload__camera-preview {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.video-upload__recording-controls {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  justify-content: center;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .video-upload__dropzone {
+    padding: 30px 16px;
+  }
+  
+  .video-upload__icon {
+    font-size: 40px;
+  }
+  
+  .video-upload__text {
+    font-size: 14px;
+  }
+  
+  .video-upload__hint {
+    font-size: 12px;
+  }
+  
+  .video-upload__file-details {
+    min-width: 0;
+  }
+  
+  .video-upload__file-name {
+    font-size: 13px;
+  }
+  
+  .video-upload__file-size {
+    font-size: 11px;
+  }
+  
+  .video-upload__camera-preview {
+    height: 250px;
+  }
+  
+  .video-upload__recording-controls {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .video-upload__record-btn {
+    padding: 10px 20px;
+    font-size: 13px;
+  }
+}

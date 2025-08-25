@@ -1,0 +1,234 @@
+.media-upload {
+  width: 100%;
+}
+
+/* Ações principais */
+.media-upload__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.media-upload__action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.media-upload__action-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  color: #212529;
+}
+
+.media-upload__action-btn:active {
+  transform: translateY(1px);
+}
+
+/* Preview da câmera */
+.media-upload__camera-preview {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.media-upload__video-preview {
+  width: 100%;
+  height: auto;
+  display: block;
+  min-height: 300px;
+  object-fit: cover;
+}
+
+/* Timer de gravação */
+.media-upload__recording-timer {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 10;
+}
+
+.media-upload__recording-dot {
+  width: 8px;
+  height: 8px;
+  background: #dc3545;
+  border-radius: 50%;
+  animation: recording-pulse 1s infinite;
+}
+
+@keyframes recording-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Controles da câmera */
+.media-upload__camera-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 10;
+}
+
+.media-upload__control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.media-upload__control-btn:hover {
+  transform: scale(1.05);
+}
+
+.media-upload__control-btn:active {
+  transform: scale(0.95);
+}
+
+/* Variações dos botões de controle */
+.media-upload__control-btn--secondary {
+  background: rgba(108, 117, 125, 0.9);
+  color: white;
+}
+
+.media-upload__control-btn--secondary:hover {
+  background: rgba(108, 117, 125, 1);
+}
+
+.media-upload__control-btn--photo {
+  background: rgba(255, 255, 255, 0.9);
+  color: #212529;
+  width: 64px;
+  height: 64px;
+}
+
+.media-upload__control-btn--photo:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.media-upload__control-btn--video {
+  background: rgba(220, 53, 69, 0.9);
+  color: white;
+}
+
+.media-upload__control-btn--video:hover {
+  background: rgba(220, 53, 69, 1);
+}
+
+.media-upload__control-btn--pause {
+  background: rgba(255, 193, 7, 0.9);
+  color: #212529;
+}
+
+.media-upload__control-btn--pause:hover {
+  background: rgba(255, 193, 7, 1);
+}
+
+.media-upload__control-btn--stop {
+  background: rgba(220, 53, 69, 0.9);
+  color: white;
+}
+
+.media-upload__control-btn--stop:hover {
+  background: rgba(220, 53, 69, 1);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .media-upload__actions {
+    flex-direction: column;
+  }
+  
+  .media-upload__action-btn {
+    justify-content: center;
+    padding: 12px 16px;
+  }
+  
+  .media-upload__camera-preview {
+    border-radius: 0;
+    max-width: none;
+  }
+  
+  .media-upload__video-preview {
+    min-height: 250px;
+  }
+  
+  .media-upload__camera-controls {
+    bottom: 16px;
+    gap: 12px;
+  }
+  
+  .media-upload__control-btn {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .media-upload__control-btn--photo {
+    width: 56px;
+    height: 56px;
+  }
+  
+  .media-upload__recording-timer {
+    top: 12px;
+    left: 12px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .media-upload__video-preview {
+    min-height: 200px;
+  }
+  
+  .media-upload__camera-controls {
+    gap: 8px;
+  }
+  
+  .media-upload__control-btn {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .media-upload__control-btn--photo {
+    width: 52px;
+    height: 52px;
+  }
+}
