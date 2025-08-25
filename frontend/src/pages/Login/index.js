@@ -36,7 +36,7 @@ export default function Login() {
       <div className="login-background">
         <div className="login-card">
           <div className="login-header">
-            <img src="/logo.png" alt="Logo" className="login-logo" />
+            <img src="/logo_black.png" alt="Logo" className="login-logo" />
             <h1 className="login-title">Bem-vindo de volta</h1>
             <p className="login-subtitle">Faça login em sua conta para continuar</p>
           </div>
