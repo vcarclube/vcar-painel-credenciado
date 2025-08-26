@@ -91,7 +91,7 @@ export default function Login() {
                 <span className="checkmark"></span>
                 Lembrar de mim
               </label>
-              <a href="#" className="forgot-password">Esqueceu a senha?</a>
+              <a style={{display: 'none'}} href="#" className="forgot-password">Esqueceu a senha?</a>
             </div>
 
             <Button
@@ -104,7 +104,7 @@ export default function Login() {
           </form>
 
           <div className="login-footer">
-            <p>Não tem uma conta? <a href="#" className="signup-link">Cadastre-se</a></p>
+            <p>Não tem uma conta? <a href="https://credenciado.vcarclube.com.br" className="signup-link">Cadastre-se</a></p>
           </div>
         </div>
       </div>
