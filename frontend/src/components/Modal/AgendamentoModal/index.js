@@ -166,10 +166,12 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
             {errors.motivacao && <span className="error-text">{errors.motivacao}</span>}
           </div>
           
+          <div style={{display: 'flex'}}>
+
           <div className="form-group">
             <label htmlFor="dataAgendamento">
               <FiCalendar />
-              Data do Agendamento *
+              Data *
             </label>
             <input
               style={{width: '100%'}}
@@ -182,7 +184,7 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
               min={new Date().toISOString().split('T')[0]}
             />
             {errors.dataAgendamento && <span className="error-text">{errors.dataAgendamento}</span>}
-          </div>
+          </div>&nbsp;
           
           <div className="form-group">
             <label htmlFor="horario">
@@ -190,15 +192,18 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
               Horário *
             </label>
             <SearchableSelect
+              hideSearchInput={true}
               options={horarioOptions}
               value={formData.horario}
               onChange={(option) => handleInputChange('horario', option?.value || '')}
-              placeholder="Selecione o horário..."
+              placeholder="Horário..."
               className={errors.horario ? 'error' : ''}
             />
             {errors.horario && <span className="error-text">{errors.horario}</span>}
           </div>
           
+          </div>
+
           <div className="modal-actions">
             <Button
               variant="secondary"

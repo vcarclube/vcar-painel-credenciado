@@ -11,7 +11,8 @@ const SearchableSelect = ({
   disabled = false,
   className = "",
   noOptionsText = "Nenhuma opção encontrada",
-  onDropdownToggle
+  onDropdownToggle,
+  hideSearchInput = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -175,19 +176,22 @@ const SearchableSelect = ({
             width: `${dropdownPosition.width}px`
           }}
         >
-          <div className="search-container">
-            <div className="search-input-wrapper">
-              <FiSearch className="search-icon" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                className="search-input"
-                placeholder={searchPlaceholder}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+
+          {hideSearchInput == false ? (
+            <div className="search-container">
+              <div className="search-input-wrapper">
+                <FiSearch className="search-icon" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  className="search-input"
+                  placeholder={searchPlaceholder}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
+          ) : (null)}
           
           <div className="options-container">
             {filteredOptions.length > 0 ? (
