@@ -9,6 +9,7 @@ export { default as ExecucaoOS } from './ExecucaoOS';
 export { default as Avaliacoes } from './Avaliacoes';
 export { default as RetornoServico } from './RetornoServico';
 export { default as DadosBancarios } from './DadosBancarios';
+export { default as DadosCadastrais } from './DadosCadastrais';
 export { default as EspelhoFinanceiro } from './EspelhoFinanceiro';
 export { default as Scanner } from './Scanner';
 export { default as Suporte } from './Suporte';

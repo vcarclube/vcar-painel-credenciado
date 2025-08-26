@@ -5,7 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './global.css';
 
-import { Login, PageNotFound, Loading, Privacy, Terms, Agenda, ExecucaoOS, Avaliacoes, RetornoServico, DadosBancarios, EspelhoFinanceiro, Scanner, Suporte } from './pages';
+import { Login, PageNotFound, Loading, Privacy, Terms, Agenda, ExecucaoOS, Avaliacoes, RetornoServico, DadosBancarios, DadosCadastrais, EspelhoFinanceiro, Scanner, Suporte } from './pages';
 
 const useMainContext = () => {
   const context = useContext(MainContext);
@@ -170,6 +170,14 @@ function App() {
             element={
               <PrivateRoute>
                 <DadosBancarios />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/dados-cadastrais"
+            element={
+              <PrivateRoute>
+                <DadosCadastrais />
               </PrivateRoute>
             }
           />

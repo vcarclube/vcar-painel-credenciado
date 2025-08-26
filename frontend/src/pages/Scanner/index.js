@@ -150,7 +150,7 @@ const Scanner = () => {
     // Adicionar um pequeno delay para garantir que o DOM esteja pronto
     const timer = setTimeout(() => {
       startCamera();
-    }, 500);
+    }, 0);
     
     return () => clearTimeout(timer);
   }, []);

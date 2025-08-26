@@ -103,7 +103,7 @@ function Sidebar() {
 
         {/* Suporte */}
         <div className="sidebar-item" onClick={() => navigate('/suporte')}>
-          <div className="sidebar-link">
+          <div className={`sidebar-link ${(location.pathname === '/suporte') ? 'active' : ''}`}>
             <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M9 11a3 3 0 1 1 6 0c0 2-3 3-3 3"></path>
               <circle cx="12" cy="17" r=".02"></circle>
