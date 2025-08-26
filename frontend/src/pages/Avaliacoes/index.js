@@ -78,7 +78,7 @@ const Avaliacoes = () => {
         }
       ]);
       setLoading(false);
-    }, 1000);
+    }, 0);
   }, []);
 
   // Função para renderizar estrelas
@@ -138,7 +138,7 @@ const Avaliacoes = () => {
         <div className="avaliacoes__container">
           <div className="avaliacoes__header">
             <h1 className="avaliacoes__title">Avaliações dos Clientes</h1>
-            <p className="avaliacoes__subtitle">Acompanhe o feedback dos seus clientes</p>
+            <p className="avaliacoes__subtitle">Acompanhe o feedback dos sócios</p>
           </div>
 
           {/* Resumo das Avaliações */}
