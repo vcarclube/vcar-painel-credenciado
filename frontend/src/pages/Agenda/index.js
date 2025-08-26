@@ -22,15 +22,21 @@ const Agenda = () => {
   const [selectedAgendamento, setSelectedAgendamento] = useState(null);
 
   const [agendamentos, setAgendamentos] = useState([]);
+  const [agendamentosFiltrados, setAgendamentosFiltrados] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Estados dos filtros
+  const [filtroDataInicio, setFiltroDataInicio] = useState('2025-08-01');
+  const [filtroDataFinal, setFiltroDataFinal] = useState('2025-08-31');
+  const [filtroStatus, setFiltroStatus] = useState('PENDENTES');
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  useEffect(() => {
+  // Função para carregar agendamentos
+  const carregarAgendamentos = () => {
     if (user && user.IdPontoAtendimento) {
-      setLoading(true);
       Api.agendamentos({ idPontoAtendimento: user.IdPontoAtendimento }).then(res => {
         if (res.status === 200 && res.data && res.data.data) {
           const agendamentosFormatados = res.data.data.map(item => {
@@ -66,12 +72,59 @@ const Agenda = () => {
           });
           setAgendamentos(agendamentosFormatados);
         }
-        setLoading(false);
       }).catch(error => {
         console.error('Erro ao carregar agendamentos:', error);
         setLoading(false);
       });
     }
+  };
+
+  // Função para filtrar agendamentos
+  const filtrarAgendamentos = () => {
+    let agendamentosFiltrados = agendamentos;
+
+    // Filtro por data
+    if (filtroDataInicio && filtroDataFinal) {
+      agendamentosFiltrados = agendamentosFiltrados.filter(agendamento => {
+        const dataAgendamento = new Date(agendamento.data.split('/').reverse().join('-'));
+        const dataInicio = new Date(filtroDataInicio);
+        const dataFinal = new Date(filtroDataFinal);
+        return dataAgendamento >= dataInicio && dataAgendamento <= dataFinal;
+      });
+    }
+
+    // Filtro por status
+    if (filtroStatus !== 'TODOS') {
+      if (filtroStatus === 'PENDENTES') {
+        agendamentosFiltrados = agendamentosFiltrados.filter(agendamento => agendamento.status === 'PENDENTE');
+      } else {
+        agendamentosFiltrados = agendamentosFiltrados.filter(agendamento => agendamento.status === filtroStatus);
+      }
+    }
+
+    setAgendamentosFiltrados(agendamentosFiltrados);
+  };
+
+  // Aplicar filtros sempre que agendamentos ou filtros mudarem
+  useEffect(() => {
+    filtrarAgendamentos();
+  }, [agendamentos, filtroDataInicio, filtroDataFinal, filtroStatus]);
+
+  // Carregar agendamentos inicialmente
+  useEffect(() => {
+    setLoading(true);
+    carregarAgendamentos();
+    setLoading(false);
+  }, [user]);
+
+  // Atualizar tabela a cada 10 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      carregarAgendamentos();
+    }, 10000); // 10 segundos
+
+    // Limpar o interval quando o componente for desmontado
+    return () => clearInterval(interval);
   }, [user]);
 
   const getStatusClass = (status) => {
@@ -144,15 +197,26 @@ const Agenda = () => {
               <div className="agenda-filters">
                 <div className="filter-group">
                   <label>Data Início:</label>
-                  <input type="date" defaultValue="2025-08-01" />
+                  <input 
+                    type="date" 
+                    value={filtroDataInicio}
+                    onChange={(e) => setFiltroDataInicio(e.target.value)}
+                  />
                 </div>
                 <div className="filter-group">
                   <label>Data Final:</label>
-                  <input type="date" defaultValue="2025-08-31" />
+                  <input 
+                    type="date" 
+                    value={filtroDataFinal}
+                    onChange={(e) => setFiltroDataFinal(e.target.value)}
+                  />
                 </div>
                 <div className="filter-group">
                   <label>Status:</label>
-                  <select defaultValue="PENDENTES">
+                  <select 
+                    value={filtroStatus}
+                    onChange={(e) => setFiltroStatus(e.target.value)}
+                  >
                     <option value="TODOS">TODOS</option>
                     <option value="EM ANDAMENTO">EM ANDAMENTO</option>
                     <option value="PENDENTES">PENDENTES</option>
@@ -172,11 +236,11 @@ const Agenda = () => {
                 <div style={{ textAlign: 'center', padding: '20px' }}>
                   <p>Carregando agendamentos...</p>
                 </div>
-              ) : agendamentos.length === 0 ? (
+              ) : agendamentosFiltrados.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
                   <p>Nenhum agendamento encontrado.</p>
                 </div>
-              ) : agendamentos.map((agendamento) => (
+              ) : agendamentosFiltrados.map((agendamento) => (
                 <div key={agendamento.id} className={`agenda-card ${agendamento.status === 'PENDENTE' ? 'card-pendente' : ''}`}>
                   <div className="card-content">
                     <div className="card-info">
@@ -286,13 +350,13 @@ const Agenda = () => {
                         Carregando agendamentos...
                       </td>
                     </tr>
-                  ) : agendamentos.length === 0 ? (
+                  ) : agendamentosFiltrados.length === 0 ? (
                     <tr>
                       <td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>
                         Nenhum agendamento encontrado.
                       </td>
                     </tr>
-                  ) : agendamentos.map((agendamento) => (
+                  ) : agendamentosFiltrados.map((agendamento) => (
                     <tr key={agendamento.id} className={agendamento.status === 'PENDENTE' ? 'row-pendente' : ''}>
                       <td className="numero-os">
                         {agendamento.numero}
