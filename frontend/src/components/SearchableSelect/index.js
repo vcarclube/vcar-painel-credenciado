@@ -7,7 +7,7 @@ const SearchableSelect = ({
   value = null, 
   onChange, 
   placeholder = "Selecione uma opção...",
-  searchPlaceholder = "Pesquisar...",
+  searchPlaceholder = "  Pesquisar...",
   disabled = false,
   className = "",
   noOptionsText = "Nenhuma opção encontrada",
@@ -32,7 +32,7 @@ const SearchableSelect = ({
   // Focar no input de busca quando abrir
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
+      //searchInputRef.current.focus();
     }
   }, [isOpen]);
 
