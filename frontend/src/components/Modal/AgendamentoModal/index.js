@@ -172,6 +172,7 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
               Data do Agendamento *
             </label>
             <input
+              style={{width: '100%'}}
               type="date"
               id="dataAgendamento"
               name="dataAgendamento"
