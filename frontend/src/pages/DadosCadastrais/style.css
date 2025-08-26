@@ -611,6 +611,12 @@
   .dadoscadastrais-btn span {
     display: none;
   }
+  
+  /* Exibir títulos dos botões nos modais */
+  .modal-actions .dadoscadastrais-btn span {
+    display: inline !important;
+    margin-left: 0.5rem;
+  }
 }
 
 /* Mobile Small */
@@ -712,6 +718,12 @@
   padding: 0 1rem;
 }
 
+/* Mostrar títulos dos botões dos modais em todas as versões */
+.modal .dadoscadastrais-btn span {
+  display: inline !important;
+  margin-left: 0.5rem;
+}
+
 /* Mobile: Position fixed acima do bottom navigation */
 @media (max-width: 768px) {
   .dadoscadastrais-bottom-actions {
@@ -731,6 +743,12 @@
   
   /* Mostrar títulos dos botões na versão mobile */
   .dadoscadastrais-bottom-actions .dadoscadastrais-btn span {
+    display: inline !important;
+    margin-left: 0.5rem;
+  }
+  
+  /* Mostrar título do botão principal de editar na versão mobile */
+  .dadoscadastrais-header-actions .dadoscadastrais-btn span {
     display: inline !important;
     margin-left: 0.5rem;
   }

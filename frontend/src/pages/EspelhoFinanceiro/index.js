@@ -269,17 +269,7 @@ const EspelhoFinanceiro = () => {
                   <span className="espelho-indicador-meta">Valor médio por OS</span>
                 </div>
               </div>
-              
-              <div className="espelho-indicador-card espelho-total-geral">
-                <div className="espelho-indicador-icon">
-                  <FiPieChart />
-                </div>
-                <div className="espelho-indicador-content">
-                  <span className="espelho-indicador-label">Total Geral</span>
-                  <span className="espelho-indicador-valor">{formatCurrency(indicadores.totalGeral)}</span>
-                  <span className="espelho-indicador-meta">{indicadores.totalTransacoes} transações</span>
-                </div>
-              </div>
+            
             </div>
             
             {/* Filtros */}

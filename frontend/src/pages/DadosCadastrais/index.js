@@ -168,7 +168,7 @@ const DadosCadastrais = () => {
   return (
     <div className="home-container">
       <Sidebar />
-      <div className="main-content">
+      <div className="main-content" style={{marginBottom: '0px', paddingBottom: '0px'}}>
         <Header />
         <div className="content-area">
           <div className="dadoscadastrais-container">
@@ -613,7 +613,7 @@ const DadosCadastrais = () => {
                   </div>
                 ))}
               </div>
-              <div className="modal-actions">
+              <div className="modal-actions" style={{flexDirection: 'row !important'}}>
                 <button
                   className="dadoscadastrais-btn dadoscadastrais-btn-secondary"
                   onClick={() => setShowServicesModal(false)}
@@ -699,7 +699,7 @@ const DadosCadastrais = () => {
                   ))
                 )}
               </div>
-              <div className="modal-actions">
+              <div className="modal-actions" style={{flexDirection: 'row !important'}}>
                 <button
                   className="dadoscadastrais-btn dadoscadastrais-btn-secondary"
                   onClick={() => setShowUsersModal(false)}
