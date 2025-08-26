@@ -28,7 +28,7 @@ const Agenda = () => {
   // Estados dos filtros
   const [filtroDataInicio, setFiltroDataInicio] = useState('2025-08-01');
   const [filtroDataFinal, setFiltroDataFinal] = useState('2025-08-31');
-  const [filtroStatus, setFiltroStatus] = useState('PENDENTES');
+  const [filtroStatus, setFiltroStatus] = useState('TODOS');
 
   useEffect(() => {
     window.scrollTo(0, 0);

@@ -46,7 +46,7 @@ const StartModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
           
           <div className="agendamento-details">
             <p><strong>Agendamento:</strong> #{agendamento?.numero}</p>
-            <p><strong>Cliente:</strong> {agendamento?.cliente}</p>
+            <p><strong>Cliente:</strong> {agendamento?.solicitante}</p>
             <p><strong>Serviço:</strong> {agendamento?.servico}</p>
             <p><strong>Data/Hora:</strong> {agendamento?.data} às {agendamento?.hora}</p>
           </div>

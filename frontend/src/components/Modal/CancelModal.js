@@ -40,7 +40,7 @@ const CancelModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
       <div className="cancel-modal-content">
         <div className="cancel-info">
           <p><strong>Agendamento:</strong> #{agendamento?.numero}</p>
-          <p><strong>Cliente:</strong> {agendamento?.cliente}</p>
+          <p><strong>Cliente:</strong> {agendamento?.solicitante}</p>
           <p><strong>Data/Hora:</strong> {agendamento?.data} às {agendamento?.hora}</p>
         </div>
 
