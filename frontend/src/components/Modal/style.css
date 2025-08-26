@@ -102,6 +102,15 @@
   overflow-y: auto;
 }
 
+/* Allow dropdown to overflow modal when SearchableSelect is open */
+.modal-container:has(.searchable-select.open) {
+  overflow: visible;
+}
+
+.modal-container:has(.searchable-select.open) .modal-content {
+  overflow: visible;
+}
+
 /* Animation */
 @keyframes modalSlideIn {
   from {

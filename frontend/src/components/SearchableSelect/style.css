@@ -1,64 +1,81 @@
-/* Searchable Select Component */
 .searchable-select {
   position: relative;
   width: 100%;
   font-family: var(--font-family);
 }
 
-/* Select Trigger */
+.searchable-select.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .select-trigger {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
   padding: 12px 16px;
   background: var(--white);
-  border: 2px solid var(--gray-300);
+  border: 1px solid var(--gray-300);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: var(--transition);
+  transition: all 0.2s ease;
   min-height: 48px;
 }
 
-.select-trigger:hover:not(.disabled) {
-  border-color: var(--gray-400);
+.select-trigger:hover {
+  border-color: var(--primary);
 }
 
-.select-trigger.open {
+.select-trigger:focus {
+  outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(1, 206, 124, 0.1);
+  box-shadow: 0 0 0 2px rgba(1, 206, 124, 0.1);
+}
+
+.searchable-select.open .select-trigger {
+  border-color: var(--primary);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .searchable-select.disabled .select-trigger {
-  background-color: var(--gray-100);
-  color: var(--gray-500);
   cursor: not-allowed;
-  border-color: var(--gray-300);
+  background: var(--gray-50);
 }
 
-/* Select Value */
-.select-value {
+.select-content {
   flex: 1;
+  min-width: 0;
+}
+
+.selected-option {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.selected-text {
+.selected-label {
   color: var(--gray-900);
-  font-size: 14px;
   font-weight: 500;
+  line-height: 1.4;
 }
 
-.placeholder-text {
+.selected-description {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+.placeholder {
   color: var(--gray-500);
-  font-size: 14px;
+  font-size: 1rem;
 }
 
-/* Select Actions */
 .select-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: 12px;
 }
 
 .clear-button {
@@ -69,60 +86,47 @@
   height: 20px;
   background: none;
   border: none;
-  color: var(--gray-400);
   cursor: pointer;
+  color: var(--gray-500);
   border-radius: 50%;
-  transition: var(--transition);
+  transition: all 0.2s ease;
 }
 
 .clear-button:hover {
-  background-color: var(--gray-100);
-  color: var(--gray-600);
+  background: var(--gray-100);
+  color: var(--gray-900);
 }
 
 .chevron {
   display: flex;
   align-items: center;
-  color: var(--gray-400);
+  justify-content: center;
+  color: var(--gray-500);
   transition: transform 0.2s ease;
 }
 
-.chevron.rotated {
+.chevron.open {
   transform: rotate(180deg);
 }
 
-/* Dropdown */
 .select-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 1050;
+  position: fixed;
   background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--primary);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
   box-shadow: var(--shadow-lg);
-  margin-top: 4px;
+  z-index: 999999;
   max-height: 300px;
   overflow: hidden;
-  animation: dropdownSlideIn 0.2s ease-out;
+  display: flex;
+  flex-direction: column;
 }
 
-@keyframes dropdownSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Search Container */
 .search-container {
   padding: 12px;
   border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50);
 }
 
 .search-input-wrapper {
@@ -134,7 +138,7 @@
 .search-icon {
   position: absolute;
   left: 12px;
-  color: var(--gray-400);
+  color: var(--gray-600);
   font-size: 16px;
   pointer-events: none;
 }
@@ -144,35 +148,30 @@
   padding: 8px 12px 8px 36px;
   border: 1px solid var(--gray-300);
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 0.875rem;
   background: var(--white);
-  transition: var(--transition);
-  outline: none;
+  transition: border-color 0.2s ease;
 }
 
 .search-input:focus {
+  outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(1, 206, 124, 0.1);
 }
 
-.search-input::placeholder {
-  color: var(--gray-400);
-}
-
-/* Options Container */
 .options-container {
-  max-height: 200px;
+  flex: 1;
   overflow-y: auto;
+  max-height: 240px;
 }
 
-/* Select Option */
 .select-option {
-  display: flex;
-  flex-direction: column;
   padding: 12px 16px;
   cursor: pointer;
-  transition: var(--transition);
+  transition: background-color 0.2s ease;
   border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .select-option:last-child {
@@ -180,70 +179,58 @@
 }
 
 .select-option:hover {
-  background-color: var(--gray-50);
+  background: var(--gray-50);
 }
 
 .select-option.selected {
-  background-color: var(--primary-bg);
+  background: var(--primary-bg);
   color: var(--primary);
 }
 
 .option-label {
-  font-size: 14px;
   font-weight: 500;
-  color: inherit;
+  line-height: 1.4;
 }
 
 .option-description {
-  font-size: 12px;
-  color: var(--gray-500);
-  margin-top: 2px;
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  line-height: 1.3;
 }
 
 .select-option.selected .option-description {
-  color: var(--primary-dark);
+  color: var(--primary);
+  opacity: 0.8;
 }
 
-/* No Options */
 .no-options {
   padding: 16px;
   text-align: center;
-  color: var(--gray-500);
-  font-size: 14px;
+  color: var(--gray-600);
   font-style: italic;
 }
 
-/* Scrollbar Styling */
-.options-container::-webkit-scrollbar {
-  width: 6px;
+/* Animações */
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.options-container::-webkit-scrollbar-track {
-  background: var(--gray-100);
+.select-dropdown {
+  animation: dropdownSlideIn 0.2s ease-out;
 }
 
-.options-container::-webkit-scrollbar-thumb {
-  background: var(--gray-300);
-  border-radius: 3px;
-}
-
-.options-container::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-400);
-}
-
-/* Responsive */
+/* Responsividade */
 @media (max-width: 768px) {
-  .select-dropdown {
-    max-height: 250px;
-  }
-  
-  .options-container {
-    max-height: 150px;
-  }
-  
   .select-trigger {
+    padding: 10px 12px;
     min-height: 44px;
-    padding: 10px 14px;
   }
   
   .search-container {
@@ -251,26 +238,6 @@
   }
   
   .select-option {
-    padding: 10px 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  .select-trigger {
-    min-height: 40px;
-    padding: 8px 12px;
-  }
-  
-  .selected-text,
-  .placeholder-text {
-    font-size: 13px;
-  }
-  
-  .option-label {
-    font-size: 13px;
-  }
-  
-  .option-description {
-    font-size: 11px;
+    padding: 10px 12px;
   }
 }

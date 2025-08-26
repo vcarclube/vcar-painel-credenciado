@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiCamera, FiX, FiRefreshCw, FiCheck, FiAlertCircle } from 'react-icons/fi';
-import { Header, Sidebar, BottomNavigation, AgendamentoModal } from '../../components';
+import { Header, Sidebar, BottomNavigation, AgendamentoModal, Button } from '../../components';
 import '../Home/style.css';
 import './style.css';
 
@@ -260,14 +260,14 @@ const Scanner = () => {
   }, [stream]);
 
   return (
-    <div className="home-container">
+    <div>
       <Sidebar />
-      <div className="main-content">
+      <div>
         <Header />
         <div className="scan-container">
           <div className="scan-header">
             <h1>Scanner de Placas</h1>
-            <p>Posicione a placa do veículo dentro do quadro para escaneamento</p>
+            <p style={{marginBottom: '15px'}}>Posicione a placa do veículo dentro do quadro para escaneamento</p>
           </div>
 
           <div className="scan-content">
@@ -288,10 +288,10 @@ const Scanner = () => {
                     </ol>
                   </div>
                 )}
-                <button className="scan-btn-retry" onClick={startCamera}>
+                <Button variant='transparent' onClick={startCamera}>
                   <FiRefreshCw />
                   Tentar Novamente
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="scan-active">
@@ -302,10 +302,10 @@ const Scanner = () => {
                     </div>
                     <h2>Iniciando Câmera...</h2>
                     <p>Aguarde enquanto ativamos a câmera para escaneamento</p>
-                    <button className="scan-btn-manual" onClick={startCamera}>
+                    <Button variant='transparent' onClick={startCamera}>
                       <FiCamera />
                       Iniciar Câmera Manualmente
-                    </button>
+                    </Button>
                   </div>
                 ) : null}
                 
@@ -346,14 +346,14 @@ const Scanner = () => {
                         <span className="scan-plate-text">{detectedPlate}</span>
                       </div>
                       <div className="scan-plate-actions">
-                        <button className="scan-btn-confirm" onClick={confirmarPlaca}>
+                        <Button variant='primary' onClick={confirmarPlaca}>
                           <FiCheck />
                           Confirmar
-                        </button>
-                        <button className="scan-btn-retry" onClick={tentarNovamente}>
+                        </Button>
+                        <Button variant='transparent' onClick={tentarNovamente}>
                           <FiRefreshCw />
                           Tentar Novamente
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -364,7 +364,7 @@ const Scanner = () => {
                         disabled={isProcessing}
                       >
                         <FiCamera />
-                        {isProcessing ? 'Processando...' : 'Capturar Placa'}
+                        {isProcessing ? 'Processando...' : 'Capturar'}
                       </button>
                       <button className="scan-btn-stop" onClick={stopCamera}>
                         <FiX />

@@ -3,6 +3,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  overflow: visible;
+}
+
+/* Ensure dropdowns are visible outside modal bounds */
+.agendamento-form .form-group {
+  position: relative;
 }
 
 .vehicle-info {
@@ -30,6 +36,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  position: relative;
+  z-index: 1;
 }
 
 .form-group {

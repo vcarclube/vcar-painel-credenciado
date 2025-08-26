@@ -8,7 +8,6 @@
 /* Scanner Header */
 .scan-header {
   text-align: center;
-  margin-bottom: 30px;
 }
 
 .scan-header h1 {
@@ -279,6 +278,7 @@
   display: flex;
   gap: 15px;
   align-items: center;
+  justify-content: space-between;
 }
 
 .scan-btn-capture {
@@ -412,7 +412,6 @@
   }
   
   .scan-actions {
-    flex-direction: column;
     gap: 10px;
   }
   

@@ -795,7 +795,7 @@ const ExecutaOS = () => {
           <div className="service-modal-description">
             <p>Selecione o serviço que será executado na ordem de serviço:</p>
           </div>
-          
+
           <div className="service-modal-select">
             <SearchableSelect
               options={getServicosDisponiveis()}
@@ -804,7 +804,11 @@ const ExecutaOS = () => {
               placeholder="Pesquisar e selecionar serviço..."
               searchPlaceholder="Digite para pesquisar..."
               noOptionsText="Nenhum serviço encontrado"
-              onDropdownToggle={handleSearchableSelectDropdownToggle}
+              onDropdownToggle={(isOpen) => {
+                if (modalDropdownSetter) {
+                  modalDropdownSetter(isOpen);
+                }
+              }}
             />
           </div>
           
