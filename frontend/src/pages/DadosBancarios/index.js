@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FiPlus, FiEye, FiEdit, FiTrash2, FiCreditCard } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation } from '../../components';
 import DadosBancariosViewModal from '../../components/Modal/DadosBancariosViewModal';
@@ -53,6 +53,10 @@ const DadosBancarios = () => {
       principal: false
     }
   ];
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const getStatusClass = (status) => {
     switch (status) {

@@ -144,6 +144,10 @@ const Scanner = () => {
     }
   };
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Iniciar câmera automaticamente ao carregar a página
   useEffect(() => {
     console.log('Componente Scanner montado, iniciando câmera...');

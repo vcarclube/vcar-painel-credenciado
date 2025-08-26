@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FiSearch, FiSend, FiChevronLeft, FiMessageCircle } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation } from '../../components';
 import './style.css';
@@ -73,6 +73,10 @@ const Suporte = () => {
             time: '14:33'
         }
     ]);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     const handleContactSelect = (contact) => {
         setSelectedContact(contact);

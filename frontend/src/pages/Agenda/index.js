@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiEye, FiPlay, FiCalendar, FiX } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation } from '../../components';
@@ -45,6 +45,10 @@ const Agenda = () => {
       servico: 'TROCA DE BIELETAS (PAR)'
     },
   ]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const getStatusClass = (status) => {
     switch (status) {

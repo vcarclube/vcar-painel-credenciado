@@ -105,6 +105,10 @@ const ExecutaOS = () => {
     { value: 'eletrica', label: 'Sistema Elétrico', description: 'Verificação do sistema elétrico' }
   ];
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Função para obter serviços disponíveis (excluindo os já adicionados)
   const getServicosDisponiveis = () => {
     const servicosAdicionados = servicos.map(servico => servico.value);

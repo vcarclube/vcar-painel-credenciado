@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { MainContext } from '../../helpers/MainContext';
 import { Button, Input } from '../../components';
@@ -11,6 +11,10 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const { authenticated, login } = useContext(MainContext);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   if (authenticated) {
     return <Navigate to="/" replace />;

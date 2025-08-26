@@ -82,6 +82,10 @@ const DadosCadastrais = () => {
   };
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     if (isEditing) {
       checkForChanges();
     }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FiEye, FiEdit, FiTrash2, FiPlus, FiClipboard } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation } from '../../components';
 import RetornoServicoViewModal from '../../components/Modal/RetornoServicoViewModal';
@@ -77,6 +77,10 @@ const RetornoServico = () => {
     const tipoMatch = filtroTipo === 'TODOS' || retorno.tipo === filtroTipo;
     return statusMatch && tipoMatch;
   });
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const getStatusClass = (status) => {
     switch (status) {

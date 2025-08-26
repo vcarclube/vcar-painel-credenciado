@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FiEye,
   FiDollarSign,
@@ -108,6 +108,10 @@ const EspelhoFinanceiro = () => {
       documento: 'CPF 456.789.123-XX'
     }
   ]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Filtrar transações baseado nos filtros
   const transacoesFiltradas = transacoes.filter(transacao => {

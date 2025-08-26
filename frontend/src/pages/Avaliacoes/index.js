@@ -8,6 +8,10 @@ const Avaliacoes = () => {
   const [loading, setLoading] = useState(true);
   const [filtroEstrelas, setFiltroEstrelas] = useState('todas');
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   // Dados simulados de avaliações
   useEffect(() => {
     setTimeout(() => {
