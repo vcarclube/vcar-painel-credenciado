@@ -40,7 +40,7 @@ export default function Header() {
   return (
     <header className="header-container">
       <div className="header-content">
-        <div className="header-logo-mobile">
+        <div className="header-logo-mobile" onClick={() => {navigate('/')}}>
           <img src="/logo_black.png" alt="Logo" className="logo-mobile" />
         </div>
         <div className="header-user" ref={dropdownRef}>
