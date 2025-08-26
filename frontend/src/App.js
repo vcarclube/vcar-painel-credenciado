@@ -1,11 +1,12 @@
 import { useContext, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { MainContext } from "./helpers/MainContext";
-import { ToastContainer } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './global.css';
 
 import { Login, PageNotFound, Loading, Privacy, Terms, Agenda, ExecucaoOS, Avaliacoes, RetornoServico, DadosBancarios, DadosCadastrais, EspelhoFinanceiro, Scanner, Suporte } from './pages';
+import Api from './Api';
 
 const useMainContext = () => {
   const context = useContext(MainContext);
@@ -53,7 +54,7 @@ function App() {
     const checkAuth = () => {
       const token = localStorage.getItem('authToken');
       const userData = localStorage.getItem('userData');
-      
+
       if (token && userData) {
         try {
           const parsedUser = JSON.parse(userData);
@@ -72,31 +73,53 @@ function App() {
     setTimeout(checkAuth, 1000);
   }, []);
 
-  const login = (email, password) => {
-    return new Promise((resolve, reject) => {
-      // Simular chamada de API
-      setTimeout(() => {
-        if (email && password) {
-          const userData = {
-            id: 1,
-            name: 'João Silva',
-            email: email,
-            avatar: '/logo.png' // Usando logo como avatar temporário
-          };
-          
-          const token = 'fake-jwt-token-' + Date.now();
-          
-          localStorage.setItem('authToken', token);
-          localStorage.setItem('userData', JSON.stringify(userData));
-          
-          setUser(userData);
-          setAuthenticated(true);
-          resolve(userData);
-        } else {
-          reject(new Error('Email e senha são obrigatórios'));
-        }
-      }, 1000);
-    });
+  const login = async (email, password) => {
+    // Validação de entrada
+    if (!email || !password) {
+      toast.error('Email e senha são obrigatórios');
+      return;
+    }
+
+    try {
+      // 1. Fazer login
+      const loginResponse = await Api.login({ email, password });
+
+      if (loginResponse.status !== 200) {
+        const errorMessage = loginResponse?.response?.data?.message || 'Erro no login';
+        toast.error(errorMessage);
+        return;
+      }
+
+      // 2. Sucesso no login
+      toast.success(loginResponse.data?.message);
+      const token = loginResponse.data?.token;
+      localStorage.setItem('authToken', token);
+
+      // 3. Verificar autenticação
+      const authResponse = await Api.auth();
+      if (authResponse.status !== 200) {
+        toast.error('Erro na verificação de autenticação');
+        return;
+      }
+
+      // 4. Buscar dados do usuário
+      const userResponse = await Api.get();
+      if (userResponse.status !== 200) {
+        toast.error('Erro ao buscar dados do usuário');
+        return;
+      }
+
+      // 5. Finalizar processo de login
+      localStorage.setItem('userData', JSON.stringify(userResponse.data?.data));
+      setAuthenticated(true);
+
+      window.location.reload();
+
+    } catch (error) {
+      console.error('Erro durante o login:', error);
+      const errorMessage = error?.response?.data?.message || 'Erro interno do servidor';
+      toast.error(errorMessage);
+    }
   };
 
   const logout = () => {

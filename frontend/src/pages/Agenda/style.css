@@ -1,7 +1,6 @@
 .agenda-container {
   padding: var(--spacing-lg);
   max-width: 1400px;
-  margin: 0 auto;
 }
 
 .agenda-header {

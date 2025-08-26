@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiEye, FiPlay, FiCalendar, FiX } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation } from '../../components';
@@ -7,46 +7,72 @@ import RescheduleModal from '../../components/Modal/RescheduleModal';
 import StartModal from '../../components/Modal/StartModal';
 import '../Home/style.css';
 import './style.css';
+import Api from '../../Api';
+import { MainContext } from '../../helpers/MainContext';
 
 const Agenda = () => {
   const navigate = useNavigate();
-  
+
+  const { user } = useContext(MainContext);
+
   // Estados para controlar os modais
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [showStartModal, setShowStartModal] = useState(false);
   const [selectedAgendamento, setSelectedAgendamento] = useState(null);
 
-  const [agendamentos] = useState([
-     {
-      id: 3,
-      numero: '1421',
-      status: 'PENDENTE',
-      pendencia: 'NÃO',
-      data: '22/08/2025',
-      hora: '16:00',
-      solicitante: 'DYLLAN NICOLAU DA SILVA',
-      documento: 'CPF 69993-0507',
-      veiculo: 'JEEP COMPASS 2021 / RCI-9FT1',
-      servico: 'MANUTENÇÃO DO SISTEMA DE FREIO'
-    },
-    {
-      id: 1,
-      numero: '1410',
-      status: 'EM ANDAMENTO',
-      pendencia: 'NÃO',
-      data: '08/08/2025',
-      hora: '16:00',
-      solicitante: 'DYLLAN NICOLAU DA SILVA',
-      documento: 'CPF 69993-0507',
-      veiculo: 'JEEP COMPASS 2021 / RCI-9FT1',
-      servico: 'TROCA DE BIELETAS (PAR)'
-    },
-  ]);
+  const [agendamentos, setAgendamentos] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    if (user && user.IdPontoAtendimento) {
+      setLoading(true);
+      Api.agendamentos({ idPontoAtendimento: user.IdPontoAtendimento }).then(res => {
+        if (res.status === 200 && res.data && res.data.data) {
+          const agendamentosFormatados = res.data.data.map(item => {
+            // Determinar status baseado nas regras fornecidas
+            let status;
+            if (item.StatusAgendamento === 'C') {
+              status = 'CONCLUÍDO';
+            } else if (item.StatusAgendamento === 'A' && (item.IdSocioVeiculoAgendaExecucao === '00000000-0000-0000-0000-000000000000' || item.IdSocioVeiculoAgendaExecucao === null)) {
+              status = 'PENDENTE';
+            } else if (item.IdSocioVeiculoAgendaExecucao !== '00000000-0000-0000-0000-000000000000' || item.IdSocioVeiculoAgendaExecucao === null) {
+              status = 'EM ANDAMENTO';
+            } else {
+              status = 'PENDENTE';
+            }
+
+            return {
+              id: item.IdSocioVeiculoAgenda,
+              numero: item.NumeroOS.toString(),
+              status: status,
+              pendencia: item.QtdePendencias > 0 ? 'SIM' : 'NÃO',
+              data: item.DataAgendamento,
+              hora: item.HoraAgendamento,
+              solicitante: item.Nome.trim(),
+              documento: `CPF ${item.Cpf}`,
+              veiculo: `${item.Marca} ${item.Veiculo} ${item.Ano} / ${item.Placa}`,
+              servico: item.Motivacao || 'Serviço não especificado',
+              telefone: item.Telefone,
+              observacoes: item.Observacoes,
+              pontoAtendimento: item.DescricaoPontoAtendimento,
+              valorServico: item.ValorServico,
+              valorRepasse: item.ValorRepasse
+            };
+          });
+          setAgendamentos(agendamentosFormatados);
+        }
+        setLoading(false);
+      }).catch(error => {
+        console.error('Erro ao carregar agendamentos:', error);
+        setLoading(false);
+      });
+    }
+  }, [user]);
 
   const getStatusClass = (status) => {
     switch (status) {
@@ -108,199 +134,85 @@ const Agenda = () => {
       <Sidebar />
       <div className="main-content">
         <Header />
-        <div className="agenda-container">
-      <div className="agenda-header">
-        <div className="agenda-title">
-          <FiCalendar className="agenda-icon" />
-          <h1>Agenda</h1>
-        </div>
-        <div className="agenda-filters">
-          <div className="filter-group">
-            <label>Data Início:</label>
-            <input type="date" defaultValue="2025-08-01" />
-          </div>
-          <div className="filter-group">
-            <label>Data Final:</label>
-            <input type="date" defaultValue="2025-08-31" />
-          </div>
-          <div className="filter-group">
-            <label>Status:</label>
-            <select defaultValue="PENDENTES">
-              <option value="TODOS">TODOS</option>
-              <option value="EM ANDAMENTO">EM ANDAMENTO</option>
-              <option value="PENDENTES">PENDENTES</option>
-              <option value="CONCLUÍDO">CONCLUÍDO</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Layout para Mobile - Cards */}
-      <div className="agenda-mobile-cards">
-        <div className="cards-header">
-          <span className="info-label">Informações</span>
-          <span className="actions-label">Ações</span>
-        </div>
-        {agendamentos.map((agendamento) => (
-          <div key={agendamento.id} className={`agenda-card ${agendamento.status === 'PENDENTE' ? 'card-pendente' : ''}`}>
-            <div className="card-content">
-              <div className="card-info">
-                <div className="card-status">
-                <span className={`status-badge ${getStatusClass(agendamento.status)}`}>
-                   {agendamento.status}
-                   {agendamento.status === 'PENDENTE' && (
-                     <span className="tag-novo-status">NOVO</span>
-                   )}
-                 </span>
-                <span className="card-number">
-                  {agendamento.numero}
-                </span>
+        <center>
+          <div className="agenda-container">
+            <div className="agenda-header">
+              <div className="agenda-title">
+                <FiCalendar className="agenda-icon" />
+                <h1>Agenda</h1>
               </div>
-                <div className="card-details">
-                  <div className="card-date-time">
-                    📅 {agendamento.data} • ⏰ {agendamento.hora}
-                  </div>
-                  <div className="card-client">
-                    👤 {agendamento.solicitante}
-                  </div>
-                  <div className="card-document">
-                    📄 {agendamento.documento}
-                  </div>
-                  <div className="card-vehicle">
-                    🚗 {agendamento.veiculo}
-                  </div>
-                  <div className="card-service">
-                    🔧 {agendamento.servico}
-                  </div>
+              <div className="agenda-filters">
+                <div className="filter-group">
+                  <label>Data Início:</label>
+                  <input type="date" defaultValue="2025-08-01" />
+                </div>
+                <div className="filter-group">
+                  <label>Data Final:</label>
+                  <input type="date" defaultValue="2025-08-31" />
+                </div>
+                <div className="filter-group">
+                  <label>Status:</label>
+                  <select defaultValue="PENDENTES">
+                    <option value="TODOS">TODOS</option>
+                    <option value="EM ANDAMENTO">EM ANDAMENTO</option>
+                    <option value="PENDENTES">PENDENTES</option>
+                    <option value="CONCLUÍDO">CONCLUÍDO</option>
+                  </select>
                 </div>
               </div>
             </div>
-            <div className="card-actions">
-              {agendamento.status === 'EM ANDAMENTO' ? (
-                <button 
-                  className="btn-acao btn-ver-os"
-                  onClick={() => handleVerOS(agendamento)}
-                  title="Ver O.S."
-                >
-                  <FiEye />
-                  <span>Ver O.S.</span>
-                </button>
-              ) : agendamento.status === 'PENDENTE' ? (
-                <>
-                  <button 
-                    className="btn-acao btn-iniciar"
-                    onClick={() => handleIniciar(agendamento)}
-                    title="Iniciar"
-                  >
-                    <FiPlay />
-                    <span>Iniciar</span>
-                  </button>
-                  <button 
-                    className="btn-acao btn-reagendar"
-                    onClick={() => handleReagendar(agendamento)}
-                    title="Reagendar"
-                  >
-                    <FiCalendar />
-                    <span>Reagendar</span>
-                  </button>
-                  <button 
-                    className="btn-acao btn-cancelar"
-                    onClick={() => handleCancelar(agendamento)}
-                    title="Cancelar"
-                  >
-                    <FiX />
-                    <span>Cancelar</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button 
-                    className="btn-acao btn-ver-os"
-                    onClick={() => handleVerOS(agendamento)}
-                    title="Ver O.S."
-                  >
-                    <FiEye />
-                    <span>Ver O.S.</span>
-                  </button>
-                  <button 
-                    className="btn-acao btn-iniciar"
-                    onClick={() => handleIniciar(agendamento)}
-                    title="Iniciar"
-                  >
-                    <FiPlay />
-                    <span>Iniciar</span>
-                  </button>
-                  <button 
-                    className="btn-acao btn-reagendar"
-                    onClick={() => handleReagendar(agendamento)}
-                    title="Reagendar"
-                  >
-                    <FiCalendar />
-                    <span>Reagendar</span>
-                  </button>
-                  <button 
-                    className="btn-acao btn-cancelar"
-                    onClick={() => handleCancelar(agendamento)}
-                    title="Cancelar"
-                  >
-                    <FiX />
-                    <span>Cancelar</span>
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
 
-      <div className="agenda-table-container">
-        <table className="agenda-table">
-          <thead>
-            <tr>
-              <th>Nº OS</th>
-              <th>Status</th>
-              <th>Pendências</th>
-              <th>Data</th>
-              <th>Hora</th>
-              <th>Solicitante</th>
-              <th>% Veículo</th>
-              <th>% Motivação</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {agendamentos.map((agendamento) => (
-              <tr key={agendamento.id} className={agendamento.status === 'PENDENTE' ? 'row-pendente' : ''}>
-                <td className="numero-os">
-                  {agendamento.numero}
-                  {agendamento.status === 'PENDENTE' && (
-                    <span className="tag-novo">NOVO</span>
-                  )}
-                </td>
-                <td>
-                  <span className={`status-badge ${getStatusClass(agendamento.status)}`}>
-                    {agendamento.status}
-                  </span>
-                </td>
-                <td className="pendencia">{agendamento.pendencia}</td>
-                <td className="data">{agendamento.data}</td>
-                <td className="hora">{agendamento.hora}</td>
-                <td className="solicitante">
-                  <div className="solicitante-info">
-                    <div className="nome">{agendamento.solicitante}</div>
-                    <div className="documento">{agendamento.documento}</div>
+            {/* Layout para Mobile - Cards */}
+            <div className="agenda-mobile-cards">
+              <div className="cards-header">
+                <span className="info-label">Informações</span>
+                <span className="actions-label">Ações</span>
+              </div>
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <p>Carregando agendamentos...</p>
+                </div>
+              ) : agendamentos.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <p>Nenhum agendamento encontrado.</p>
+                </div>
+              ) : agendamentos.map((agendamento) => (
+                <div key={agendamento.id} className={`agenda-card ${agendamento.status === 'PENDENTE' ? 'card-pendente' : ''}`}>
+                  <div className="card-content">
+                    <div className="card-info">
+                      <div className="card-status">
+                        <span className={`status-badge ${getStatusClass(agendamento.status)}`}>
+                          {agendamento.status}
+                          {agendamento.status === 'PENDENTE' && (
+                            <span className="tag-novo-status">NOVO</span>
+                          )}
+                        </span>
+                        <span className="card-number">
+                          {agendamento.numero}
+                        </span>
+                      </div>
+                      <div className="card-details">
+                        <div className="card-date-time">
+                          📅 {agendamento.data} • ⏰ {agendamento.hora}
+                        </div>
+                        <div className="card-client">
+                          👤 {agendamento.solicitante}
+                        </div>
+                        <div className="card-document">
+                          📄 {agendamento.documento}
+                        </div>
+                        <div className="card-vehicle">
+                          🚗 {agendamento.veiculo}
+                        </div>
+                        <div className="card-service">
+                          🔧 {agendamento.servico}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </td>
-                <td className="veiculo">
-                  <div className="veiculo-info">
-                    {agendamento.veiculo}
-                  </div>
-                </td>
-                <td className="servico">{agendamento.servico}</td>
-                <td className="acoes">
-                  <div className="acoes-container">
+                  <div className="card-actions">
                     {agendamento.status === 'EM ANDAMENTO' ? (
-                      <button 
+                      <button
                         className="btn-acao btn-ver-os"
                         onClick={() => handleVerOS(agendamento)}
                         title="Ver O.S."
@@ -310,7 +222,7 @@ const Agenda = () => {
                       </button>
                     ) : agendamento.status === 'PENDENTE' ? (
                       <>
-                        <button 
+                        <button
                           className="btn-acao btn-iniciar"
                           onClick={() => handleIniciar(agendamento)}
                           title="Iniciar"
@@ -318,7 +230,7 @@ const Agenda = () => {
                           <FiPlay />
                           <span>Iniciar</span>
                         </button>
-                        <button 
+                        <button
                           className="btn-acao btn-reagendar"
                           onClick={() => handleReagendar(agendamento)}
                           title="Reagendar"
@@ -326,7 +238,7 @@ const Agenda = () => {
                           <FiCalendar />
                           <span>Reagendar</span>
                         </button>
-                        <button 
+                        <button
                           className="btn-acao btn-cancelar"
                           onClick={() => handleCancelar(agendamento)}
                           title="Cancelar"
@@ -335,9 +247,9 @@ const Agenda = () => {
                           <span>Cancelar</span>
                         </button>
                       </>
-                    ) : (
+                    )  : (
                       <>
-                        <button 
+                        <button
                           className="btn-acao btn-ver-os"
                           onClick={() => handleVerOS(agendamento)}
                           title="Ver O.S."
@@ -345,43 +257,131 @@ const Agenda = () => {
                           <FiEye />
                           <span>Ver O.S.</span>
                         </button>
-                        <button 
-                          className="btn-acao btn-iniciar"
-                          onClick={() => handleIniciar(agendamento)}
-                          title="Iniciar"
-                        >
-                          <FiPlay />
-                          <span>Iniciar</span>
-                        </button>
-                        <button 
-                          className="btn-acao btn-reagendar"
-                          onClick={() => handleReagendar(agendamento)}
-                          title="Reagendar"
-                        >
-                          <FiCalendar />
-                          <span>Reagendar</span>
-                        </button>
-                        <button 
-                          className="btn-acao btn-cancelar"
-                          onClick={() => handleCancelar(agendamento)}
-                          title="Cancelar"
-                        >
-                          <FiX />
-                          <span>Cancelar</span>
-                        </button>
                       </>
                     )}
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-        </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="agenda-table-container">
+              <table className="agenda-table">
+                <thead>
+                  <tr>
+                    <th>Nº OS</th>
+                    <th>Status</th>
+                    <th>Pendências</th>
+                    <th>Data</th>
+                    <th>Hora</th>
+                    <th>Solicitante</th>
+                    <th>% Veículo</th>
+                    <th>% Motivação</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>
+                        Carregando agendamentos...
+                      </td>
+                    </tr>
+                  ) : agendamentos.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" style={{ textAlign: 'center', padding: '20px' }}>
+                        Nenhum agendamento encontrado.
+                      </td>
+                    </tr>
+                  ) : agendamentos.map((agendamento) => (
+                    <tr key={agendamento.id} className={agendamento.status === 'PENDENTE' ? 'row-pendente' : ''}>
+                      <td className="numero-os">
+                        {agendamento.numero}
+                        {agendamento.status === 'PENDENTE' && (
+                          <span className="tag-novo">NOVO</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`status-badge ${getStatusClass(agendamento.status)}`}>
+                          {agendamento.status}
+                        </span>
+                      </td>
+                      <td className="pendencia">{agendamento.pendencia}</td>
+                      <td className="data">{agendamento.data}</td>
+                      <td className="hora">{agendamento.hora}</td>
+                      <td className="solicitante">
+                        <div className="solicitante-info">
+                          <div className="nome">{agendamento.solicitante}</div>
+                          <div className="documento">{agendamento.documento}</div>
+                        </div>
+                      </td>
+                      <td className="veiculo">
+                        <div className="veiculo-info">
+                          {agendamento.veiculo}
+                        </div>
+                      </td>
+                      <td className="servico">{agendamento.servico}</td>
+                      <td className="acoes">
+                        <div className="acoes-container">
+                          {agendamento.status === 'EM ANDAMENTO' ? (
+                            <button
+                              className="btn-acao btn-ver-os"
+                              onClick={() => handleVerOS(agendamento)}
+                              title="Ver O.S."
+                            >
+                              <FiEye />
+                              <span>Ver O.S.</span>
+                            </button>
+                          ) : agendamento.status === 'PENDENTE' ? (
+                            <>
+                              <button
+                                className="btn-acao btn-iniciar"
+                                onClick={() => handleIniciar(agendamento)}
+                                title="Iniciar"
+                              >
+                                <FiPlay />
+                                <span>Iniciar</span>
+                              </button>
+                              <button
+                                className="btn-acao btn-reagendar"
+                                onClick={() => handleReagendar(agendamento)}
+                                title="Reagendar"
+                              >
+                                <FiCalendar />
+                                <span>Reagendar</span>
+                              </button>
+                              <button
+                                className="btn-acao btn-cancelar"
+                                onClick={() => handleCancelar(agendamento)}
+                                title="Cancelar"
+                              >
+                                <FiX />
+                                <span>Cancelar</span>
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                className="btn-acao btn-ver-os"
+                                onClick={() => handleVerOS(agendamento)}
+                                title="Ver O.S."
+                              >
+                                <FiEye />
+                                <span>Ver O.S.</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </center>
       </div>
       <BottomNavigation />
-      
+
       {/* Modais */}
       <StartModal
         isOpen={showStartModal}
@@ -389,14 +389,14 @@ const Agenda = () => {
         onConfirm={handleConfirmStart}
         agendamento={selectedAgendamento}
       />
-      
+
       <RescheduleModal
         isOpen={showRescheduleModal}
         onClose={() => setShowRescheduleModal(false)}
         onConfirm={handleConfirmReschedule}
         agendamento={selectedAgendamento}
       />
-      
+
       <CancelModal
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
