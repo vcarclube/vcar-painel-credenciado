@@ -166,7 +166,7 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
             {errors.motivacao && <span className="error-text">{errors.motivacao}</span>}
           </div>
           
-          <div style={{display: 'flex'}}>
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
 
           <div className="form-group">
             <label htmlFor="dataAgendamento">
