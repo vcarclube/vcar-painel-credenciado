@@ -160,7 +160,7 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
               options={motivacaoOptions}
               value={formData.motivacao}
               onChange={(option) => handleInputChange('motivacao', option?.value || '')}
-              placeholder="Selecione a motivação do serviço..."
+              placeholder="Selecione a motivação..."
               className={errors.motivacao ? 'error' : ''}
             />
             {errors.motivacao && <span className="error-text">{errors.motivacao}</span>}
@@ -211,7 +211,7 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
               onClick={handleSubmit}
               loading={isSubmitting}
             >
-              Criar Agendamento
+              Agendar
             </Button>
           </div>
         </div>
