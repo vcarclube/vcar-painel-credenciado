@@ -25,7 +25,6 @@ const Agenda = () => {
       pendencia: 'NÃO',
       data: '22/08/2025',
       hora: '16:00',
-      credenciado: 'LUCAS CALHAMBEQUE',
       solicitante: 'DYLLAN NICOLAU DA SILVA',
       documento: 'CPF 69993-0507',
       veiculo: 'JEEP COMPASS 2021 / RCI-9FT1',
@@ -38,7 +37,6 @@ const Agenda = () => {
       pendencia: 'NÃO',
       data: '08/08/2025',
       hora: '16:00',
-      credenciado: 'TECHNO DEVICES 1',
       solicitante: 'DYLLAN NICOLAU DA SILVA',
       documento: 'CPF 69993-0507',
       veiculo: 'JEEP COMPASS 2021 / RCI-9FT1',
@@ -264,7 +262,6 @@ const Agenda = () => {
               <th>Pendências</th>
               <th>Data</th>
               <th>Hora</th>
-              <th>Credenciado</th>
               <th>Solicitante</th>
               <th>% Veículo</th>
               <th>% Motivação</th>
@@ -288,7 +285,6 @@ const Agenda = () => {
                 <td className="pendencia">{agendamento.pendencia}</td>
                 <td className="data">{agendamento.data}</td>
                 <td className="hora">{agendamento.hora}</td>
-                <td className="credenciado">{agendamento.credenciado}</td>
                 <td className="solicitante">
                   <div className="solicitante-info">
                     <div className="nome">{agendamento.solicitante}</div>
