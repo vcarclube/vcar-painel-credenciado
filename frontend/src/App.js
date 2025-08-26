@@ -5,7 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './global.css';
 
-import { Login, PageNotFound, Loading, Privacy, Terms, Agenda, ExecucaoOS, Avaliacoes, RetornoServico, DadosBancarios, EspelhoFinanceiro, Scanner } from './pages';
+import { Login, PageNotFound, Loading, Privacy, Terms, Agenda, ExecucaoOS, Avaliacoes, RetornoServico, DadosBancarios, EspelhoFinanceiro, Scanner, Suporte } from './pages';
 
 const useMainContext = () => {
   const context = useContext(MainContext);
@@ -186,6 +186,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Scanner />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/suporte"
+            element={
+              <PrivateRoute>
+                <Suporte />
               </PrivateRoute>
             }
           />

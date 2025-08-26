@@ -102,7 +102,7 @@ function Sidebar() {
         </div>
 
         {/* Suporte */}
-        <div className="sidebar-item">
+        <div className="sidebar-item" onClick={() => navigate('/suporte')}>
           <div className="sidebar-link">
             <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path d="M9 11a3 3 0 1 1 6 0c0 2-3 3-3 3"></path>

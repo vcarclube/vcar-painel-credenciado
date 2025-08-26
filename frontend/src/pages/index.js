@@ -11,3 +11,4 @@ export { default as RetornoServico } from './RetornoServico';
 export { default as DadosBancarios } from './DadosBancarios';
 export { default as EspelhoFinanceiro } from './EspelhoFinanceiro';
 export { default as Scanner } from './Scanner';
+export { default as Suporte } from './Suporte';

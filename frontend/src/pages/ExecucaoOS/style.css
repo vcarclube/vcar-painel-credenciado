@@ -768,6 +768,7 @@
 .execucao-os__dropdown {
   position: relative;
   display: inline-block;
+  width: 100%;
 }
 
 .execucao-os__dropdown-toggle {
@@ -783,6 +784,8 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  width: 100%;
+  justify-content: center;
 }
 
 .execucao-os__dropdown-toggle:hover {
@@ -932,11 +935,12 @@
   }
   
   .execucao-os__actions-desktop {
-    gap: 12px;
+    display: none; /* Ocultar botões desktop no mobile */
   }
   
   .execucao-os__actions-mobile {
-    display: none;
+    display: flex; /* Mostrar dropdown mobile */
+    justify-content: center;
   }
   
   .execucao-os__fotos-grid {

@@ -159,7 +159,6 @@ const DadosBancariosViewModal = ({ isOpen, onClose, dado }) => {
           display: flex;
           justify-content: flex-end;
           gap: 12px;
-          padding-top: 16px;
           border-top: 1px solid #e2e8f0;
         }
 

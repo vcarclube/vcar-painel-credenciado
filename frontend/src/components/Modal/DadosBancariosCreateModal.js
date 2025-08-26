@@ -125,7 +125,7 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
     >
       <div className="create-modal-content">
         <form onSubmit={handleSubmit} className="create-form">
-          <div className="form-section">
+          <div className="">
             <h4 className="section-title">Informações Bancárias</h4>
             
             <div className="form-row">
@@ -318,8 +318,6 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
         }
 
         .modal-actions {
-          padding: 20px 24px;
-          background: #f8f9fa;
           display: flex;
           justify-content: flex-end;
           gap: 12px;
@@ -337,7 +335,6 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
           }
 
           .modal-actions {
-            padding: 16px 20px;
             flex-direction: column;
           }
         }
