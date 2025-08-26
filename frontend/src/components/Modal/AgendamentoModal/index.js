@@ -168,39 +168,39 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
           
           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
 
-          <div className="form-group">
-            <label htmlFor="dataAgendamento">
-              <FiCalendar />
-              Data *
-            </label>
-            <input
-              style={{width: '100%'}}
-              type="date"
-              id="dataAgendamento"
-              name="dataAgendamento"
-              value={formData.dataAgendamento}
-              onChange={handleDateChange}
-              className={errors.dataAgendamento ? 'error' : ''}
-              min={new Date().toISOString().split('T')[0]}
-            />
-            {errors.dataAgendamento && <span className="error-text">{errors.dataAgendamento}</span>}
-          </div>&nbsp;
-          
-          <div className="form-group">
-            <label htmlFor="horario">
-              <FiClock />
-              Horário *
-            </label>
-            <SearchableSelect
-              hideSearchInput={true}
-              options={horarioOptions}
-              value={formData.horario}
-              onChange={(option) => handleInputChange('horario', option?.value || '')}
-              placeholder="Horário..."
-              className={errors.horario ? 'error' : ''}
-            />
-            {errors.horario && <span className="error-text">{errors.horario}</span>}
-          </div>
+            <div className="form-group" style={{width: '100%'}}>
+              <label htmlFor="dataAgendamento">
+                <FiCalendar />
+                Data *
+              </label>
+              <input
+                style={{width: '100%'}}
+                type="date"
+                id="dataAgendamento"
+                name="dataAgendamento"
+                value={formData.dataAgendamento}
+                onChange={handleDateChange}
+                className={errors.dataAgendamento ? 'error' : ''}
+                min={new Date().toISOString().split('T')[0]}
+              />
+              {errors.dataAgendamento && <span className="error-text">{errors.dataAgendamento}</span>}
+            </div>&nbsp;
+            
+            <div className="form-group" style={{width: '100%'}}>
+              <label htmlFor="horario">
+                <FiClock />
+                Horário *
+              </label>
+              <SearchableSelect
+                hideSearchInput={true}
+                options={horarioOptions}
+                value={formData.horario}
+                onChange={(option) => handleInputChange('horario', option?.value || '')}
+                placeholder="Horário..."
+                className={errors.horario ? 'error' : ''}
+              />
+              {errors.horario && <span className="error-text">{errors.horario}</span>}
+            </div>
           
           </div>
 
