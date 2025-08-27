@@ -96,14 +96,14 @@ function App() {
       localStorage.setItem('authToken', token);
 
       // 3. Verificar autenticação
-      const authResponse = await Api.auth();
+      const authResponse = await Api.auth(token);
       if (authResponse.status !== 200) {
         toast.error('Erro na verificação de autenticação');
         return;
       }
 
       // 4. Buscar dados do usuário
-      const userResponse = await Api.get();
+      const userResponse = await Api.get(token);
       if (userResponse.status !== 200) {
         toast.error('Erro ao buscar dados do usuário');
         return;

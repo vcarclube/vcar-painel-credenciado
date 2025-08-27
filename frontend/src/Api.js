@@ -4,15 +4,25 @@ import Environment from "./Environment";
 const API_BASE = Environment.API_BASE;
 
 const Api = {
-    auth: async () => {
-        return await axios.get(`${API_BASE}/credenciado/auth`, Environment.HEADERS).then(async (response) => {
+    auth: async (token) => {
+
+        let forceToken = Environment.HEADERS || { headers: {
+            authToken: token,
+        }};
+
+        return await axios.get(`${API_BASE}/credenciado/auth`, forceToken).then(async (response) => {
             return await response;
         }).catch(err => {
             return err;
         });
     },
-    get: async () => {
-        return await axios.get(`${API_BASE}/credenciado/get`, Environment.HEADERS).then(async (response) => {
+    get: async (token) => {
+        
+        let forceToken = Environment.HEADERS || { headers: {
+            authToken: token,
+        }};
+
+        return await axios.get(`${API_BASE}/credenciado/get`, forceToken).then(async (response) => {
             return await response;
         }).catch(err => {
             return err;
