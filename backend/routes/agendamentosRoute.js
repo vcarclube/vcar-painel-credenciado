@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { validateToken } = require('../middlewares/AuthMiddleware');
+const { validateOrigin } = require('../middlewares/CorsMiddleware');
 
 const db = require('../database');
 const Utils = require('../utils');
@@ -214,7 +215,7 @@ router.get('/lista/:idPontoAtendimento', validateToken, async (req, res) => {
   }
 });
 
-router.post('/lista-horarios-disponiveis', validateToken, async (req, res) => {
+router.post('/lista-horarios-disponiveis', validateOrigin, async (req, res) => {
   try{
     const { idPontoAtendimento, dataAgendamento, dataAtual, horaAtual } = req.body;
 

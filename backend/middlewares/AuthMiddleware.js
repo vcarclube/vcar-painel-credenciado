@@ -4,7 +4,7 @@ require('dotenv').config()
 
 const validateToken = (req, res, next) => {
     try{
-        let permitedOrigins = [process.env.PERMITED_ORIGIN, process.env.PERMITED_ORIGIN_DEVELOPMENT];
+        let permitedOrigins = [process.env.PERMITED_ORIGIN, process.env.PERMITED_ORIGIN_DEVELOPMENT, process.env.PERMITED_ORIGIN_DOTNET_VCAR_PROJECT, process.env.PERMITED_ORIGIN_DOTNET_VCAR_PROJECT_DEVELOPMENT];
         const origin = req.header('Origin');
         if(!permitedOrigins.includes(origin)){
             return res.status(404).json({error: 'CORS origin error'})
