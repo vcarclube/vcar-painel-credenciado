@@ -9,6 +9,7 @@ import '../Home/style.css';
 import './style.css';
 import Api from '../../Api';
 import { MainContext } from '../../helpers/MainContext';
+import { toast } from 'react-toastify';
 
 const Agenda = () => {
   const navigate = useNavigate();
@@ -54,6 +55,9 @@ const Agenda = () => {
 
             return {
               id: item.IdSocioVeiculoAgenda,
+              idSocio: item.IdSocio,
+              idSocioVeiculo: item.IdSocioVeiculo,
+              idPontoAtendimento: user?.IdPontoAtendimento,
               numero: item.NumeroOS.toString(),
               status: status,
               pendencia: item.QtdePendencias > 0 ? 'SIM' : 'NÃO',
@@ -72,6 +76,7 @@ const Agenda = () => {
           });
           setAgendamentos(agendamentosFormatados);
         }
+        setLoading(false);
       }).catch(error => {
         console.error('Erro ao carregar agendamentos:', error);
         setLoading(false);
@@ -112,9 +117,7 @@ const Agenda = () => {
 
   // Carregar agendamentos inicialmente
   useEffect(() => {
-    setLoading(true);
     carregarAgendamentos();
-    setLoading(false);
   }, [user]);
 
   // Atualizar tabela a cada 10 segundos
@@ -169,10 +172,18 @@ const Agenda = () => {
   };
 
   const handleConfirmReschedule = async (agendamentoId, dadosReagendamento) => {
-    console.log('Reagendando:', agendamentoId, dadosReagendamento);
-    // Aqui você implementaria a lógica para reagendar
-    // Por exemplo: await api.reagendarAgendamento(agendamentoId, dadosReagendamento);
-    alert('Agendamento reagendado com sucesso!');
+    console.log('Reagendando:', agendamentoId, dadosReagendamento); 
+    try {
+      await Api.reagendar({
+        idSocioVeiculoAgenda: agendamentoId,
+        ...dadosReagendamento
+      })
+      toast.success('Agendamento reagendado com sucesso!');
+      carregarAgendamentos();
+    } catch (error) {
+      toast.error('Erro ao reagendar agendamento.');
+      return;
+    }
   };
 
   const handleConfirmCancel = async (agendamentoId, motivo) => {
@@ -380,7 +391,7 @@ const Agenda = () => {
                       </td>
                       <td className="veiculo">
                         <div className="veiculo-info">
-                          {agendamento.veiculo}
+                          {agendamento.veiculo}{agendamento.litragem ? ` - ${agendamento.litragem}` : ``}
                         </div>
                       </td>
                       <td className="servico">{agendamento.servico}</td>

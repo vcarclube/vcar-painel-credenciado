@@ -1,16 +1,38 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Modal from './index';
 import { Button } from '../index';
+import { toast } from 'react-toastify';
+import Api from '../../Api';
 
 const RescheduleModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
+
   const [novaData, setNovaData] = useState('');
   const [novaHora, setNovaHora] = useState('');
   const [motivo, setMotivo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [horariosDisponiveis, setHorariosDisponiveis] = useState([]);
+
+  useEffect(() => {
+    if (agendamento?.idPontoAtendimento && novaData) {
+
+      let dataAtual = new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })?.replace(",", "")?.split(" ")[0];
+      let horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+      Api.listaHorariosDisponiveis({
+        idPontoAtendimento: agendamento?.idPontoAtendimento,
+        dataAgendamento: novaData,
+        dataAtual: dataAtual,
+        horaAtual: horaAtual
+      }).then(res => {
+        setHorariosDisponiveis(res?.data);
+      });
+    }
+  }, [agendamento?.idPontoAtendimento, novaData]);
 
   const handleConfirm = async () => {
+
     if (!novaData || !novaHora || !motivo.trim()) {
-      alert('Por favor, preencha todos os campos obrigatórios.');
+      toast.error('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
@@ -19,13 +41,16 @@ const RescheduleModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
     const novaDataHora = new Date(`${novaData}T${novaHora}`);
     
     if (novaDataHora <= agora) {
-      alert('A nova data e hora deve ser futura.');
+      toast.error('A nova data e hora deve ser futura.');
       return;
     }
 
     setLoading(true);
     try {
       await onConfirm(agendamento?.id, {
+        idSocio: agendamento?.idSocio,
+        idSocioVeiculo: agendamento?.idSocioVeiculo,
+        idPontoAtendimento: agendamento?.idPontoAtendimento,
         data: novaData,
         hora: novaHora,
         motivo: motivo.trim()
@@ -45,6 +70,7 @@ const RescheduleModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
     setMotivo('');
     setLoading(false);
     onClose();
+    setHorariosDisponiveis([]);
   };
 
   // Função para obter data mínima (hoje)
@@ -68,7 +94,7 @@ const RescheduleModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Reagendar Agendamento"
+      title="Reagendar"
       size="medium"
     >
       <div className="reschedule-modal-content">
@@ -94,21 +120,22 @@ const RescheduleModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
                 disabled={loading}
               />
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="nova-hora" className="form-label">
                 Nova Hora *
               </label>
-              <input
-                type="time"
-                id="nova-hora"
-                className="form-input"
-                value={novaHora}
-                onChange={(e) => setNovaHora(e.target.value)}
-                min={getMinTime()}
-                disabled={loading}
-              />
+              <select id="nova-hora" className="form-select" style={{height: '59px'}} value={novaHora} onChange={(e) => setNovaHora(e.target.value)}>
+                 <option key={0} value={null}>Selecione...</option>
+                {horariosDisponiveis.map((item, index) => (
+                  <option key={index} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
             </div>
+            
+
           </div>
 
           <div className="form-group">
@@ -193,6 +220,21 @@ const RescheduleModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
           color: #374151;
         }
 
+        .form-select {
+          padding: 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 14px;
+          transition: border-color 0.2s;
+        }
+
+        .form-select:focus {
+          outline: none;
+          border-color: #01ce7c;
+          outline : #01ce7c;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
         .form-input {
           padding: 12px;
           border: 1px solid #d1d5db;
@@ -203,7 +245,7 @@ const RescheduleModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
 
         .form-input:focus {
           outline: none;
-          border-color: #3b82f6;
+          border-color: #01ce7c;
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
