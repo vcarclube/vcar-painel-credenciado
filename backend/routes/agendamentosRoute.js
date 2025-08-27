@@ -121,7 +121,7 @@ router.get('/lista/:idPontoAtendimento', validateToken, async (req, res) => {
         C.Telefone,
         C.IdSocio,
         C.Cpf,
-        D.Descricao AS Motivacao, 
+        MT.Descricao AS Motivacao, 
         D.Observacoes,
         E.Descricao AS Veiculo,
         F.Descricao AS Marca,
@@ -147,6 +147,8 @@ router.get('/lista/:idPontoAtendimento', validateToken, async (req, res) => {
           ON B.IdSocio = C.IdSocio
         INNER JOIN Servicos AS D
           ON A.IdServico = D.IdServico
+        LEFT JOIN Motivacoes AS MT
+          ON MT.IdMotivacao = A.IdMotivacao
         INNER JOIN Veiculos AS E
           ON B.IdVeiculo = E.IdVeiculo
         INNER JOIN Marcas AS F
@@ -233,6 +235,10 @@ router.post('/lista-horarios-disponiveis', validateOrigin, async (req, res) => {
 
     let { horaSelecionadaInicio, horaSelecionadaFim } = Utils.definirHorasInicioFimPorDiaDaSemana(pontoAtendimento, dataUS);  
 
+    if(horaSelecionadaInicio == null || horaSelecionadaFim == null || horaSelecionadaInicio == undefined || horaSelecionadaFim == undefined || horaSelecionadaInicio == "" || horaSelecionadaFim == ""){
+      return res.status(200).json([]);
+    }
+
     if(qtdeElevadores <= 0){
       return res.status(400).json({ 
         message: 'Ponto de atendimento não possui elevadores' 
@@ -245,11 +251,11 @@ router.post('/lista-horarios-disponiveis', validateOrigin, async (req, res) => {
       });
     }
 
-    console.log('=== DEBUG INFO ===');
-    console.log('Quantidade de elevadores:', qtdeElevadores);
-    console.log('Agendamentos encontrados:', agendamentos.length);
-    console.log('Agendamentos:', agendamentos);
-    console.log('Horário funcionamento:', horaSelecionadaInicio, 'às', horaSelecionadaFim);
+    //console.log('=== DEBUG INFO ===');
+    //console.log('Quantidade de elevadores:', qtdeElevadores);
+    //console.log('Agendamentos encontrados:', agendamentos.length);
+    //console.log('Agendamentos:', agendamentos);
+    //console.log('Horário funcionamento:', horaSelecionadaInicio, 'às', horaSelecionadaFim);
 
     // Função para converter tempo HH:MM:SS em minutos
     function timeToMinutes(timeString) {
@@ -307,7 +313,7 @@ router.post('/lista-horarios-disponiveis', validateOrigin, async (req, res) => {
     const totalIntervalos = Math.ceil(totalMinutosFuncionamento / 30);
     const ocupacaoElevadores = Array(totalIntervalos).fill().map(() => Array(qtdeElevadores).fill(false));
 
-    console.log('Total de intervalos criados:', totalIntervalos);
+    //console.log('Total de intervalos criados:', totalIntervalos);
 
     // Função para verificar se um horário está dentro do funcionamento
     function isHorarioValido(minutos) {
@@ -334,11 +340,11 @@ router.post('/lista-horarios-disponiveis', validateOrigin, async (req, res) => {
 
     // Processar agendamentos existentes
     agendamentos.forEach((agendamento, index) => {
-      console.log(`\n--- Processando agendamento ${index + 1} ---`);
+      //console.log(`\n--- Processando agendamento ${index + 1} ---`);
       
       // Verificar se o agendamento é para a data solicitada
       if (!isSameDate(agendamento.DataAgendamento, dataAgendamento)) {
-        console.log('Agendamento de data diferente, pulando...');
+        //console.log('Agendamento de data diferente, pulando...');
         return;
       }
 
@@ -347,7 +353,7 @@ router.post('/lista-horarios-disponiveis', validateOrigin, async (req, res) => {
         const horaAgendamento = extractTimeFromISO(agendamento.HoraAgendamento);
         const inicioAgendamentoMinutos = timeToMinutes(horaAgendamento);
         
-        console.log('Hora do agendamento:', horaAgendamento, '(', inicioAgendamentoMinutos, 'minutos)');
+        //console.log('Hora do agendamento:', horaAgendamento, '(', inicioAgendamentoMinutos, 'minutos)');
         
         // Verificar se o horário do agendamento está dentro do funcionamento
         if (!isHorarioValido(inicioAgendamentoMinutos)) {
@@ -360,18 +366,18 @@ router.post('/lista-horarios-disponiveis', validateOrigin, async (req, res) => {
         agendamento.servicosVinculados.forEach(servico => {
           const tempoServico = timeToMinutes(servico.TempoMedio);
           tempoTotalMinutos += tempoServico;
-          console.log(`Serviço: ${servico.Descricao} - Tempo: ${servico.TempoMedio} (${tempoServico} min)`);
+          //console.log(`Serviço: ${servico.Descricao} - Tempo: ${servico.TempoMedio} (${tempoServico} min)`);
         });
         
-        console.log('Tempo total dos serviços:', tempoTotalMinutos, 'minutos');
+        //console.log('Tempo total dos serviços:', tempoTotalMinutos, 'minutos');
         
         // Calcular intervalos ocupados
         const inicioIntervalo = minutosParaIndice(inicioAgendamentoMinutos);
         const duracaoIntervalos = Math.ceil(tempoTotalMinutos / 30);
         
-        console.log('Início intervalo:', inicioIntervalo);
-        console.log('Duração em intervalos:', duracaoIntervalos);
-        console.log('Intervalos a ocupar:', inicioIntervalo, 'até', inicioIntervalo + duracaoIntervalos - 1);
+        //console.log('Início intervalo:', inicioIntervalo);
+        //console.log('Duração em intervalos:', duracaoIntervalos);
+        //console.log('Intervalos a ocupar:', inicioIntervalo, 'até', inicioIntervalo + duracaoIntervalos - 1);
         
         // Encontrar elevador disponível e marcar como ocupado
         let elevadorEncontrado = false;
@@ -457,9 +463,9 @@ router.post('/lista-horarios-disponiveis', validateOrigin, async (req, res) => {
       }
     }
 
-    console.log('\n=== RESULTADO ===');
-    console.log('Horários disponíveis encontrados:', horasDisponiveis.length);
-    console.log('Primeiros 10 horários:', horasDisponiveis.slice(0, 10));
+    //console.log('\n=== RESULTADO ===');
+    //console.log('Horários disponíveis encontrados:', horasDisponiveis.length);
+    //console.log('Primeiros 10 horários:', horasDisponiveis.slice(0, 10));
 
     return res.status(200).json(horasDisponiveis);
 

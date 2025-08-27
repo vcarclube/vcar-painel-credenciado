@@ -66,7 +66,7 @@ const Agenda = () => {
               solicitante: item.Nome.trim(),
               documento: `CPF ${item.Cpf}`,
               veiculo: `${item.Marca} ${item.Veiculo} ${item.Ano} / ${item.Placa}`,
-              servico: item.Motivacao || 'Serviço não especificado',
+              servico: item.Motivacao || '(NÃO INFORMADO)',
               telefone: item.Telefone,
               observacoes: item.Observacoes,
               pontoAtendimento: item.DescricaoPontoAtendimento,
@@ -349,8 +349,8 @@ const Agenda = () => {
                     <th>Data</th>
                     <th>Hora</th>
                     <th>Solicitante</th>
-                    <th>% Veículo</th>
-                    <th>% Motivação</th>
+                    <th>Veículo</th>
+                    <th>Motivação</th>
                     <th>Ações</th>
                   </tr>
                 </thead>
@@ -394,7 +394,7 @@ const Agenda = () => {
                           {agendamento.veiculo}{agendamento.litragem ? ` - ${agendamento.litragem}` : ``}
                         </div>
                       </td>
-                      <td className="servico">{agendamento.servico}</td>
+                      <td className="servico">{agendamento.servico.toUpperCase()}</td>
                       <td className="acoes">
                         <div className="acoes-container">
                           {agendamento.status === 'EM ANDAMENTO' ? (
