@@ -7,7 +7,7 @@ const Api = {
     auth: async (token) => {
 
         let forceToken = Environment.HEADERS || { headers: {
-            authToken: token,
+            authToken: token || localStorage.getItem('authToken'),
         }};
 
         return await axios.get(`${API_BASE}/credenciado/auth`, forceToken).then(async (response) => {
@@ -19,7 +19,7 @@ const Api = {
     get: async (token) => {
         
         let forceToken = Environment.HEADERS || { headers: {
-            authToken: token,
+            authToken: token || localStorage.getItem('authToken'),
         }};
 
         return await axios.get(`${API_BASE}/credenciado/get`, forceToken).then(async (response) => {

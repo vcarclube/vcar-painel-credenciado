@@ -226,14 +226,14 @@ router.post('/lista-horarios-disponiveis', validateOrigin, async (req, res) => {
         message: 'Dados incompletos' 
       });
     }
-
+    
     let dataUS = Utils.formatDateUS(dataAtual);
 
     let pontoAtendimento = await Utils.getPontoAtendimentoById(idPontoAtendimento);
     let agendamentos = await Utils.getAgendamentosByPontoAtendimento(idPontoAtendimento, dataAgendamento);
     let qtdeElevadores = pontoAtendimento?.QtdeElevadores;
 
-    let { horaSelecionadaInicio, horaSelecionadaFim } = Utils.definirHorasInicioFimPorDiaDaSemana(pontoAtendimento, dataUS);  
+    let { horaSelecionadaInicio, horaSelecionadaFim } = Utils.definirHorasInicioFimPorDiaDaSemana(pontoAtendimento, dataAgendamento);  
 
     if(horaSelecionadaInicio == null || horaSelecionadaFim == null || horaSelecionadaInicio == undefined || horaSelecionadaFim == undefined || horaSelecionadaInicio == "" || horaSelecionadaFim == ""){
       return res.status(200).json([]);

@@ -93,17 +93,18 @@ function App() {
       // 2. Sucesso no login
       toast.success(loginResponse.data?.message);
       const token = loginResponse.data?.token;
-      localStorage.setItem('authToken', token);
+      await localStorage.setItem('authToken', token);
+      let _token = await localStorage.getItem('authToken');
 
       // 3. Verificar autenticação
-      const authResponse = await Api.auth(token);
+      const authResponse = await Api.auth(_token);
       if (authResponse.status !== 200) {
         toast.error('Erro na verificação de autenticação');
         return;
       }
 
       // 4. Buscar dados do usuário
-      const userResponse = await Api.get(token);
+      const userResponse = await Api.get(_token);
       if (userResponse.status !== 200) {
         toast.error('Erro ao buscar dados do usuário');
         return;
