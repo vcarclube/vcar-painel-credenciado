@@ -164,11 +164,19 @@ const Agenda = () => {
   };
 
   // Funções de confirmação dos modais
-  const handleConfirmStart = async (agendamentoId) => {
-    console.log('Iniciando OS para agendamento:', agendamentoId);
-    // Aqui você implementaria a lógica para iniciar a OS
-    // Por exemplo: await api.iniciarOS(agendamentoId);
-    alert('OS iniciada com sucesso!');
+  const handleConfirmStart = async (agendamentoId, dadosInicio) => {
+    console.log('Iniciando OS para agendamento:', agendamentoId, dadosInicio);
+    try {
+      await Api.iniciar({
+        idSocioVeiculoAgenda: agendamentoId,
+        ...dadosInicio
+      })
+      toast.success('Ordem de Serviço iniciada com sucesso!');
+      carregarAgendamentos();
+    } catch (error) {
+      toast.error('Erro ao iniciar Ordem de Serviço.');
+      return;
+    }
   };
 
   const handleConfirmReschedule = async (agendamentoId, dadosReagendamento) => {
@@ -471,6 +479,7 @@ const Agenda = () => {
         onClose={() => setShowStartModal(false)}
         onConfirm={handleConfirmStart}
         agendamento={selectedAgendamento}
+        idPontoAtendimentoUsuario={user?.IdPontoAtendimentoUsuario}
       />
 
       <RescheduleModal

@@ -477,7 +477,7 @@ router.post('/lista-horarios-disponiveis', validateOrigin, async (req, res) => {
   }
 });
 
-router.post('/reagendar', async (req, res) => {
+router.post('/reagendar', validateToken, async (req, res) => {
   try {
     const { idSocioVeiculoAgenda, idPontoAtendimento, idSocio, idSocioVeiculo, data, hora, motivo } = req.body;
     if (!idSocioVeiculoAgenda || !idPontoAtendimento || !idSocio || !idSocioVeiculo || !data || !hora || !motivo) {
@@ -542,7 +542,7 @@ router.post('/reagendar', async (req, res) => {
   }
 })
 
-router.post('/cancelar', async (req, res) => {
+router.post('/cancelar', validateToken, async (req, res) => {
   try {
     const { idSocioVeiculoAgenda, idPontoAtendimento, idSocio, idSocioVeiculo, motivo } = req.body;
     if (!idSocioVeiculoAgenda || !idPontoAtendimento || !idSocio || !idSocioVeiculo || !motivo ) {
@@ -601,5 +601,66 @@ router.post('/cancelar', async (req, res) => {
     });
   }
 })
+
+router.post('/iniciar', validateToken, async (req, res) => {
+  try {
+    const { idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio, data, hora } = req.body;
+    
+    if (!idSocioVeiculoAgenda || !idPontoAtendimentoUsuario) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda e idPontoAtendimentoUsuario são obrigatórios' 
+      });
+    }
+
+    const idSocioVeiculoAgendaExecucaoGenerated = Utils.generateUUID();
+
+    const query = `
+      INSERT INTO SociosVeiculosAgendaExecucao(IdSocioVeiculoAgendaExecucao, IdSocioVeiculoAgenda, IdUsuarioInicio, DataHoraInicio)
+      SELECT @idExecucao, @idAgenda, @idUsuario, @dataHora
+      FROM Sequencial AS A
+      LEFT JOIN SociosVeiculosAgendaExecucao AS B
+        ON B.IdSocioVeiculoAgenda = @idAgendaCheck
+      WHERE A.Id = 1
+      AND B.IdSocioVeiculoAgenda IS NULL
+    `;
+
+    let dataUS = Utils.formatDateUS(data);
+
+    await db.query(query, {
+      idExecucao: idSocioVeiculoAgendaExecucaoGenerated,
+      idAgenda: idSocioVeiculoAgenda,
+      idUsuario: idPontoAtendimentoUsuario,
+      dataHora: `${dataUS} ${hora}`,
+      idAgendaCheck: idSocioVeiculoAgenda
+    });
+
+    let agendamento = await Utils.getAgendamentoById(idSocioVeiculoAgenda);
+    let socio = await Utils.getSocioById(idSocio);
+    let motivacao = await Utils.getMotivacaoById(agendamento?.IdMotivacao);
+
+    await Utils.notificarWhatsapp({
+      phone: socio.Telefone,
+      message: `
+📆 Olá, ${socio.Nome}👋, Informamos que seu serviço de *${motivacao?.Descricao }* já foi iniciado em ${data} ás ${hora}.
+      `
+    });
+
+    await Utils.notificarFirebaseCloudMessaging({
+      idSocio: socio.IdSocio,
+      title: 'Serviço iniciado',
+      body: `Olá ${socio.Nome}👋, Informamos que seu serviço de *${motivacao?.Descricao }* já foi iniciado em ${data} ás ${hora}.`
+    });
+
+    return res.status(200).json({
+      message: 'Execução iniciada com sucesso'
+    });
+
+  } catch (error) {
+    console.error('Erro ao iniciar execução:', error);
+    return res.status(500).json({ 
+      message: 'Erro interno do servidor' 
+    });
+  }
+});
 
 module.exports = router;

@@ -56,13 +56,20 @@ const Api = {
             return err;
         });
     },
+    iniciar: async ({idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio, data, hora }) => {
+        return await axios.post(`${API_BASE}/agendamentos/iniciar`, {idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio, data, hora }, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
     listaHorariosDisponiveis: async ({idPontoAtendimento, dataAgendamento, dataAtual, horaAtual}) => {
         return await axios.post(`${API_BASE}/agendamentos/lista-horarios-disponiveis`, {idPontoAtendimento, dataAgendamento, dataAtual, horaAtual}, Environment.HEADERS).then(async (response) => {
             return await response;
         }).catch(err => {
             return err;
         });
-    }
+    },
 }
 
 export default Api;

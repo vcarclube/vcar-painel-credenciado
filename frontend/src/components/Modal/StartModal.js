@@ -1,18 +1,29 @@
 import React, { useState } from 'react';
 import Modal from './index';
 import { Button } from '../index';
+import { toast } from 'react-toastify';
 
-const StartModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
+const StartModal = ({ isOpen, onClose, onConfirm, agendamento, idPontoAtendimentoUsuario }) => {
   const [loading, setLoading] = useState(false);
 
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      await onConfirm(agendamento?.id);
+
+      let dataAtual = new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })?.replace(",", "")?.split(" ")[0];
+      let horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+      await onConfirm(agendamento?.id, {
+        idSocioVeiculoAgenda: agendamento?.id,
+        idPontoAtendimentoUsuario: idPontoAtendimentoUsuario,
+        idSocio: agendamento?.idSocio,
+        data: dataAtual,
+        hora: horaAtual
+      });
       handleClose();
     } catch (error) {
       console.error('Erro ao iniciar OS:', error);
-      alert('Erro ao iniciar a Ordem de Serviço. Tente novamente.');
+      toast.error('Erro ao iniciar a Ordem de Serviço. Tente novamente.');
     } finally {
       setLoading(false);
     }

@@ -198,18 +198,6 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
             </p>
           </div>
           
-          <div className="video-upload__divider">
-            <span>ou</span>
-          </div>
-          
-          <button 
-            className="video-upload__record-btn"
-            onClick={startRecording}
-            type="button"
-          >
-            <FiCamera className="video-upload__record-icon" />
-            Gravar Vídeo
-          </button>
         </div>
       ) : (
         <div className="video-upload__preview">
@@ -260,6 +248,7 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
         ref={fileInputRef}
         type="file"
         accept="video/*"
+        capture="camera"
         onChange={handleFileSelect}
         className="video-upload__input"
         style={{ display: 'none' }}
