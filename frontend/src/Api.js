@@ -3,9 +3,13 @@ import Environment from "./Environment";
 
 const API_BASE = Environment.API_BASE;
 
-const Api = {
-    auth: async (token) => {
+const getUriUploadPath = (filename) => {
+    return `${API_BASE}/uploads/files/${filename}`;
+}
 
+const Api = {
+    getUriUploadPath,
+    auth: async (token) => {
         let forceToken = Environment.HEADERS || { headers: {
             authToken: token || localStorage.getItem('authToken'),
         }};
@@ -27,6 +31,31 @@ const Api = {
         }).catch(err => {
             return err;
         });
+    },
+    getFile: async (filename) => {
+        return await axios.get(`${API_BASE}/uploads/files/${filename}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    upload: async (formData) => {
+        try {
+            const response = await axios.post(
+                `${API_BASE}/uploads/upload`,
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                        ...Environment.HEADERS.headers
+                    }
+                }
+            )
+            return response.data // axios já retorna JSON
+        } catch (err) {
+            console.error("Erro no Api.upload:", err)
+            throw err
+        }
     },
     login: async ({ email, password }) => {
         return await axios.post(`${API_BASE}/credenciado/login`, { email, password }).then(async (response) => {
@@ -70,6 +99,27 @@ const Api = {
             return err;
         });
     },
+    atualizarVideoInicial: async ({idSocioVeiculoAgenda, videoInicial}) => {
+        return await axios.post(`${API_BASE}/agendamentos/atualizar-video-inicial`, {idSocioVeiculoAgenda, videoInicial}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    atualizarVideoFinal: async ({idSocioVeiculoAgenda, videoFinal}) => {
+        return await axios.post(`${API_BASE}/agendamentos/atualizar-video-final`, {idSocioVeiculoAgenda, videoFinal}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    getAgendamentoDetails: async ({idSocioVeiculoAgenda}) => {
+        return await axios.get(`${API_BASE}/agendamentos/get/${idSocioVeiculoAgenda}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    }
 }
 
 export default Api;

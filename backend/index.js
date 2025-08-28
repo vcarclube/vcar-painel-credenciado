@@ -14,9 +14,11 @@ app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
 const credenciadoRoute = require('./routes/credenciadoRoute');
 const agendamentosRoute = require('./routes/agendamentosRoute');
+const uploadRoute = require('./routes/uploadsRoute');
 
 app.use('/credenciado', credenciadoRoute);
 app.use('/agendamentos', agendamentosRoute);
+app.use('/uploads', uploadRoute);
 
 if(process.env.DEVELOPMENT_MODE == "true"){
     var httpServer = http.createServer(app);

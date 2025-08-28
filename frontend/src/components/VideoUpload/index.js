@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { FiUpload, FiVideo, FiX, FiCheck, FiCamera } from 'react-icons/fi';
 import './style.css';
+import Api from '../../Api';
 
 const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "Upload de Vídeo" }) => {
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -26,28 +27,29 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
   };
 
   const handleUpload = async (file) => {
-    setIsUploading(true);
-    setUploadProgress(0);
-    
-    // Simular upload com progresso
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          setIsUploaded(true);
-          if (onVideoUpload) {
-            onVideoUpload(file);
-          }
-          if (onVideoChange) {
-            onVideoChange(file);
-          }
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 200);
-  };
+    setIsUploading(true)
+    setUploadProgress(0)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const result = await Api.upload(formData)
+
+      if (result.success) {
+        setIsUploaded(true)
+        if (onVideoUpload) onVideoUpload(file)
+        if (onVideoChange) onVideoChange(file)
+      } else {
+        console.error(result.error)
+      }
+    } catch (err) {
+      console.error("Erro ao enviar:", err)
+    } finally {
+      setIsUploading(false)
+      setUploadProgress(100)
+    }
+  }
 
   const handleRemoveVideo = () => {
     setSelectedVideo(null);

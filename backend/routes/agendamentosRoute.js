@@ -110,6 +110,8 @@ router.get('/lista/:idPontoAtendimento', validateToken, async (req, res) => {
         A.IdServico,
         A.NumeroOS,
         A.IdPontoAtendimento,
+        A.VideoInicial,
+        A.VideoFinal,
         FORMAT(A.DataAgendamento,'dd/MM/yyyy') AS DataAgendamento,
         LEFT(CONVERT(VARCHAR, A.HoraAgendamento), 5) AS HoraAgendamento,
         UPPER(B.Placa) AS Placa,
@@ -657,6 +659,87 @@ router.post('/iniciar', validateToken, async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao iniciar execução:', error);
+    return res.status(500).json({ 
+      message: 'Erro interno do servidor' 
+    });
+  }
+});
+
+router.post('/atualizar-video-inicial', validateToken, async (req, res) => {
+  try {
+    const { idSocioVeiculoAgenda, videoInicial } = req.body;
+    
+    if (!idSocioVeiculoAgenda || !videoInicial) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda e videoInicial são obrigatórios' 
+      });
+    }
+    await db.query(`
+      UPDATE SociosVeiculosAgenda
+      SET VideoInicial = @videoInicial
+      WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda;
+    `, { idSocioVeiculoAgenda, videoInicial });
+    return res.status(200).json({
+      message: 'Video inicial atualizado com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar video inicial:', error);
+    return res.status(500).json({ 
+      message: 'Erro interno do servidor' 
+    });
+  }
+});
+
+router.post('/atualizar-video-final', validateToken, async (req, res) => {
+  try {
+    const { idSocioVeiculoAgenda, videoFinal } = req.body;
+    
+    if (!idSocioVeiculoAgenda || !videoFinal) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda e videoFinal são obrigatórios' 
+      });
+    }
+    await db.query(`
+      UPDATE SociosVeiculosAgenda
+      SET VideoFinal = @videoFinal
+      WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda;
+    `, { idSocioVeiculoAgenda, videoFinal });
+    return res.status(200).json({
+      message: 'Video final atualizado com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar video final:', error);
+    return res.status(500).json({ 
+      message: 'Erro interno do servidor' 
+    });
+  }
+});
+
+router.get('/get/:idSocioVeiculoAgenda', validateToken, async (req, res) => {
+  try {
+    const { idSocioVeiculoAgenda } = req.params;
+    if (!idSocioVeiculoAgenda) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda é obrigatório' 
+      });
+    }
+    
+    let agendamento = await Utils.getAgendamentoById(idSocioVeiculoAgenda);
+    let socioVeiculo = await Utils.getSocioVeiculoById(agendamento?.IdSocioVeiculo);
+    let socio = await Utils.getSocioById(socioVeiculo?.IdSocio);
+    let motivo = await Utils.getMotivacaoById(agendamento?.IdMotivacao);
+    let execucao = await Utils.getAgendamentoExecucao(idSocioVeiculoAgenda);
+
+    return res.status(200).json({
+      agendamento,
+      socio,
+      socioVeiculo,
+      motivo,
+      execucao
+    });
+    
+  } catch (error) {
+    console.error('Erro ao obter agendamento:', error);
     return res.status(500).json({ 
       message: 'Erro interno do servidor' 
     });

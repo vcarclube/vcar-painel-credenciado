@@ -1,4 +1,6 @@
-const db = require('./database');
+const db = require('./database')
+const ftp = require("basic-ftp")
+const fs = require("fs")
 
 const DEVELOPMENT_MODE = true;
 
@@ -24,9 +26,48 @@ const formatHourString = (dateStr) => {
     return `${hours}:${minutes}:${seconds}`;
 }
 
+async function uploadToFTP(localPath, remotePath, onProgress) {
+    const client = new ftp.Client()
+    client.ftp.verbose = true
+
+    try {
+        await client.access({
+            host: "216.158.231.74",
+            user: "vcarclub",
+            password: "7U@gSNCc",
+            secure: false
+        })
+
+        console.log("Conectado ao FTP")
+
+        // Cria a pasta /uploads caso não exista
+        await client.ensureDir("/uploads")
+        await client.cd("/uploads")
+
+        // Callback de progresso
+        client.trackProgress(info => {
+            if (onProgress) {
+                const progress = Math.round((info.bytes / info.bytesOverall) * 100)
+                onProgress(progress)
+            }
+        })
+
+        // Faz upload
+        await client.uploadFrom(localPath, remotePath)
+
+        console.log("Upload concluído")
+    } catch (err) {
+        console.error("Erro no FTP:", err)
+        throw err
+    } finally {
+        client.close()
+    }
+}
+
 module.exports = {
     generateUUID,
     formatHourString,
+    uploadToFTP,
     getAgendamentoById: async (idSocioVeiculoAgenda) => {
         let result = await db.query(`
             SELECT *
@@ -45,9 +86,14 @@ module.exports = {
     },
     getSocioVeiculoById: async (idSocioVeiculo) => {
         let result = await db.query(`
-            SELECT IdSocioVeiculo, IdSocio, IdMarca, IdVeiculo, Ano, Placa, Litragem
-            FROM SociosVeiculos
-            WHERE IdSocioVeiculo = @idSocioVeiculo
+            SELECT 
+                A.IdSocioVeiculo, A.IdSocio, A.IdMarca, A.IdVeiculo, A.Ano, A.Placa, A.Litragem,
+                B.Descricao AS MarcaVeiculo,
+                C.Descricao AS VeiculoModelo
+            FROM SociosVeiculos AS A
+            INNER JOIN Marcas AS B ON A.IdMarca = B.IdMarca
+            INNER JOIN Veiculos AS C ON A.IdVeiculo = C.IdVeiculo
+            WHERE A.IdSocioVeiculo = @idSocioVeiculo
         `, { idSocioVeiculo });
         return result.recordset[0];
     },
@@ -66,6 +112,18 @@ module.exports = {
             FROM Motivacoes
             WHERE IdMotivacao = @idMotivacao
         `, { idMotivacao });
+        return result.recordset[0];
+    },
+    getAgendamentoExecucao: async (idSocioVeiculoAgenda) => {
+        let result = await db.query(`
+            SELECT 
+            A.* ,
+            B.Nome AS ExecutorInicio,
+            C.Nome AS ExecutorFim
+            FROM SociosVeiculosAgendaExecucao AS A
+            LEFT JOIN PontosAtendimentoUsuarios AS B ON A.IdUsuarioInicio = B.IdPontoAtendimentoUsuario
+            LEFT JOIN PontosAtendimentoUsuarios AS C ON A.IdUsuarioFim = C.IdPontoAtendimentoUsuario
+            WHERE A.IdSocioVeiculoAgenda = @idSocioVeiculoAgenda`, { idSocioVeiculoAgenda });
         return result.recordset[0];
     },
     notificarPontoAtendimento: async (data) => {

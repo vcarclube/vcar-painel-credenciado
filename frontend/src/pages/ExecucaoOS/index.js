@@ -21,11 +21,13 @@ import {
 import { Header, Sidebar, BottomNavigation, Modal, SearchableSelect, Button, MediaUpload, LaudosModal, RecibosModal } from '../../components';
 import { VideoInicialModal, VideoFinalizacaoModal } from '../../components/Modal';
 import './style.css';
+import Api from '../../Api';
 
 const ExecutaOS = () => {
   const { idSocioVeiculoAgenda } = useParams();
   const [osData, setOsData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [agendamento, setAgendamento] = useState(null);
   
   // Estados para funcionalidades
   const [fotos, setFotos] = useState([]);
@@ -109,6 +111,44 @@ const ExecutaOS = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  // Função para obter agendamento
+  const getAgendamento = async () => {
+    try {
+      const response = await Api.getAgendamentoDetails({ idSocioVeiculoAgenda });
+      if (response.status === 200) {
+        setAgendamento(response.data);
+
+        let _agendamento = response.data;
+
+        setOsData({
+          id: _agendamento?.agendamento?.IdSocioVeiculoAgenda,
+          numero: _agendamento?.agendamento?.NumeroOS,
+          cliente: _agendamento?.socio?.Nome,
+          documento: _agendamento?.socio?.Cpf,
+          veiculo: `${_agendamento?.socioVeiculo?.MarcaVeiculo} ${_agendamento?.socioVeiculo?.Ano} ${_agendamento?.socioVeiculo?.Litragem}`,
+          placa: _agendamento?.socioVeiculo?.Placa?.toUpperCase(),
+          motivacao: _agendamento?.motivo?.Descricao?.toUpperCase(),
+          status: _agendamento?.agendamento?.StatusAgendamento == 'A' ? 'EM EXECUÇÃOS' : 'CONCLUIDA',
+          dataInicio: new Date(_agendamento?.execucao?.DataHoraInicio).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          horaInicio: new Date(_agendamento?.execucao?.DataHoraInicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          execucaoInicial: _agendamento?.execucao?.ExecutorInicio,
+          execucaoFinal: _agendamento?.execucao?.ExecutorFim,
+          videoInicial: _agendamento?.agendamento?.VideoInicial,
+          videoFinal: _agendamento?.agendamento?.VideoFinal
+        });
+        setLoading(false);
+        
+        // Abrir modal de vídeo inicial se ainda não foi feito upload
+        if (!videoInicialUploaded) {
+          setIsVideoInicialModalOpen(true);
+        }
+
+      }
+    } catch (error) {
+      console.error('Erro ao obter agendamento:', error);
+    }
+  };
+
   // Função para obter serviços disponíveis (excluindo os já adicionados)
   const getServicosDisponiveis = () => {
     const servicosAdicionados = servicos.map(servico => servico.value);
@@ -119,28 +159,7 @@ const ExecutaOS = () => {
   const servicosDisponiveis = getServicosDisponiveis();
 
   useEffect(() => {
-    // Simular carregamento de dados da OS
-    setTimeout(() => {
-      setOsData({
-        numero: '1421',
-        cliente: 'DYLLAN NICOLAU DA SILVA',
-        documento: 'CPF: 699.993.050-07',
-        veiculo: 'JEEP COMPASS 2021/2021',
-        placa: 'RCI-9FT1',
-        motivacao: 'PREVENTIVA DE MOTOR - R$ 0,00',
-        status: 'EM EXECUÇÃO',
-        dataInicio: new Date().toLocaleDateString('pt-BR'),
-        horaInicio: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        execucaoInicial: 'Carlos Mecânico',
-        execucaoFinal: null
-      });
-      setLoading(false);
-      
-      // Abrir modal de vídeo inicial se ainda não foi feito upload
-      if (!videoInicialUploaded) {
-        setIsVideoInicialModalOpen(true);
-      }
-    }, 1000);
+    getAgendamento();
   }, [idSocioVeiculoAgenda, videoInicialUploaded]);
 
   // Handlers para fotos e vídeos
@@ -305,13 +324,19 @@ const ExecutaOS = () => {
   };
   
   // Handlers para modais de vídeo
-  const handleVideoInicialConfirm = (video) => {
+  const handleVideoInicialConfirm = async (video) => {
     console.log('Vídeo inicial enviado:', video);
+
+    await Api.atualizarVideoInicial({
+      idSocioVeiculoAgenda: osData.id,
+      videoInicial: video?.name
+    });
+    
     setVideoInicialUploaded(true);
     setIsVideoInicialModalOpen(false);
   };
   
-  const handleVideoFinalizacaoConfirm = (video) => {
+  const handleVideoFinalizacaoConfirm = async (video) => {
     console.log('Finalizando OS com vídeo:', video);
     console.log('Dados da OS:', {
       osData,
@@ -408,7 +433,7 @@ const ExecutaOS = () => {
                 <div className="execucao-os__meta">
                   <div className="execucao-os__meta-item">
                     <FiCalendar className="execucao-os__meta-icon" />
-                    <span>Iniciado em: {osData.dataInicio}</span>
+                    <span>Iniciado em: {osData.dataInicio?.split(",")[0]}</span>
                   </div>
                   <div className="execucao-os__meta-item">
                     <FiClock className="execucao-os__meta-icon" />
@@ -623,7 +648,7 @@ const ExecutaOS = () => {
                     </button>
                   </div>
                   <div className="execucao-os__card-content">
-                    {fotos.length === 0 ? (
+                    {fotos.length === 0 && !osData?.videoInicial ? (
                       <div className="execucao-os__empty-state">
                         <FiCamera className="execucao-os__empty-icon" />
                         <p>Nenhuma foto ou vídeo adicionado</p>
@@ -634,6 +659,30 @@ const ExecutaOS = () => {
                     ) : (
                       <>
                         <div className="execucao-os__fotos-grid">
+                          {osData?.videoInicial && (
+                            <div className="execucao-os__foto-item">
+                              <div className="execucao-os__video-container">
+                                <video 
+                                  src={Api.getUriUploadPath(osData?.videoInicial)} 
+                                  className="execucao-os__video-preview"
+                                  controls
+                                  preload="metadata"
+                                />
+                              </div>
+                            </div>
+                          )}
+                          {osData.videoFinal && (
+                            <div className="execucao-os__foto-item">
+                              <div className="execucao-os__video-container">
+                                <video 
+                                  src={Api.getUriUploadPath(osData?.videoFinal)} 
+                                  className="execucao-os__video-preview"
+                                  controls
+                                  preload="metadata"
+                                />
+                              </div>
+                            </div>
+                          )}
                           {fotos.map(foto => (
                             <div key={foto.id} className="execucao-os__foto-item">
                               {foto.type === 'image' ? (
@@ -1046,10 +1095,13 @@ const ExecutaOS = () => {
       </Modal>
       
       {/* Modal de vídeo inicial */}
-      <VideoInicialModal
-        isOpen={isVideoInicialModalOpen}
-        onConfirm={handleVideoInicialConfirm}
-      />
+      {!osData?.videoInicial && (
+        <VideoInicialModal
+          isOpen={isVideoInicialModalOpen}
+          onConfirm={handleVideoInicialConfirm}
+          agendamento={agendamento}
+        />
+      )}
       
       {/* Modal de vídeo de finalização */}
       <VideoFinalizacaoModal
@@ -1057,6 +1109,7 @@ const ExecutaOS = () => {
         onConfirm={handleVideoFinalizacaoConfirm}
         onCancel={() => setIsVideoFinalizacaoModalOpen(false)}
         servicosPendentes={getServicosPendentes()}
+        agendamento={agendamento}
       />
       
       {/* Modal de Laudos */}
