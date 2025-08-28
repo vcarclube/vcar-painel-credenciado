@@ -65,7 +65,7 @@ const Agenda = () => {
               hora: item.HoraAgendamento,
               solicitante: item.Nome.trim(),
               documento: `CPF ${item.Cpf}`,
-              veiculo: `${item.Marca} ${item.Veiculo} ${item.Ano} / ${item.Placa}`,
+              veiculo: `${item.Marca} ${item.Veiculo} ${item.Ano} - ${item.Litragem} / ${item.Placa}`,
               servico: item.Motivacao || '(NÃO INFORMADO)',
               telefone: item.Telefone,
               observacoes: item.Observacoes,
@@ -273,7 +273,7 @@ const Agenda = () => {
                         <div className="card-client">
                           👤 {agendamento.solicitante}
                         </div>
-                        <div className="card-document">
+                        <div className="card-document" style={{display: 'none'}}>
                           📄 {agendamento.documento}
                         </div>
                         <div className="card-vehicle">
@@ -345,7 +345,7 @@ const Agenda = () => {
                   <tr>
                     <th>Nº OS</th>
                     <th>Status</th>
-                    <th>Pendências</th>
+                    <th style={{display: 'none'}}>Pendências</th>
                     <th>Data</th>
                     <th>Hora</th>
                     <th>Solicitante</th>
@@ -380,18 +380,18 @@ const Agenda = () => {
                           {agendamento.status}
                         </span>
                       </td>
-                      <td className="pendencia">{agendamento.pendencia}</td>
+                      <td className="pendencia" style={{display: 'none'}}>{agendamento.pendencia}</td>
                       <td className="data">{agendamento.data}</td>
                       <td className="hora">{agendamento.hora}</td>
                       <td className="solicitante">
                         <div className="solicitante-info">
                           <div className="nome">{agendamento.solicitante}</div>
-                          <div className="documento">{agendamento.documento}</div>
+                          <div className="documento" style={{display: 'none'}}>{agendamento.documento}</div>
                         </div>
                       </td>
                       <td className="veiculo">
                         <div className="veiculo-info">
-                          {agendamento.veiculo}{agendamento.litragem ? ` - ${agendamento.litragem}` : ``}
+                          {agendamento.veiculo}
                         </div>
                       </td>
                       <td className="servico">{agendamento.servico.toUpperCase()}</td>
