@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './index';
 import { Button } from '../index';
+import { toast } from 'react-toastify';
 
 const CancelModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
   const [motivo, setMotivo] = useState('');
@@ -8,17 +9,22 @@ const CancelModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
 
   const handleConfirm = async () => {
     if (!motivo.trim()) {
-      alert('Por favor, informe o motivo do cancelamento.');
+      toast.error('Por favor, informe o motivo do cancelamento.');
       return;
     }
 
     setLoading(true);
     try {
-      await onConfirm(agendamento?.id, motivo.trim());
+      await onConfirm(agendamento?.id, {
+        motivo: motivo.trim(),
+        idSocio: agendamento?.idSocio,
+        idSocioVeiculo: agendamento?.idSocioVeiculo,
+        idPontoAtendimento: agendamento?.idPontoAtendimento,
+      });
       handleClose();
     } catch (error) {
       console.error('Erro ao cancelar agendamento:', error);
-      alert('Erro ao cancelar agendamento. Tente novamente.');
+      toast.error('Erro ao cancelar agendamento. Tente novamente.');
     } finally {
       setLoading(false);
     }

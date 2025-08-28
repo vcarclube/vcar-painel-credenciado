@@ -186,11 +186,19 @@ const Agenda = () => {
     }
   };
 
-  const handleConfirmCancel = async (agendamentoId, motivo) => {
-    console.log('Cancelando agendamento:', agendamentoId, 'Motivo:', motivo);
-    // Aqui você implementaria a lógica para cancelar
-    // Por exemplo: await api.cancelarAgendamento(agendamentoId, motivo);
-    alert('Agendamento cancelado com sucesso!');
+  const handleConfirmCancel = async (agendamentoId, dadosCancelamento) => {
+    console.log('Cancelando agendamento:', agendamentoId, dadosCancelamento);
+    try {
+      await Api.cancelar({
+        idSocioVeiculoAgenda: agendamentoId,
+        ...dadosCancelamento
+      })
+      toast.success('Agendamento cancelado com sucesso!');
+      carregarAgendamentos();
+    } catch (error) {
+      toast.error('Erro ao cancelar agendamento.');
+      return;
+    }
   };
 
   return (

@@ -49,8 +49,8 @@ const Api = {
             return err;
         });
     },
-    cancelar: async ({idSocioVeiculoAgenda, motivo}) => {
-        return await axios.post(`${API_BASE}/agendamentos/cancelar`, {idSocioVeiculoAgenda, motivo}, Environment.HEADERS).then(async (response) => {
+    cancelar: async ({idSocioVeiculoAgenda, motivo, idPontoAtendimento, idSocio, idSocioVeiculo }) => {
+        return await axios.post(`${API_BASE}/agendamentos/cancelar`, {idSocioVeiculoAgenda, idPontoAtendimento, idSocio, idSocioVeiculo, motivo}, Environment.HEADERS).then(async (response) => {
             return await response;
         }).catch(err => {
             return err;

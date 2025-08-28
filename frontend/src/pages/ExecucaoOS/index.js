@@ -469,10 +469,6 @@ const ExecutaOS = () => {
                         <span className="execucao-os__info-label">Execução Final:</span>
                         <span className="execucao-os__info-value">{osData.execucaoFinal || 'Não informado'}</span>
                       </div>
-                      <div className="execucao-os__info-item">
-                        <span className="execucao-os__info-label">Repasse:</span>
-                        <span className="execucao-os__info-value">{'R$ 0,00'}</span>
-                      </div>
                     </div>
                   </div>
                 </div>

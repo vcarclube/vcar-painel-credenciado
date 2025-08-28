@@ -544,12 +544,57 @@ router.post('/reagendar', async (req, res) => {
 
 router.post('/cancelar', async (req, res) => {
   try {
-    const { idSocioVeiculoAgenda, motivo } = req.body;
-    if (!idSocioVeiculoAgenda || !motivo ) {
+    const { idSocioVeiculoAgenda, idPontoAtendimento, idSocio, idSocioVeiculo, motivo } = req.body;
+    if (!idSocioVeiculoAgenda || !idPontoAtendimento || !idSocio || !idSocioVeiculo || !motivo ) {
       return res.status(400).json({ 
         message: 'Dados incompletos' 
       });
     }
+
+    let agendamento = await Utils.getAgendamentoById(idSocioVeiculoAgenda);
+    let pontoAtendimento = await Utils.getPontoAtendimentoById(idPontoAtendimento);
+    let socio = await Utils.getSocioById(idSocio);
+    let socioVeiculo = await Utils.getSocioVeiculoById(idSocioVeiculo);
+    let motivacao = await Utils.getMotivacaoById(agendamento?.IdMotivacao);
+
+    await Utils.notificarPontoAtendimento({
+      idPontoAtendimento,
+      titulo: 'Cancelamento',
+      conteudo: `Foi feito um cancelamento do sócio ${socio.Nome} no ${pontoAtendimento.Descricao} para ${Utils.formatDateString(agendamento.DataAgendamento)} ás ${agendamento.HoraAgendamento}. Motivo: ${motivo}`,
+      lido: false
+    });
+
+    await Utils.notificarWhatsapp({
+      phone: socio.Telefone,
+      message: `
+📆 Olá, ${socio.Nome}👋, Informamos que seu serviço foi cancelado pela oficina.
+
+🗺 *Local*: ${pontoAtendimento.Descricao}
+🚗 *Carro*: ${socioVeiculo.Placa}
+⭐ *Serviço*: ${motivacao?.Descricao || `(não informado)`}
+📅 *Data*: ${Utils.formatDateString(agendamento.DataAgendamento)}
+🕐 *Hora*: ${Utils.formatHourString(agendamento.HoraAgendamento)}
+
+🛑 *Motivo*: ${motivo}
+      `
+    });
+
+    await Utils.notificarFirebaseCloudMessaging({
+      idSocio: socio.IdSocio,
+      title: 'Cancelamento',
+      body: `Olá ${socio.Nome}👋, Informamos que seu serviço foi cancelado pela ${pontoAtendimento.Descricao}, ${motivo}`
+    });
+
+    await db.query(`
+            UPDATE SociosVeiculosAgenda
+            SET MotivoCancelamento = @motivo, StatusAgendamento = 'E'
+            WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda;
+        `, { idSocioVeiculoAgenda, motivo });
+
+    return res.status(200).json({
+      message: 'Cancelamento realizado com sucesso'
+    });
+
   } catch (error) {
     return res.status(500).json({ 
       message: 'Erro interno do servidor' 
