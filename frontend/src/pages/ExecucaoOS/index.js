@@ -121,6 +121,7 @@ const ExecutaOS = () => {
     getServicos();
     getServicosVinculados();
     getFotosAgendamento();
+    getAnotacoesAgendamento();
   }, [idSocioVeiculoAgenda, videoInicialUploaded]);
 
   // Inicializar FFmpeg para compressão
@@ -525,20 +526,66 @@ const ExecutaOS = () => {
     setNewNote('');
   };
 
-  const handleAddNote = () => {
-    if (newNote.trim()) {
-      const note = {
-        id: Date.now(),
-        text: newNote.trim(),
-        timestamp: new Date().toLocaleString('pt-BR')
-      };
-      setAnotacoes([...anotacoes, note]);
-      setNewNote('');
+  // Função para carregar anotações da API
+  const getAnotacoesAgendamento = async () => {
+    try {
+      const response = await Api.getAnotacoesAgendamento({ idSocioVeiculoAgenda });
+      if (response.status === 200 && response.data.anotacoes) {
+        const anotacoesFormatadas = response.data.anotacoes.map(anotacao => ({
+          id: anotacao.IdSocioVeiculoAgendaExecucaoAnotacao,
+          text: anotacao.Anotacao,
+          timestamp: new Date(anotacao.DataLog).toLocaleString('pt-BR')
+        }));
+        setAnotacoes(anotacoesFormatadas);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar anotações:', error);
+      toast.error('Erro ao carregar anotações');
     }
   };
 
-  const handleRemoveNote = (id) => {
-    setAnotacoes(anotacoes.filter(note => note.id !== id));
+  const handleAddNote = async () => {
+    if (newNote.trim()) {
+      try {
+        const response = await Api.adicionarAnotacaoAgendamento({
+          idSocioVeiculoAgenda,
+          idPontoAtendimentoUsuario: user.IdPontoAtendimentoUsuario,
+          anotacao: newNote.trim(),
+          data: new Date().toISOString()
+        });
+        
+        if (response.status === 200) {
+          toast.success('Anotação adicionada com sucesso!');
+          setNewNote('');
+          // Recarregar anotações
+          getAnotacoesAgendamento();
+        } else {
+          toast.error('Erro ao adicionar anotação');
+        }
+      } catch (error) {
+        console.error('Erro ao adicionar anotação:', error);
+        toast.error('Erro ao adicionar anotação');
+      }
+    }
+  };
+
+  const handleRemoveNote = async (id) => {
+    try {
+      const response = await Api.deleteAnotacaoAgendamento({
+        idSocioVeiculoAgendaExecucaoAnotacao: id
+      });
+      
+      if (response.status === 200) {
+        toast.success('Anotação removida com sucesso!');
+        // Recarregar anotações
+        getAnotacoesAgendamento();
+      } else {
+        toast.error('Erro ao remover anotação');
+      }
+    } catch (error) {
+      console.error('Erro ao remover anotação:', error);
+      toast.error('Erro ao remover anotação');
+    }
   };
 
   // Handlers para ações

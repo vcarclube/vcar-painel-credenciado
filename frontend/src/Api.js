@@ -169,6 +169,27 @@ const Api = {
             return err;
         });
     },
+    getAnotacoesAgendamento: async ({idSocioVeiculoAgenda}) => {
+        return await axios.get(`${API_BASE}/agendamentos/get-anotacoes/${idSocioVeiculoAgenda}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    adicionarAnotacaoAgendamento: async ({idSocioVeiculoAgenda, idPontoAtendimentoUsuario, anotacao, data}) => {
+        return await axios.post(`${API_BASE}/agendamentos/adicionar-anotacao`, {idSocioVeiculoAgenda, idPontoAtendimentoUsuario, anotacao, data}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    deleteAnotacaoAgendamento: async ({idSocioVeiculoAgendaExecucaoAnotacao}) => {
+        return await axios.post(`${API_BASE}/agendamentos/deletar-anotacao`, {idSocioVeiculoAgendaExecucaoAnotacao}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
 }
 
 export default Api;

@@ -933,4 +933,89 @@ router.post('/deletar-foto', validateToken, async (req, res) => {
   }
 })
 
+router.post('/adicionar-anotacao', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgenda, idPontoAtendimentoUsuario, anotacao, data } = req.body;
+    if (!idSocioVeiculoAgenda || !idPontoAtendimentoUsuario || !anotacao || !data) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda, idPontoAtendimentoUsuario e anotação são obrigatórios' 
+      });
+    }
+    let idSocioVeiculoAgendaExecucaoAnotacaoGenerated = Utils.generateUUID();
+    await db.query(`
+      INSERT INTO SociosVeiculosAgendaExecucaoAnotacoes (
+        IdSocioVeiculoAgendaExecucaoAnotacao,
+        IdSocioVeiculoAgenda,
+        IdUsuario,
+        Anotacao,
+        DataLog
+      )
+      VALUES (
+        @idSocioVeiculoAgendaExecucaoAnotacaoGenerated,
+        @idSocioVeiculoAgenda,
+        @idPontoAtendimentoUsuario,
+        @anotacao,
+        @data
+      );
+    `, { 
+      idSocioVeiculoAgendaExecucaoAnotacaoGenerated,
+      idSocioVeiculoAgenda,
+      idPontoAtendimentoUsuario,
+      anotacao,
+      data
+    });
+
+    return res.status(200).json({
+      message: 'Anotação adicionada com sucesso'
+    });
+
+  }catch (error) {
+    console.error('Erro ao adicionar anotações:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
+router.post('/deletar-anotacao', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgendaExecucaoAnotacao } = req.body;
+    if (!idSocioVeiculoAgendaExecucaoAnotacao) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgendaExecucaoAnotacao é obrigatório' 
+      });
+    }
+    await db.query(`
+      DELETE FROM SociosVeiculosAgendaExecucaoAnotacoes
+      WHERE IdSocioVeiculoAgendaExecucaoAnotacao = @idSocioVeiculoAgendaExecucaoAnotacao;
+    `, { idSocioVeiculoAgendaExecucaoAnotacao });
+    return res.status(200).json({
+      message: 'Anotação desvinculada com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao desvincular anotação:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
+router.get('/get-anotacoes/:idSocioVeiculoAgenda', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgenda } = req.params;
+    if (!idSocioVeiculoAgenda) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda é obrigatório' 
+      });
+    }
+    const anotacoes = await db.query(`
+      SELECT * FROM SociosVeiculosAgendaExecucaoAnotacoes
+      WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda;
+    `, { idSocioVeiculoAgenda });
+    return res.status(200).json({
+      message: 'Anotações recuperadas com sucesso',
+      anotacoes: anotacoes?.recordset
+    });
+  } catch (error) {
+    console.error('Erro ao recuperar anotações:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
 module.exports = router;
