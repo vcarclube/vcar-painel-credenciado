@@ -8,14 +8,16 @@ import { useNavigate } from 'react-router-dom';
 const VideoInicialModal = ({ isOpen, onConfirm }) => {
   const navigate = useNavigate();
   const [video, setVideo] = useState(null);
+  const [videoResult, setVideoResult] = useState(null);
 
-  const handleVideoChange = (videoFile) => {
+  const handleVideoChange = (videoFile, result) => {
     setVideo(videoFile);
+    setVideoResult(result);
   };
 
   const handleConfirm = () => {
     if (video) {
-      onConfirm(video);
+      onConfirm(video, videoResult);
       setVideo(null);
     }
   };

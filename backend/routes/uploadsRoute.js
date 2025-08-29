@@ -10,6 +10,14 @@ const Utils = require('../utils');
 
 const { validateToken } = require("../middlewares/AuthMiddleware");
 
+const sanitizeFileName = (filename) => {
+  return filename
+    .normalize("NFD") // remove acentos
+    .replace(/[\u0300-\u036f]/g, "") // remove diacríticos
+    .replace(/\s+/g, "_") // troca espaços por "_"
+    .replace(/[^a-zA-Z0-9._-]/g, ""); // mantém apenas letras, números, ., _, -
+};
+
 router.post("/upload", validateToken, upload.single("file"), async (req, res) => {
     try {
         if (!req.file) {
@@ -17,7 +25,7 @@ router.post("/upload", validateToken, upload.single("file"), async (req, res) =>
         }
 
         const localPath = req.file.path
-        const remotePath = Utils.generateUUID() + req.file.originalname
+        const remotePath = Utils.generateUUID() + sanitizeFileName(req.file.originalname)
 
         // Faz upload para FTP
         await Utils.uploadToFTP(localPath, remotePath, (progress) => {

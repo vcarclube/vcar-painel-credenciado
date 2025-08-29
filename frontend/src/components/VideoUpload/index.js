@@ -38,8 +38,8 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
 
       if (result.success) {
         setIsUploaded(true)
-        if (onVideoUpload) onVideoUpload(file)
-        if (onVideoChange) onVideoChange(file)
+        if (onVideoUpload) onVideoUpload(file, result)
+        if (onVideoChange) onVideoChange(file, result)
       } else {
         console.error(result.error)
       }

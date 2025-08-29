@@ -172,7 +172,7 @@ const Agenda = () => {
         ...dadosInicio
       })
       toast.success('Ordem de Serviço iniciada com sucesso!');
-      carregarAgendamentos();
+      navigate(`/execucao-os/${agendamentoId}`);
     } catch (error) {
       toast.error('Erro ao iniciar Ordem de Serviço.');
       return;

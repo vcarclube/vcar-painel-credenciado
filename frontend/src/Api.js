@@ -4,14 +4,14 @@ import Environment from "./Environment";
 const API_BASE = Environment.API_BASE;
 
 const getUriUploadPath = (filename) => {
-    return `${API_BASE}/uploads/files/${filename}`;
-}
+  return `${API_BASE}/uploads/files/${encodeURIComponent(filename)}`;
+};
 
 const Api = {
     getUriUploadPath,
     auth: async (token) => {
-        let forceToken = Environment.HEADERS || { headers: {
-            authToken: token || localStorage.getItem('authToken'),
+        let forceToken = { headers: {
+            authToken: token,
         }};
 
         return await axios.get(`${API_BASE}/credenciado/auth`, forceToken).then(async (response) => {
@@ -22,8 +22,8 @@ const Api = {
     },
     get: async (token) => {
         
-        let forceToken = Environment.HEADERS || { headers: {
-            authToken: token || localStorage.getItem('authToken'),
+        let forceToken = { headers: {
+            authToken: token,
         }};
 
         return await axios.get(`${API_BASE}/credenciado/get`, forceToken).then(async (response) => {

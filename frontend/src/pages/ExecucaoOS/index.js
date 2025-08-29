@@ -128,7 +128,7 @@ const ExecutaOS = () => {
           veiculo: `${_agendamento?.socioVeiculo?.MarcaVeiculo} ${_agendamento?.socioVeiculo?.Ano} ${_agendamento?.socioVeiculo?.Litragem}`,
           placa: _agendamento?.socioVeiculo?.Placa?.toUpperCase(),
           motivacao: _agendamento?.motivo?.Descricao?.toUpperCase(),
-          status: _agendamento?.agendamento?.StatusAgendamento == 'A' ? 'EM EXECUÇÃOS' : 'CONCLUIDA',
+          status: _agendamento?.agendamento?.StatusAgendamento == 'A' ? 'EM EXECUÇÃO' : 'CONCLUIDA',
           dataInicio: new Date(_agendamento?.execucao?.DataHoraInicio).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
           horaInicio: new Date(_agendamento?.execucao?.DataHoraInicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
           execucaoInicial: _agendamento?.execucao?.ExecutorInicio,
@@ -322,21 +322,21 @@ const ExecutaOS = () => {
     setIsVideoFinalizacaoModalOpen(true);
     setDropdownOpen(false);
   };
-  
+
   // Handlers para modais de vídeo
-  const handleVideoInicialConfirm = async (video) => {
-    console.log('Vídeo inicial enviado:', video);
+  const handleVideoInicialConfirm = async (video, videoResult) => {
+    console.log('Vídeo inicial enviado:', video, videoResult);
 
     await Api.atualizarVideoInicial({
       idSocioVeiculoAgenda: osData.id,
-      videoInicial: video?.name
+      videoInicial: videoResult?.file
     });
     
     setVideoInicialUploaded(true);
     setIsVideoInicialModalOpen(false);
   };
   
-  const handleVideoFinalizacaoConfirm = async (video) => {
+  const handleVideoFinalizacaoConfirm = async (video, videoResult) => {
     console.log('Finalizando OS com vídeo:', video);
     console.log('Dados da OS:', {
       osData,
@@ -509,7 +509,7 @@ const ExecutaOS = () => {
                 <div className="execucao-os__card">
                   <div className="execucao-os__card-header">
                     <FiTool className="execucao-os__card-icon" />
-                    <h3 className="execucao-os__card-title">Serviços Executados</h3>
+                    <h3 className="execucao-os__card-title">Serviços</h3>
                     <button className="execucao-os__add-btn" onClick={handleAddServico}>
                       <FiPlus size={16} />
                       Adicionar
@@ -1104,13 +1104,15 @@ const ExecutaOS = () => {
       )}
       
       {/* Modal de vídeo de finalização */}
-      <VideoFinalizacaoModal
-        isOpen={isVideoFinalizacaoModalOpen}
-        onConfirm={handleVideoFinalizacaoConfirm}
-        onCancel={() => setIsVideoFinalizacaoModalOpen(false)}
-        servicosPendentes={getServicosPendentes()}
-        agendamento={agendamento}
-      />
+      {osData?.videoFinal && (
+        <VideoFinalizacaoModal
+          isOpen={isVideoFinalizacaoModalOpen}
+          onConfirm={handleVideoFinalizacaoConfirm}
+          onCancel={() => setIsVideoFinalizacaoModalOpen(false)}
+          servicosPendentes={getServicosPendentes()}
+          agendamento={agendamento}
+        />
+      )}
       
       {/* Modal de Laudos */}
       <LaudosModal

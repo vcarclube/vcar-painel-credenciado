@@ -6,17 +6,19 @@ import './style.css';
 
 const VideoFinalizacaoModal = ({ isOpen, onCancel, onConfirm, servicosPendentes = [] }) => {
   const [video, setVideo] = useState(null);
+  const [videoResult, setVideoResult] = useState(null);
 
   const hasServicosPendentes = servicosPendentes.length > 0;
   const canFinalize = video && !hasServicosPendentes;
 
-  const handleVideoChange = (videoFile) => {
+  const handleVideoChange = (videoFile, result) => {
     setVideo(videoFile);
+    setVideoResult(result);
   };
 
   const handleConfirm = () => {
     if (video && servicosPendentes.length === 0) {
-      onConfirm(video);
+      onConfirm(video, videoResult);
       setVideo(null);
     }
   };
