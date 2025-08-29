@@ -202,7 +202,6 @@ const MediaUpload = ({
         ref={fileInputRef}
         type="file"
         capture="camera"
-        multiple={multiple}
         accept={acceptedTypes}
         onChange={handleFileUpload}
         style={{ display: 'none' }}
