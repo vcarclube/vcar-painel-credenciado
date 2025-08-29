@@ -119,7 +119,35 @@ const Api = {
         }).catch(err => {
             return err;
         });
-    }
+    },
+    getPontoAtendimentoServicos: async ({idPontoAtendimento}) => {
+        return await axios.get(`${API_BASE}/ponto-atendimento/servicos/${idPontoAtendimento}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    getServicosVinculadosAgendamento: async ({idSocioVeiculoAgenda}) => {
+        return await axios.get(`${API_BASE}/agendamentos/servicos-vinculados/${idSocioVeiculoAgenda}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    vincularServicoAgendamento: async ({idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico}) => {
+        return await axios.post(`${API_BASE}/agendamentos/vincular-servico`, {idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    desvincularServicoAgendamento: async ({idSocioVeiculoAgendaExecucaoServico}) => {
+        return await axios.post(`${API_BASE}/agendamentos/desvincular-servico`, {idSocioVeiculoAgendaExecucaoServico}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
 }
 
 export default Api;

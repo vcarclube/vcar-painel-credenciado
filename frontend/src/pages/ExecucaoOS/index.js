@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   FiCamera, 
@@ -22,8 +22,12 @@ import { Header, Sidebar, BottomNavigation, Modal, SearchableSelect, Button, Med
 import { VideoInicialModal, VideoFinalizacaoModal } from '../../components/Modal';
 import './style.css';
 import Api from '../../Api';
+import { toast } from 'react-toastify';
+import { MainContext } from '../../helpers/MainContext';
 
 const ExecutaOS = () => {
+  const { user } = useContext(MainContext);
+
   const { idSocioVeiculoAgenda } = useParams();
   const [osData, setOsData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -54,6 +58,10 @@ const ExecutaOS = () => {
   // Estados para modais de laudos e recibos
   const [isLaudosModalOpen, setIsLaudosModalOpen] = useState(false);
   const [isRecibosModalOpen, setIsRecibosModalOpen] = useState(false);
+  
+  // Estados para modal de confirmação de exclusão
+  const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] = useState(false);
+  const [servicoToDelete, setServicoToDelete] = useState(null);
   const [laudos, setLaudos] = useState([
     {
       id: 1,
@@ -93,25 +101,20 @@ const ExecutaOS = () => {
     }
   ]);
   
-  // Lista completa de serviços disponíveis (simulado)
-  const todosServicos = [
-    { value: 'troca-oleo', label: 'Troca de Óleo', description: 'Troca de óleo do motor e filtro' },
-    { value: 'alinhamento', label: 'Alinhamento', description: 'Alinhamento e balanceamento' },
-    { value: 'freios', label: 'Revisão de Freios', description: 'Verificação e manutenção do sistema de freios' },
-    { value: 'suspensao', label: 'Suspensão', description: 'Manutenção do sistema de suspensão' },
-    { value: 'ar-condicionado', label: 'Ar Condicionado', description: 'Manutenção do sistema de climatização' },
-    { value: 'bateria', label: 'Bateria', description: 'Verificação e troca de bateria' },
-    { value: 'pneus', label: 'Pneus', description: 'Verificação e troca de pneus' },
-    { value: 'motor', label: 'Revisão de Motor', description: 'Manutenção geral do motor' },
-    { value: 'transmissao', label: 'Transmissão', description: 'Manutenção da transmissão/câmbio' },
-    { value: 'eletrica', label: 'Sistema Elétrico', description: 'Verificação do sistema elétrico' }
-  ];
+  const [todosServicos, setTodosServicos] = useState([]);
+
+  const [btnLoading, setBtnLoading] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Função para obter agendamento
+  useEffect(() => {
+    getAgendamento();
+    getServicos();
+    getServicosVinculados();
+  }, [idSocioVeiculoAgenda, videoInicialUploaded]);
+
   const getAgendamento = async () => {
     try {
       const response = await Api.getAgendamentoDetails({ idSocioVeiculoAgenda });
@@ -149,18 +152,38 @@ const ExecutaOS = () => {
     }
   };
 
+  const getServicos = async () => {
+    try {
+      const response = await Api.getPontoAtendimentoServicos({ idPontoAtendimento: user?.IdPontoAtendimento });
+      if (response.status === 200) {
+        setTodosServicos(response?.data?.servicos);
+      }
+    } catch (error) {
+      console.error('Erro ao obter serviços:', error);
+    }
+  }
+
+  const getServicosVinculados = async () => {
+    try {
+      const response = await Api.getServicosVinculadosAgendamento({ idSocioVeiculoAgenda });
+      if (response.status === 200) {
+        setServicos(response?.data?.servicos);
+      }
+    } catch (error) {
+      console.error('Erro ao obter serviços:', error);
+    }
+  }
+
   // Função para obter serviços disponíveis (excluindo os já adicionados)
   const getServicosDisponiveis = () => {
+    //console.log(servicos);
     const servicosAdicionados = servicos.map(servico => servico.value);
+    //console.log(servicosAdicionados);
     return todosServicos.filter(servico => !servicosAdicionados.includes(servico.value));
   };
 
   // Serviços disponíveis filtrados
   const servicosDisponiveis = getServicosDisponiveis();
-
-  useEffect(() => {
-    getAgendamento();
-  }, [idSocioVeiculoAgenda, videoInicialUploaded]);
 
   // Handlers para fotos e vídeos
   const handleAddFoto = (event) => {
@@ -241,7 +264,7 @@ const ExecutaOS = () => {
     }
   };
   
-  const handleConfirmService = () => {
+  const handleConfirmService = async () => {
     if (selectedService) {
       // Verificar se o serviço já foi adicionado
       const servicoJaAdicionado = servicos.some(servico => servico.value === selectedService.value);
@@ -252,16 +275,20 @@ const ExecutaOS = () => {
       }
       
       const servicoSelecionado = todosServicos.find(s => s.value === selectedService.value);
-      const novoServico = {
-        id: `servico_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        label: servicoSelecionado.label,
-        value: servicoSelecionado.value,
-        descricao: servicoSelecionado.label,
-        status: 'pendente',
-        tempo: '',
-        observacoes: ''
-      };
-      setServicos([...servicos, novoServico]);
+
+      setBtnLoading(true);
+
+      await Api.vincularServicoAgendamento({
+        idPontoAtendimentoUsuario: user?.IdPontoAtendimentoUsuario,
+        idSocioVeiculoAgenda,
+        idServico: servicoSelecionado.value,
+      })
+
+      setBtnLoading(false);
+
+      toast.success(`Serviço vinculado com sucesso.`)
+
+      getServicosVinculados();
       handleCloseServiceModal();
     }
   };
@@ -276,15 +303,39 @@ const ExecutaOS = () => {
     ));
   };
 
-  const handleRemoveServico = (id) => {
-    setServicos(servicos.filter(servico => servico.id !== id));
+  const handleRemoveServico = async (servico) => {
+    setServicoToDelete(servico);
+    setIsConfirmDeleteModalOpen(true);
+  };
+
+  const handleConfirmDeleteServico = async () => {
+    if (servicoToDelete) {
+      try {
+        // Remove o serviço da lista
+        await Api.desvincularServicoAgendamento({
+          idSocioVeiculoAgendaExecucaoServico: servicoToDelete.id
+        })
+
+        getServicosVinculados();
+
+        toast.success('Serviço removido com sucesso!');
+      } catch (error) {
+        console.error('Erro ao remover serviço:', error);
+        toast.error('Erro ao remover serviço');
+      }
+    }
+    setIsConfirmDeleteModalOpen(false);
+    setServicoToDelete(null);
+  };
+
+  const handleCancelDeleteServico = () => {
+    setIsConfirmDeleteModalOpen(false);
+    setServicoToDelete(null);
   };
 
   const handleViewServico = (id) => {
     const servico = servicos.find(s => s.id === id);
-    if (servico) {
-      alert(`Detalhes do Serviço:\n\nNome: ${servico.label}\nStatus: ${servico.status === 'concluido' ? 'Concluído' : servico.status === 'em_andamento' ? 'Em Andamento' : 'Pendente'}\nDescrição: ${servico.descricao || 'Não informado'}\nTempo: ${servico.tempo || 'Não informado'}\nObservações: ${servico.observacoes || 'Nenhuma observação'}`);
-    }
+    if (servico) { }
   };
 
   // Handlers para anotações
@@ -316,7 +367,7 @@ const ExecutaOS = () => {
   // Handlers para ações
   const handleFinalizarOS = () => {
     // Verificar serviços pendentes
-    const servicosPendentes = servicos.filter(servico => servico.status !== 'concluido');
+    const servicosPendentes = servicos.filter(servico => servico.status !== 'P');
     
     // Abrir modal de finalização
     setIsVideoFinalizacaoModalOpen(true);
@@ -345,17 +396,21 @@ const ExecutaOS = () => {
       produtos,
       servicos
     });
+
+    await Api.atualizarVideoFinal({
+      idSocioVeiculoAgenda: osData.id,
+      videoFinal: videoResult?.file
+    })
     
     setVideoFinalizacaoUploaded(true);
     setIsVideoFinalizacaoModalOpen(false);
     
-    // Aqui você pode implementar a lógica de finalização da OS
-    alert('OS finalizada com sucesso!');
+    toast.success('OS finalizada com sucesso!');
   };
   
   // Função para obter serviços pendentes
   const getServicosPendentes = () => {
-    return servicos.filter(servico => servico.status !== 'concluido');
+    return servicos.filter(servico => servico.status !== 'A');
   };
 
   const handleAdicionarLaudos = () => {
@@ -535,9 +590,9 @@ const ExecutaOS = () => {
                           {servicos.map(servico => (
                             <div key={servico.id} className="execucao-os__table-row">
                               <div className="execucao-os__table-cell execucao-os__table-cell--status">
-                                <span className={`execucao-os__status-badge execucao-os__status-badge--${servico.status || 'pendente'}`}>
-                                  {servico.status === 'concluido' ? 'Concluído' : 
-                                   servico.status === 'em_andamento' ? 'Em Andamento' : 'Pendente'}
+                                <span className={`execucao-os__status-badge execucao-os__status-badge--${servico.status}`}>
+                                  {servico.status === 'A' ? 'Aprovado' : 
+                                   servico.status === 'P' ? 'Pendente' : 'Reprovado'}
                                 </span>
                               </div>
                               <div className="execucao-os__table-cell execucao-os__table-cell--service">
@@ -546,7 +601,7 @@ const ExecutaOS = () => {
                               <div className="execucao-os__table-cell execucao-os__table-cell--actions">
                                 <button 
                                   className="execucao-os__action-btn-action execucao-os__action-btn--delete"
-                                  onClick={() => handleRemoveServico(servico.id)}
+                                  onClick={() => handleRemoveServico(servico)}
                                   title="Excluir serviço"
                                 >
                                   <FiTrash2 size={16} />
@@ -871,7 +926,7 @@ const ExecutaOS = () => {
             <Button
               variant="primary"
               onClick={handleConfirmService}
-              disabled={!selectedService}
+              disabled={!selectedService || btnLoading}
             >
               Confirmar Serviço
             </Button>
@@ -1104,7 +1159,7 @@ const ExecutaOS = () => {
       )}
       
       {/* Modal de vídeo de finalização */}
-      {osData?.videoFinal && (
+      {!osData?.videoFinal && (
         <VideoFinalizacaoModal
           isOpen={isVideoFinalizacaoModalOpen}
           onConfirm={handleVideoFinalizacaoConfirm}
@@ -1131,6 +1186,88 @@ const ExecutaOS = () => {
         setRecibos={setRecibos}
         onRemoveRecibo={handleRemoveRecibo}
       />
+      
+      {/* Modal de confirmação de exclusão de serviço */}
+      <Modal
+        isOpen={isConfirmDeleteModalOpen}
+        onClose={handleCancelDeleteServico}
+        title="Confirmar Exclusão"
+        size="small"
+      >
+        <div className="confirm-delete-modal-content">
+          <div className="confirm-delete-modal-description">
+            <p>Tem certeza que deseja excluir este serviço?</p>
+            {servicoToDelete && (
+              <p><strong>{servicoToDelete.label}</strong></p>
+            )}
+            <p>Esta ação não pode ser desfeita.</p>
+          </div>
+          
+          <div className="confirm-delete-modal-actions">
+            <button 
+              className="btn btn-secondary"
+              onClick={handleCancelDeleteServico}
+            >
+              Cancelar
+            </button>
+            <button 
+              className="btn btn-danger"
+              onClick={handleConfirmDeleteServico}
+            >
+              Excluir
+            </button>
+          </div>
+        </div>
+        
+        <style jsx>{`
+          .confirm-delete-modal-content {
+            padding: 20px;
+            text-align: center;
+          }
+          
+          .confirm-delete-modal-description {
+            margin-bottom: 30px;
+          }
+          
+          .confirm-delete-modal-description p {
+            margin: 10px 0;
+            color: #333;
+          }
+          
+          .confirm-delete-modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+          }
+          
+          .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+          }
+          
+          .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+          }
+          
+          .btn-secondary:hover {
+            background-color: #5a6268;
+          }
+          
+          .btn-danger {
+            background-color: #dc3545;
+            color: white;
+          }
+          
+          .btn-danger:hover {
+            background-color: #c82333;
+          }
+        `}</style>
+      </Modal>
     </div>
   );
 };

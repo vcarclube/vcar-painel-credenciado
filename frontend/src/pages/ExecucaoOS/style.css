@@ -464,17 +464,17 @@
   letter-spacing: 0.5px;
 }
 
-.execucao-os__status-badge--pendente {
+.execucao-os__status-badge--R {
   background-color: #fef3c7;
   color: #92400e;
 }
 
-.execucao-os__status-badge--em_andamento {
+.execucao-os__status-badge--P {
   background-color: #dbeafe;
   color: #1e40af;
 }
 
-.execucao-os__status-badge--concluido {
+.execucao-os__status-badge--A {
   background-color: #d1fae5;
   color: #065f46;
 }

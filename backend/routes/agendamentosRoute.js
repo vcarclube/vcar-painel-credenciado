@@ -746,4 +746,101 @@ router.get('/get/:idSocioVeiculoAgenda', validateToken, async (req, res) => {
   }
 });
 
+router.get('/servicos-vinculados/:idSocioVeiculoAgenda', validateToken, async (req, res) => {
+    try {
+        const { idSocioVeiculoAgenda } = req.params;
+
+        let result = await db.query(`
+            SELECT 
+              A.*,
+              A.StatusAprovacao AS status,
+              A.IdSocioVeiculoAgendaExecucaoServico AS id,
+              B.IdServico AS value,
+              B.Descricao + ' - ' + B.TipoVeiculo AS label, 
+              B.Observacoes AS description
+            FROM SociosVeiculosAgendaExecucaoServicos AS A
+            INNER JOIN Servicos AS B ON A.IdServico=B.IdServico
+            WHERE A.idSocioVeiculoAgenda=@idSocioVeiculoAgenda;
+        `, { idSocioVeiculoAgenda });
+      
+        const servicos = result.recordset;
+
+        return res.status(200).json({
+            servicos
+        });
+
+    } catch (error) {
+        console.error('Erro ao buscar serviços vinculados:', error);
+        return res.status(400).json({ message: error.message, data: null });
+    }
+})
+
+router.post('/vincular-servico', validateToken , async (req, res) => {
+  try{
+    const { idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico } = req.body;
+    if (!idPontoAtendimentoUsuario || !idSocioVeiculoAgenda || !idServico) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idPontoAtendimentoUsuario, idSocioVeiculoAgenda e idServico são obrigatórios' 
+      });
+    }
+
+    let idSocioVeiculoAgendaExecucaoServicoGenerated = Utils.generateUUID();
+
+    await db.query(`
+      INSERT INTO SociosVeiculosAgendaExecucaoServicos (
+        IdSocioVeiculoAgendaExecucaoServico,
+        IdSocioVeiculoAgenda,
+        IdServico,
+        IdUsuario,
+        StatusAprovacao,
+        DataLog,
+        PagamentoFeito
+      )
+      VALUES (
+        @idSocioVeiculoAgendaExecucaoServicoGenerated,
+        @idSocioVeiculoAgenda,
+        @idServico,
+        @idPontoAtendimentoUsuario,
+        'A',
+        GETDATE(),
+        'N'
+      );
+    `, { 
+      idSocioVeiculoAgendaExecucaoServicoGenerated,
+      idSocioVeiculoAgenda,
+      idPontoAtendimentoUsuario,
+      idServico
+    });
+
+    return res.status(200).json({
+      message: 'Serviço vinculado com sucesso'
+    });
+
+  } catch (error) {
+    console.error('Erro ao inserir serviço:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
+router.post('/desvincular-servico', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgendaExecucaoServico } = req.body;
+    if (!idSocioVeiculoAgendaExecucaoServico) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgendaExecucaoServico é obrigatório' 
+      });
+    }
+    await db.query(`
+      DELETE FROM SociosVeiculosAgendaExecucaoServicos
+      WHERE IdSocioVeiculoAgendaExecucaoServico = @idSocioVeiculoAgendaExecucaoServico;
+    `, { idSocioVeiculoAgendaExecucaoServico });
+    return res.status(200).json({
+      message: 'Serviço desvinculado com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao desvincular serviço:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
 module.exports = router;

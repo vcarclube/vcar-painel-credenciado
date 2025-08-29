@@ -149,13 +149,13 @@ router.get("/files/:filename", async (req, res) => {
         }
 
     } catch (err) {
-        console.error("Erro ao buscar arquivo:", err);
+        //console.error("Erro ao buscar arquivo:", err);
         
         // Fechar cliente em caso de erro
         try {
             client.close();
         } catch (closeErr) {
-            console.error("Erro ao fechar cliente:", closeErr);
+            c//onsole.error("Erro ao fechar cliente:", closeErr);
         }
         
         if (!res.headersSent) {
