@@ -201,6 +201,7 @@ const MediaUpload = ({
       <input
         ref={fileInputRef}
         type="file"
+        capture="user"
         multiple={multiple}
         accept={acceptedTypes}
         onChange={handleFileUpload}
