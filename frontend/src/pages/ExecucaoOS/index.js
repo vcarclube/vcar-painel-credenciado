@@ -87,26 +87,7 @@ const ExecutaOS = () => {
       url: '#'
     }
   ]);
-  const [recibos, setRecibos] = useState([
-    {
-      id: 1,
-      nome: 'Recibo_Pecas_001.pdf',
-      tamanho: 512000, // 512KB
-      dataUpload: '15/01/2024',
-      valor: 350.00,
-      descricao: 'Recibo de compra de peças para reparo',
-      url: '#'
-    },
-    {
-      id: 2,
-      nome: 'Recibo_Servicos_Externos.pdf',
-      tamanho: 768000, // 768KB
-      dataUpload: '15/01/2024',
-      valor: 150.00,
-      descricao: 'Serviços terceirizados',
-      url: '#'
-    }
-  ]);
+  const [recibos, setRecibos] = useState([]);
   
   const [todosServicos, setTodosServicos] = useState([]);
 
@@ -122,6 +103,7 @@ const ExecutaOS = () => {
     getServicosVinculados();
     getFotosAgendamento();
     getAnotacoesAgendamento();
+    getNotasFiscaisAgendamento();
   }, [idSocioVeiculoAgenda, videoInicialUploaded]);
 
   // Inicializar FFmpeg para compressão
@@ -652,9 +634,49 @@ const ExecutaOS = () => {
     setLaudos(laudos.filter(laudo => laudo.id !== id));
   };
   
+  // Função para carregar recibos da API
+  const getNotasFiscaisAgendamento = async () => {
+    try {
+      const response = await Api.getNotasFiscaisAgendamento({ idSocioVeiculoAgenda });
+      if (response) {
+        setRecibos(response?.data.notas || []);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar recibos:', error);
+      toast.error('Erro ao carregar recibos');
+    }
+  };
+
+  // Função para adicionar recibo
+  const handleAddRecibo = async (reciboData) => {
+    try {
+      const response = await Api.adicionarNotaFiscalAgendamento({
+        idSocioVeiculoAgenda,
+        idPontoAtendimentoUsuario: user.IdPontoAtendimentoUsuario,
+        ...reciboData
+      });
+      if (response.status === 200) {
+        toast.success('Recibo adicionado com sucesso!');
+        await getNotasFiscaisAgendamento(); // Recarregar lista
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar recibo:', error);
+      toast.error('Erro ao adicionar recibo');
+    }
+  };
+
   // Handlers para recibos
-  const handleRemoveRecibo = (id) => {
-    setRecibos(recibos.filter(recibo => recibo.id !== id));
+  const handleRemoveRecibo = async (id) => {
+    try {
+      const response = await Api.deletarNotaFiscalAgendamento({ idSocioVeiculoAgendaNotaFiscal: id });
+      if (response.status === 200) {
+        toast.success('Recibo removido com sucesso!');
+        await getNotasFiscaisAgendamento(); // Recarregar lista
+      }
+    } catch (error) {
+      console.error('Erro ao remover recibo:', error);
+      toast.error('Erro ao remover recibo');
+    }
   };
 
   if (loading) {
@@ -1063,6 +1085,8 @@ const ExecutaOS = () => {
                     )}
                   </div>
                 </div>
+
+
               </div>
             </section>
 
@@ -1438,6 +1462,7 @@ const ExecutaOS = () => {
         recibos={recibos}
         setRecibos={setRecibos}
         onRemoveRecibo={handleRemoveRecibo}
+        onAddRecibo={handleAddRecibo}
       />
       
       {/* Modal de confirmação de exclusão de serviço */}

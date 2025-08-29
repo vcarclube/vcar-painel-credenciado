@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Modal from './index';
 import { Button } from '../index';
-import { FiDollarSign, FiTrash2, FiUpload, FiDownload } from 'react-icons/fi';
+import { FiDollarSign, FiTrash2, FiUpload, FiDownload, FiX } from 'react-icons/fi';
+import Api from '../../Api';
+import { toast } from 'react-toastify';
 
-const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo }) => {
+const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo, onAddRecibo }) => {
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    console.log(recibos)
+  }, [])
 
   const handleClose = () => {
     onClose();
@@ -27,8 +33,8 @@ const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo }) => {
   const handleDownload = (recibo) => {
     // Simular download do recibo
     const link = document.createElement('a');
-    link.href = recibo.url;
-    link.download = recibo.nome;
+    link.href = Api.getUriUploadPath(recibo.NomeArquivo);
+    link.download = recibo.NomeArquivo;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -49,6 +55,43 @@ const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo }) => {
     }).format(value);
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setLoading(true);
+    try {
+      // Fazer upload do arquivo
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadResponse = await Api.upload(formData);
+      
+      if (uploadResponse.success) {
+        // Adicionar o recibo com dados básicos do arquivo
+        const reciboData = {
+          nome: file.name,
+          arquivo: uploadResponse.file,
+          nomeArquivo: uploadResponse.file,
+          notaFiscal: uploadResponse.file,
+          tamanho: file.size,
+          data: new Date().toISOString(),
+          dataUpload: new Date().toLocaleDateString('pt-BR')
+        };
+        
+        await onAddRecibo(reciboData);
+        toast.success('Recibo adicionado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error('Erro ao fazer upload do recibo');
+    } finally {
+      setLoading(false);
+      // Limpar o input
+      e.target.value = '';
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -57,21 +100,31 @@ const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo }) => {
       size="large"
     >
       <div className="recibos-modal-content">
+
+        
         {recibos.length === 0 ? (
           <div className="recibos-empty-state">
             <FiDollarSign className="recibos-empty-icon" />
             <h4>Nenhum recibo adicionado</h4>
             <p>Os recibos adicionados à esta OS aparecerão aqui.</p>
-            <Button
-              variant="primary"
-              onClick={() => {
-                // Aqui seria implementada a funcionalidade de upload
-                console.log('Implementar upload de recibo');
-              }}
-            >
-              <FiUpload size={16} />
-              Adicionar Primeiro Recibo
-            </Button>
+            <div className="upload-input-container">
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={handleFileUpload}
+                disabled={loading}
+                id="recibo-upload"
+                style={{ display: 'none' }}
+              />
+              <Button
+                variant="primary"
+                onClick={() => document.getElementById('recibo-upload').click()}
+                disabled={loading}
+              >
+                <FiUpload size={16} />
+                {loading ? 'Enviando...' : 'Adicionar Primeiro Recibo'}
+              </Button>
+            </div>
           </div>
         ) : (
           <>
@@ -79,16 +132,24 @@ const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo }) => {
               <div className="recibos-count">
                 <span>{recibos.length} recibo{recibos.length !== 1 ? 's' : ''} encontrado{recibos.length !== 1 ? 's' : ''}</span>
               </div>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  // Aqui seria implementada a funcionalidade de upload
-                  console.log('Implementar upload de recibo');
-                }}
-              >
-                <FiUpload size={16} />
-                Adicionar Recibo
-              </Button>
+              <div className="upload-input-container">
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={handleFileUpload}
+                  disabled={loading}
+                  id="recibo-upload-list"
+                  style={{ display: 'none' }}
+                />
+                <Button
+                  variant="primary"
+                  onClick={() => document.getElementById('recibo-upload-list').click()}
+                  disabled={loading}
+                >
+                  <FiUpload size={16} />
+                  {loading ? 'Enviando...' : 'Adicionar Recibo'}
+                </Button>
+              </div>
             </div>
             
             <div className="recibos-list">
@@ -99,10 +160,10 @@ const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo }) => {
                   </div>
                   
                   <div className="recibo-info">
-                    <h4 className="recibo-name">{recibo.nome}</h4>
+                    <h4 className="recibo-name">{recibo.NomeArquivo}</h4>
                     <div className="recibo-details">
-                      <span className="recibo-size">{formatFileSize(recibo.tamanho)}</span>
-                      <span className="recibo-date">Adicionado em {recibo.dataUpload}</span>
+                      <span className="recibo-size" style={{display: 'none'}}>{formatFileSize(recibo.tamanho)}</span>
+                      <span className="recibo-date">Adicionado em {new Date(recibo.DataLog).toLocaleDateString()}</span>
                       {recibo.valor && (
                         <span className="recibo-value">{formatCurrency(recibo.valor)}</span>
                       )}
@@ -122,7 +183,7 @@ const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo }) => {
                     </button>
                     <button
                       className="recibo-action-btn recibo-remove-btn"
-                      onClick={() => handleRemove(recibo.id)}
+                      onClick={() => handleRemove(recibo.IdSocioVeiculoAgendaNotaFiscal )}
                       disabled={loading}
                       title="Excluir recibo"
                     >
@@ -149,6 +210,114 @@ const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo }) => {
       <style jsx>{`
         .recibos-modal-content {
           min-height: 300px;
+        }
+
+        .upload-form {
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          margin-bottom: 24px;
+          overflow: hidden;
+        }
+
+        .upload-form-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 20px;
+          background: #ffffff;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        .upload-form-header h4 {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 600;
+          color: #334155;
+        }
+
+        .upload-form-close {
+          background: none;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          transition: all 0.2s;
+        }
+
+        .upload-form-close:hover {
+          background: #f1f5f9;
+          color: #334155;
+        }
+
+        .upload-form-close:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .upload-form-content {
+          padding: 20px;
+        }
+
+        .form-group {
+          margin-bottom: 16px;
+        }
+
+        .form-group:last-child {
+          margin-bottom: 0;
+        }
+
+        .form-group label {
+          display: block;
+          font-size: 14px;
+          font-weight: 500;
+          color: #374151;
+          margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 14px;
+          transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-group input:disabled,
+        .form-group textarea:disabled {
+          background: #f9fafb;
+          color: #6b7280;
+          cursor: not-allowed;
+        }
+
+        .file-selected {
+          display: block;
+          margin-top: 6px;
+          font-size: 12px;
+          color: #059669;
+          background: #ecfdf5;
+          padding: 4px 8px;
+          border-radius: 4px;
+          border: 1px solid #a7f3d0;
+        }
+
+        .form-actions {
+          display: flex;
+          gap: 12px;
+          justify-content: flex-end;
+          margin-top: 20px;
+          padding-top: 16px;
+          border-top: 1px solid #e5e7eb;
         }
 
         .recibos-empty-state {

@@ -190,6 +190,27 @@ const Api = {
             return err;
         });
     },
+    adicionarNotaFiscalAgendamento: async ({idSocioVeiculoAgenda, idPontoAtendimentoUsuario, notaFiscal, nomeArquivo, data}) => {
+        return await axios.post(`${API_BASE}/agendamentos/adicionar-nota-fiscal`, {idSocioVeiculoAgenda, idPontoAtendimentoUsuario, notaFiscal, nomeArquivo, data}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    deletarNotaFiscalAgendamento: async ({idSocioVeiculoAgendaNotaFiscal}) => {
+        return await axios.post(`${API_BASE}/agendamentos/deletar-nota-fiscal`, {idSocioVeiculoAgendaNotaFiscal}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    getNotasFiscaisAgendamento: async ({idSocioVeiculoAgenda}) => {
+        return await axios.get(`${API_BASE}/agendamentos/get-notas-fiscais/${idSocioVeiculoAgenda}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
 }
 
 export default Api;

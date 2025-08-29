@@ -1018,4 +1018,112 @@ router.get('/get-anotacoes/:idSocioVeiculoAgenda', validateToken, async (req, re
   }
 })
 
+
+/*
+
+SELECT TOP (1000) [IdSocioVeiculoAgendaNotaFiscal]
+      ,[IdSocioVeiculoAgenda]
+      ,[IdUsuario]
+      ,[DataLog]
+      ,[Arquivo]
+      ,[NomeArquivo]
+  FROM [vcarclube].[dbo].[SociosVeiculosAgendaNotasFiscais]
+
+
+*/
+
+router.get('/get-notas-fiscais/:idSocioVeiculoAgenda', validateToken, async (req, res) => {
+  try{
+
+    const { idSocioVeiculoAgenda } = req.params;
+    if (!idSocioVeiculoAgenda) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda é obrigatório' 
+      });
+    }
+    const notasFiscais = await db.query(`
+      SELECT * FROM SociosVeiculosAgendaNotasFiscais
+      WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda;
+    `, { idSocioVeiculoAgenda });
+    
+    return res.status(200).json({
+      message: 'Notas fiscais recuperadas com sucesso',
+      notas: notasFiscais?.recordset
+    });
+
+  }catch (error) {
+    console.error('Erro ao recuperar notais fiscais:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
+router.post('/adicionar-nota-fiscal', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgenda, idPontoAtendimentoUsuario, notaFiscal, nomeArquivo, data } = req.body;
+    if (!idSocioVeiculoAgenda || !idPontoAtendimentoUsuario || !notaFiscal || !nomeArquivo || !data) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda, idPontoAtendimentoUsuario, notaFiscal, nomeArquivo e data são obrigatórios' 
+      });
+    }
+
+    let idSocioVeiculoAgendaNotaFiscalGenerated = Utils.generateUUID();
+
+    await db.query(`
+      INSERT INTO SociosVeiculosAgendaNotasFiscais (
+        IdSocioVeiculoAgendaNotaFiscal,
+        IdSocioVeiculoAgenda,
+        IdUsuario,
+        DataLog,
+        Arquivo,
+        NomeArquivo
+      )
+      VALUES (
+        @idSocioVeiculoAgendaNotaFiscalGenerated,
+        @idSocioVeiculoAgenda,
+        @idPontoAtendimentoUsuario,
+        @data,
+        @notaFiscal,
+        @nomeArquivo
+      );
+    `, { 
+      idSocioVeiculoAgendaNotaFiscalGenerated,
+      idSocioVeiculoAgenda,
+      idPontoAtendimentoUsuario,
+      data,
+      notaFiscal,
+      nomeArquivo
+    });
+
+    return res.status(200).json({
+      message: 'Nota fiscal adicionada com sucesso',
+      notaFiscal: idSocioVeiculoAgendaNotaFiscalGenerated
+    });
+
+  }catch (error) {
+    console.error('Erro ao adicionar nota fiscal:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
+router.post('/deletar-nota-fiscal', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgendaNotaFiscal } = req.body;
+    if (!idSocioVeiculoAgendaNotaFiscal) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgendaNotaFiscal é obrigatório' 
+      });
+    }
+    await db.query(`
+      DELETE FROM SociosVeiculosAgendaNotasFiscais
+      WHERE IdSocioVeiculoAgendaNotaFiscal = @idSocioVeiculoAgendaNotaFiscal;
+    `, { idSocioVeiculoAgendaNotaFiscal });
+    return res.status(200).json({
+      message: 'Nota fiscal deletada com sucesso'
+    });
+  }catch (error) {
+    console.error('Erro ao deletar nota fiscal:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
 module.exports = router;
