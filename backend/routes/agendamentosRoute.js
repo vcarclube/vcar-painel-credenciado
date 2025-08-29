@@ -843,4 +843,94 @@ router.post('/desvincular-servico', validateToken, async (req, res) => {
   }
 })
 
+router.get('/get-fotos/:idSocioVeiculoAgenda', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgenda } = req.params;
+    if (!idSocioVeiculoAgenda) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda é obrigatório' 
+      });
+    }
+    let result = await db.query(`
+      SELECT 
+        A.*
+      FROM SociosVeiculosAgendaExecucaoFotos AS A
+      WHERE A.idSocioVeiculoAgenda=@idSocioVeiculoAgenda;
+    `, { idSocioVeiculoAgenda });
+
+    const fotos = result.recordset;
+
+    return res.status(200).json({
+      fotos
+    });
+  }catch (error) {
+    console.error('Erro ao regatar fotos:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
+router.post('/adicionar-foto', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgenda, idPontoAtendimentoUsuario, foto } = req.body;
+    if (!idSocioVeiculoAgenda || !foto) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda e foto são obrigatórios' 
+      });
+    }
+
+    let idSocioVeiculoAgendaExecucaoFotoGenerated = Utils.generateUUID();
+
+    await db.query(`
+      INSERT INTO SociosVeiculosAgendaExecucaoFotos (
+        IdSocioVeiculoAgendaExecucaoFoto,
+        IdSocioVeiculoAgenda,
+        IdUsuario,
+        Foto,
+        DataLog
+      )
+      VALUES (
+        @idSocioVeiculoAgendaExecucaoFotoGenerated,
+        @idSocioVeiculoAgenda,
+        @idPontoAtendimentoUsuario,
+        @foto,
+        GETDATE()
+      );
+    `, { 
+      idSocioVeiculoAgendaExecucaoFotoGenerated,
+      idSocioVeiculoAgenda,
+      idPontoAtendimentoUsuario,
+      foto
+    });
+
+    return res.status(200).json({
+      message: 'Foto adicionada com sucesso'
+    });
+
+  } catch (error) {
+    console.error('Erro ao adicionar foto:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
+router.post('/deletar-foto', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgendaExecucaoFoto } = req.body;
+    if (!idSocioVeiculoAgendaExecucaoFoto) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgendaExecucaoFoto é obrigatório' 
+      });
+    }
+    await db.query(`
+      DELETE FROM SociosVeiculosAgendaExecucaoFotos
+      WHERE IdSocioVeiculoAgendaExecucaoFoto = @idSocioVeiculoAgendaExecucaoFoto;
+    `, { idSocioVeiculoAgendaExecucaoFoto });
+    return res.status(200).json({
+      message: 'Foto desvinculada com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao desvincular foto:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
 module.exports = router;

@@ -148,6 +148,27 @@ const Api = {
             return err;
         });
     },
+    adicionaFotoAgendamento: async ({idSocioVeiculoAgenda, idPontoAtendimentoUsuario, foto}) => {
+        return await axios.post(`${API_BASE}/agendamentos/adicionar-foto`, {idSocioVeiculoAgenda, idPontoAtendimentoUsuario, foto}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    deletaFotoAgendamento: async ({idSocioVeiculoAgendaExecucaoFoto}) => {
+        return await axios.post(`${API_BASE}/agendamentos/deletar-foto`, {idSocioVeiculoAgendaExecucaoFoto}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    getFotosAgendamento: async ({idSocioVeiculoAgenda}) => {
+        return await axios.get(`${API_BASE}/agendamentos/get-fotos/${idSocioVeiculoAgenda}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
 }
 
 export default Api;

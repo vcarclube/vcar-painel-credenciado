@@ -20,6 +20,8 @@ import {
 } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation, Modal, SearchableSelect, Button, MediaUpload, LaudosModal, RecibosModal } from '../../components';
 import { VideoInicialModal, VideoFinalizacaoModal } from '../../components/Modal';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import './style.css';
 import Api from '../../Api';
 import { toast } from 'react-toastify';
@@ -39,6 +41,11 @@ const ExecutaOS = () => {
   const [produtos, setProdutos] = useState([]);
   const [servicos, setServicos] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  
+  // Estados para compressão de vídeos
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressionProgress, setCompressionProgress] = useState(0);
+  const [ffmpeg, setFfmpeg] = useState(null);
   
   // Estados para modal de anotações
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
@@ -113,7 +120,36 @@ const ExecutaOS = () => {
     getAgendamento();
     getServicos();
     getServicosVinculados();
+    getFotosAgendamento();
   }, [idSocioVeiculoAgenda, videoInicialUploaded]);
+
+  // Inicializar FFmpeg para compressão
+  useEffect(() => {
+    const loadFFmpeg = async () => {
+      const ffmpegInstance = new FFmpeg();
+      
+      ffmpegInstance.on('log', ({ message }) => {
+        console.log(message);
+      });
+      
+      ffmpegInstance.on('progress', ({ progress }) => {
+        setCompressionProgress(Math.round(progress * 100));
+      });
+
+      try {
+        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+        await ffmpegInstance.load({
+          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+        });
+        setFfmpeg(ffmpegInstance);
+      } catch (error) {
+        console.error('Erro ao carregar FFmpeg:', error);
+      }
+    };
+
+    loadFFmpeg();
+  }, []);
 
   const getAgendamento = async () => {
     try {
@@ -185,21 +221,149 @@ const ExecutaOS = () => {
   // Serviços disponíveis filtrados
   const servicosDisponiveis = getServicosDisponiveis();
 
+  // Função para compactar vídeo
+  const compressVideo = async (file) => {
+    if (!ffmpeg) {
+      throw new Error('FFmpeg não está carregado');
+    }
+
+    setIsCompressing(true);
+    setCompressionProgress(0);
+
+    try {
+      const inputName = 'input.mp4';
+      const outputName = 'output.mp4';
+
+      // Escrever arquivo de entrada
+      await ffmpeg.writeFile(inputName, await fetchFile(file));
+
+      // Configurações otimizadas para compressão rápida e eficiente
+      const ffmpegArgs = [
+        '-i', inputName,
+        '-c:v', 'libx264',           // Codec de vídeo H.264
+        '-preset', 'fast',           // Preset rápido
+        '-crf', '23',                // Qualidade balanceada (18-28)
+        '-c:a', 'aac',               // Codec de áudio AAC
+        '-b:a', '128k',              // Bitrate de áudio
+        '-movflags', '+faststart',   // Otimização para web
+        '-profile:v', 'baseline',    // Perfil compatível
+        '-level', '3.0',             // Nível de compatibilidade
+        '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', // Garantir dimensões pares
+        outputName
+      ];
+
+      // Executar compressão
+      await ffmpeg.exec(ffmpegArgs);
+
+      // Ler arquivo comprimido
+      const data = await ffmpeg.readFile(outputName);
+      const compressedBlob = new Blob([data.buffer], { type: 'video/mp4' });
+      
+      // Criar novo arquivo comprimido
+      const compressedFile = new File(
+        [compressedBlob], 
+        `compressed_${file.name.replace(/\.[^/.]+$/, '')}.mp4`, 
+        { type: 'video/mp4' }
+      );
+
+      // Limpar arquivos temporários
+      await ffmpeg.deleteFile(inputName);
+      await ffmpeg.deleteFile(outputName);
+
+      console.log(`Compressão concluída: ${file.size} → ${compressedFile.size} bytes`);
+      console.log(`Redução: ${((1 - compressedFile.size / file.size) * 100).toFixed(1)}%`);
+
+      return compressedFile;
+    } catch (error) {
+      console.error('Erro na compressão:', error);
+      throw error;
+    } finally {
+      setIsCompressing(false);
+      setCompressionProgress(0);
+    }
+  };
+
+  // Função para carregar fotos do agendamento
+  const getFotosAgendamento = async () => {
+    try {
+      const response = await Api.getFotosAgendamento({ idSocioVeiculoAgenda });
+      if (response.status === 200 && response.data && response.data.fotos) {
+        const fotosFormatadas = response.data.fotos.map(foto => ({
+          id: foto.IdSocioVeiculoAgendaExecucaoFoto,
+          nome: foto.Foto,
+          url: Api.getUriUploadPath(foto.Foto),
+          type: foto.Foto.toLowerCase().includes('.mp4') || foto.Foto.toLowerCase().includes('.mov') ? 'video' : 'image',
+          idSocioVeiculoAgendaExecucaoFoto: foto.IdSocioVeiculoAgendaExecucaoFoto
+        }));
+        setFotos(fotosFormatadas);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar fotos:', error);
+    }
+  };
+
   // Handlers para fotos e vídeos
   const handleAddFoto = (event) => {
     const files = Array.from(event.target.files);
-    const newFotos = files.map(file => ({
-      id: Date.now() + Math.random(),
-      file,
-      url: URL.createObjectURL(file),
-      nome: file.name,
-      type: file.type.startsWith('image/') ? 'image' : 'video'
-    }));
-    setFotos([...fotos, ...newFotos]);
+    files.forEach(file => {
+      uploadFoto(file);
+    });
+  };
+
+  const uploadFoto = async (file) => {
+    try {
+      let fileToUpload = file;
+      
+      // Verificar se é vídeo e se precisa de compressão (maior que 25MB)
+      if (file.type.startsWith('video/') && file.size > 25 * 1024 * 1024 && ffmpeg) {
+        try {
+          toast.info('Comprimindo vídeo, aguarde...');
+          fileToUpload = await compressVideo(file);
+          toast.success('Vídeo comprimido com sucesso!');
+        } catch (error) {
+          console.error('Erro na compressão, enviando arquivo original:', error);
+          toast.warning('Erro na compressão, enviando arquivo original');
+          fileToUpload = file;
+        }
+      }
+      
+      toast.info(`Enviando arquivo...`);
+
+      // Primeiro faz upload do arquivo
+      const formData = new FormData();
+      formData.append('file', fileToUpload);
+
+      const uploadResponse = await Api.upload(formData);
+
+      console.log(uploadResponse.success);
+
+      if (uploadResponse.success) {
+        // Depois adiciona a foto ao agendamento
+        const addFotoResponse = await Api.adicionaFotoAgendamento({
+          idSocioVeiculoAgenda,
+          idPontoAtendimentoUsuario: user.IdPontoAtendimentoUsuario,
+          foto: uploadResponse.file
+        });
+        
+        if (addFotoResponse.status === 200) {
+          toast.success('Arquivo enviado com sucesso!');
+          getFotosAgendamento(); // Recarrega as fotos
+        } else {
+          toast.error('Erro ao enviar arquivo');
+        }
+      } else {
+        toast.error('Erro no upload do arquivo');
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload do arquivo:', error);
+      toast.error('Erro ao fazer upload do arquivo');
+    }
   };
 
   const handleAddMedia = (mediaItem) => {
-    setFotos([...fotos, mediaItem]);
+    if (mediaItem.file) {
+      uploadFoto(mediaItem.file);
+    }
   };
 
   // Ref para controlar o MediaUpload
@@ -211,13 +375,26 @@ const ExecutaOS = () => {
     }
   };
 
-  const handleRemoveFoto = (id) => {
-    const foto = fotos.find(f => f.id === id);
-    if (foto) {
-      URL.revokeObjectURL(foto.url);
-    }
-    setFotos(fotos.filter(foto => foto.id !== id));
-  };
+  const handleRemoveFoto = async (id) => {
+    try {
+      const foto = fotos.find(f => f.id === id);
+      if (foto && foto.idSocioVeiculoAgendaExecucaoFoto) {
+        const response = await Api.deletaFotoAgendamento({
+          idSocioVeiculoAgendaExecucaoFoto: foto.idSocioVeiculoAgendaExecucaoFoto
+        });
+        
+        if (response.status === 200) {
+          toast.success('Foto removida com sucesso!');
+          getFotosAgendamento(); // Recarrega as fotos
+        } else {
+          toast.error('Erro ao remover foto');
+        }
+      }
+    } catch (error) {
+       console.error('Erro ao remover foto:', error);
+       toast.error('Erro ao remover foto');
+     }
+   };
 
   // Handlers para produtos
   const handleAddProduto = () => {
@@ -473,7 +650,7 @@ const ExecutaOS = () => {
       <Header />
       <div className="content-wrapper">
         <Sidebar />
-        <div className="main-content">
+        <div className="main-content" style={{marginBottom: '0px', paddingBottom: '0px'}}>
           <div className="execucao-os">
             
             {/* Header da OS */}
@@ -702,6 +879,35 @@ const ExecutaOS = () => {
                       Adicionar
                     </button>
                   </div>
+                  {isCompressing && (
+                    <div className="execucao-os__compression-progress" style={{
+                      padding: '10px 20px',
+                      backgroundColor: '#f8f9fa',
+                      borderBottom: '1px solid #e9ecef',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px'
+                    }}>
+                      <FiVideo size={16} style={{ color: '#007bff' }} />
+                      <span style={{ fontSize: '14px', color: '#6c757d' }}>
+                        Comprimindo vídeo... {compressionProgress}%
+                      </span>
+                      <div style={{
+                        flex: 1,
+                        height: '4px',
+                        backgroundColor: '#e9ecef',
+                        borderRadius: '2px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${compressionProgress}%`,
+                          height: '100%',
+                          backgroundColor: '#007bff',
+                          transition: 'width 0.3s ease'
+                        }} />
+                      </div>
+                    </div>
+                  )}
                   <div className="execucao-os__card-content">
                     {fotos.length === 0 && !osData?.videoInicial ? (
                       <div className="execucao-os__empty-state">
