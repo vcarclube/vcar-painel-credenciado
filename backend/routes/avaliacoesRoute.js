@@ -1,24 +1,9 @@
 const express = require('express');
-const bcrypt = require("bcryptjs");
-const jwt = require('jsonwebtoken');
 const router = express.Router();
 
-const { validateOrigin } = require('../middlewares/CorsMiddleware');
 const { validateToken } = require('../middlewares/AuthMiddleware');
 
 const db = require('../database');
-
-/**
- 
-
-SELECT TOP (1000) [IdSocioVeiculoAgendaAvaliacao]
-      ,[IdSocioVeiculoAgenda]
-      ,[Nota]
-      ,[Observacoes]
-      ,[DataLog]
-  FROM [vcarclube].[dbo].[SociosVeiculosAgendaAvaliacao]
-
- */
 
 router.get('/get-all/:idPontoAtendimento', validateToken, async (req, res) => {
     try {

@@ -246,6 +246,13 @@ const Api = {
             return err;
         });
     },
+    getAgendamentoPontoAtendimentoByPlaca: async ({idPontoAtendimento, placa}) => {
+        return await axios.get(`${API_BASE}/scanner/get-agendamento-pontoatendimento-by-placa/${idPontoAtendimento}/${placa}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    }
 }
 
 export default Api;

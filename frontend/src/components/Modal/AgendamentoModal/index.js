@@ -142,9 +142,19 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
     >
       <div className="agendamento-modal-content">
         <div className="vehicle-info">
+          {vehicleData?.nomeSocio && (
+            <p className="socio-name">
+              <strong>Sócio: {vehicleData?.nomeSocio}</strong>
+            </p>
+          )}
           <p className="vehicle-plate">
             <strong>Placa: {vehicleData?.placa}</strong>
           </p>
+          {vehicleData?.veiculo && (
+            <p className="vehicle-details">
+              <strong>Veículo: {vehicleData?.veiculo}</strong>
+            </p>
+          )}
           <p className="info-text">
             Preencha os dados abaixo para criar um novo agendamento.
           </p>
