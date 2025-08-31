@@ -211,6 +211,41 @@ const Api = {
             return err;
         });
     },
+    getLaudosAgendamento: async ({idSocioVeiculoAgenda}) => {
+        return await axios.get(`${API_BASE}/agendamentos/get-laudos/${idSocioVeiculoAgenda}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    deletarLaudoAgendamento: async ({idSocioVeiculoAgendaLaudo}) => {
+        return await axios.post(`${API_BASE}/agendamentos/deletar-laudo`, {idSocioVeiculoAgendaLaudo}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    adicionarLaudoAgendamento: async ({idSocioVeiculoAgenda, idPontoAtendimentoUsuario, laudo, nomeArquivo, data}) => {
+        return await axios.post(`${API_BASE}/agendamentos/adicionar-laudo`, {idSocioVeiculoAgenda, idPontoAtendimentoUsuario, laudo, nomeArquivo, data}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    getAvaliacaoMediaPontoAtendimento: async ({idPontoAtendimento}) => {
+         return await axios.get(`${API_BASE}/avaliacoes/get-average/${idPontoAtendimento}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    getAvaliacoesPontoAtendimento: async ({idPontoAtendimento}) => {
+        return await axios.get(`${API_BASE}/avaliacoes/get-all/${idPontoAtendimento}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
 }
 
 export default Api;

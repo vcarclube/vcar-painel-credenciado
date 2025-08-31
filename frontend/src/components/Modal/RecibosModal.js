@@ -80,7 +80,6 @@ const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo, onAddRecibo })
         };
         
         await onAddRecibo(reciboData);
-        toast.success('Recibo adicionado com sucesso!');
       }
     } catch (error) {
       console.error('Erro ao fazer upload:', error);
@@ -162,14 +161,14 @@ const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo, onAddRecibo })
                   <div className="recibo-info">
                     <h4 className="recibo-name">{recibo.NomeArquivo}</h4>
                     <div className="recibo-details">
-                      <span className="recibo-size" style={{display: 'none'}}>{formatFileSize(recibo.tamanho)}</span>
+                      <span className="recibo-size" style={{display: 'none'}}>{formatFileSize(recibo?.tamanho)}</span>
                       <span className="recibo-date">Adicionado em {new Date(recibo.DataLog).toLocaleDateString()}</span>
                       {recibo.valor && (
                         <span className="recibo-value">{formatCurrency(recibo.valor)}</span>
                       )}
                     </div>
-                    {recibo.descricao && (
-                      <p className="recibo-description">{recibo.descricao}</p>
+                    {recibo?.descricao && (
+                      <p className="recibo-description">{recibo?.descricao}</p>
                     )}
                   </div>
                   

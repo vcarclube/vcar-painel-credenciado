@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import Modal from './index';
 import { Button } from '../index';
 import { FiFileText, FiTrash2, FiUpload, FiDownload } from 'react-icons/fi';
+import Api from '../../Api';
+import { toast } from 'react-toastify';
 
-const LaudosModal = ({ isOpen, onClose, laudos, onRemoveLaudo }) => {
+const LaudosModal = ({ isOpen, onClose, laudos, onRemoveLaudo, onAddLaudo }) => {
   const [loading, setLoading] = useState(false);
 
   const handleClose = () => {
@@ -17,10 +19,47 @@ const LaudosModal = ({ isOpen, onClose, laudos, onRemoveLaudo }) => {
         await onRemoveLaudo(laudoId);
       } catch (error) {
         console.error('Erro ao remover laudo:', error);
-        alert('Erro ao remover laudo. Tente novamente.');
+        toast.error('Erro ao remover laudo');
       } finally {
         setLoading(false);
       }
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setLoading(true);
+    try {
+      // Fazer upload do arquivo
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadResponse = await Api.upload(formData);
+      
+      if (uploadResponse.success) {
+        // Adicionar o laudo com dados básicos do arquivo
+        const laudoData = {
+          nome: file.name,
+          arquivo: uploadResponse.file,
+          nomeArquivo: uploadResponse.file,
+          notaFiscal: uploadResponse.file,
+          tamanho: file.size,
+          data: new Date().toISOString(),
+          dataUpload: new Date().toLocaleDateString('pt-BR')
+        };
+        
+        await onAddLaudo(laudoData);
+        toast.success('Laudo adicionado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error('Erro ao fazer upload do laudo');
+    } finally {
+      setLoading(false);
+      // Limpar o input
+      e.target.value = '';
     }
   };
 
@@ -55,16 +94,24 @@ const LaudosModal = ({ isOpen, onClose, laudos, onRemoveLaudo }) => {
             <FiFileText className="laudos-empty-icon" />
             <h4>Nenhum laudo adicionado</h4>
             <p>Os laudos adicionados à esta OS aparecerão aqui.</p>
-            <Button
-              variant="primary"
-              onClick={() => {
-                // Aqui seria implementada a funcionalidade de upload
-                console.log('Implementar upload de laudo');
-              }}
-            >
-              <FiUpload size={16} />
-              Adicionar Primeiro Laudo
-            </Button>
+            <div className="upload-input-container">
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                onChange={handleFileUpload}
+                disabled={loading}
+                id="laudo-upload"
+                style={{ display: 'none' }}
+              />
+              <Button
+                variant="primary"
+                onClick={() => document.getElementById('laudo-upload').click()}
+                disabled={loading}
+              >
+                <FiUpload size={16} />
+                {loading ? 'Enviando...' : 'Adicionar Primeiro Laudo'}
+              </Button>
+            </div>
           </div>
         ) : (
           <>
@@ -72,33 +119,41 @@ const LaudosModal = ({ isOpen, onClose, laudos, onRemoveLaudo }) => {
               <div className="laudos-count">
                 <span>{laudos.length} laudo{laudos.length !== 1 ? 's' : ''} encontrado{laudos.length !== 1 ? 's' : ''}</span>
               </div>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  // Aqui seria implementada a funcionalidade de upload
-                  console.log('Implementar upload de laudo');
-                }}
-              >
-                <FiUpload size={16} />
-                Adicionar Laudo
-              </Button>
+              <div className="upload-input-container">
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={handleFileUpload}
+                  disabled={loading}
+                  id="laudo-upload-list"
+                  style={{ display: 'none' }}
+                />
+                <Button
+                  variant="primary"
+                  onClick={() => document.getElementById('laudo-upload-list').click()}
+                  disabled={loading}
+                >
+                  <FiUpload size={16} />
+                  {loading ? 'Enviando...' : 'Adicionar Laudo'}
+                </Button>
+              </div>
             </div>
             
             <div className="laudos-list">
               {laudos.map(laudo => (
-                <div key={laudo.id} className="laudo-item">
+                <div key={laudo.IdSocioVeiculoAgendaLaudo} className="laudo-item">
                   <div className="laudo-icon">
                     <FiFileText size={24} />
                   </div>
                   
                   <div className="laudo-info">
-                    <h4 className="laudo-name">{laudo.nome}</h4>
+                    <h4 className="laudo-name">{laudo.NomeArquivo}</h4>
                     <div className="laudo-details">
-                      <span className="laudo-size">{formatFileSize(laudo.tamanho)}</span>
-                      <span className="laudo-date">Adicionado em {laudo.dataUpload}</span>
+                      <span className="laudo-size">{formatFileSize(laudo?.tamanho)}</span>
+                      <span className="laudo-date">Adicionado em {new Date(laudo.DataLog).toLocaleDateString()}</span>
                     </div>
                     {laudo.descricao && (
-                      <p className="laudo-description">{laudo.descricao}</p>
+                      <p className="laudo-description">{laudo?.descricao}</p>
                     )}
                   </div>
                   
@@ -112,7 +167,7 @@ const LaudosModal = ({ isOpen, onClose, laudos, onRemoveLaudo }) => {
                     </button>
                     <button
                       className="laudo-action-btn laudo-remove-btn"
-                      onClick={() => handleRemove(laudo.id)}
+                      onClick={() => handleRemove(laudo.IdSocioVeiculoAgendaLaudo )}
                       disabled={loading}
                       title="Excluir laudo"
                     >

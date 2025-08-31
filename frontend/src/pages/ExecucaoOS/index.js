@@ -69,24 +69,7 @@ const ExecutaOS = () => {
   // Estados para modal de confirmação de exclusão
   const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] = useState(false);
   const [servicoToDelete, setServicoToDelete] = useState(null);
-  const [laudos, setLaudos] = useState([
-    {
-      id: 1,
-      nome: 'Laudo_Tecnico_Motor_001.pdf',
-      tamanho: 2048576, // 2MB
-      dataUpload: '15/01/2024',
-      descricao: 'Laudo técnico completo do motor do veículo',
-      url: '#'
-    },
-    {
-      id: 2,
-      nome: 'Laudo_Eletrico_Sistema.pdf',
-      tamanho: 1536000, // 1.5MB
-      dataUpload: '15/01/2024',
-      descricao: 'Análise do sistema elétrico',
-      url: '#'
-    }
-  ]);
+  const [laudos, setLaudos] = useState([]);
   const [recibos, setRecibos] = useState([]);
   
   const [todosServicos, setTodosServicos] = useState([]);
@@ -104,6 +87,7 @@ const ExecutaOS = () => {
     getFotosAgendamento();
     getAnotacoesAgendamento();
     getNotasFiscaisAgendamento();
+    getLaudosAgendamento();
   }, [idSocioVeiculoAgenda, videoInicialUploaded]);
 
   // Inicializar FFmpeg para compressão
@@ -629,9 +613,52 @@ const ExecutaOS = () => {
     setDropdownOpen(false);
   };
   
-  // Handlers para laudos
-  const handleRemoveLaudo = (id) => {
-    setLaudos(laudos.filter(laudo => laudo.id !== id));
+  // Função para carregar laudos da API
+  const getLaudosAgendamento = async () => {
+    try {
+      const response = await Api.getLaudosAgendamento({ idSocioVeiculoAgenda });
+      if (response) {
+        setLaudos(response?.data.laudos || []);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar laudos:', error);
+      toast.error('Erro ao carregar laudos');
+    }
+  };
+
+  // Função para adicionar laudo
+  const handleAddLaudo = async (laudoData) => {
+    console.log(laudoData)
+    try {
+      const response = await Api.adicionarLaudoAgendamento({
+        idSocioVeiculoAgenda,
+        idPontoAtendimentoUsuario: user.IdPontoAtendimentoUsuario,
+        ...laudoData
+      });
+      
+      if (response) {
+        // Recarregar a lista de laudos
+        await getLaudosAgendamento();
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar laudo:', error);
+      toast.error('Erro ao adicionar laudo');
+      throw error;
+    }
+  };
+
+  // Função para remover laudo
+  const handleRemoveLaudo = async (laudoId) => {
+    try {
+      await Api.deletarLaudoAgendamento({ idSocioVeiculoAgendaLaudo: laudoId });
+      // Recarregar a lista de laudos
+      await getLaudosAgendamento();
+      toast.success('Laudo removido com sucesso!');
+    } catch (error) {
+      console.error('Erro ao remover laudo:', error);
+      toast.error('Erro ao remover laudo');
+      throw error;
+    }
   };
   
   // Função para carregar recibos da API
@@ -1451,8 +1478,8 @@ const ExecutaOS = () => {
         isOpen={isLaudosModalOpen}
         onClose={() => setIsLaudosModalOpen(false)}
         laudos={laudos}
-        setLaudos={setLaudos}
         onRemoveLaudo={handleRemoveLaudo}
+        onAddLaudo={handleAddLaudo}
       />
       
       {/* Modal de Recibos */}

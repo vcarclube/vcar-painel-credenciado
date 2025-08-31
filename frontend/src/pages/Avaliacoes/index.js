@@ -1,85 +1,84 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { FiStar, FiUser, FiCalendar, FiClock } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation } from '../../components';
+import { MainContext } from '../../helpers/MainContext';
+import Api from '../../Api';
+import { toast } from 'react-toastify';
 import './style.css';
 
 const Avaliacoes = () => {
+  const { user } = useContext(MainContext);
   const [avaliacoes, setAvaliacoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroEstrelas, setFiltroEstrelas] = useState('todas');
+  const [mediaEstrelas, setMediaEstrelas] = useState(0);
+  const [totalAvaliacoes, setTotalAvaliacoes] = useState(0);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Dados simulados de avaliações
+  // Carregar avaliações da API
   useEffect(() => {
-    setTimeout(() => {
-      setAvaliacoes([
-        {
-          id: 1,
-          cliente: 'DYLLAN NICOLAU DA SILVA',
-          documento: 'CPF: 699.993.050-07',
-          veiculo: 'JEEP COMPASS 2021/2021',
-          placa: 'RCI-9FT1',
-          osNumero: '1421',
-          estrelas: 5,
-          comentario: 'Excelente atendimento! O mecânico foi muito profissional e explicou tudo detalhadamente. Serviço de qualidade e pontualidade impecável. Recomendo!',
-          data: '15/01/2024',
-          hora: '14:30'
-        },
-        {
-          id: 2,
-          cliente: 'MARIA SANTOS OLIVEIRA',
-          documento: 'CPF: 123.456.789-00',
-          veiculo: 'HONDA CIVIC 2020/2020',
-          placa: 'ABC-1234',
-          osNumero: '1420',
-          estrelas: 4,
-          comentario: 'Bom atendimento, serviço realizado conforme esperado. Apenas o tempo de espera foi um pouco maior que o previsto, mas no geral estou satisfeita.',
-          data: '14/01/2024',
-          hora: '10:15'
-        },
-        {
-          id: 3,
-          cliente: 'JOÃO CARLOS PEREIRA',
-          documento: 'CPF: 987.654.321-11',
-          veiculo: 'TOYOTA COROLLA 2019/2019',
-          placa: 'XYZ-9876',
-          osNumero: '1419',
-          estrelas: 5,
-          comentario: 'Perfeito! Problema resolvido rapidamente e com preço justo. Equipe muito competente e atenciosa. Voltarei sempre que precisar.',
-          data: '13/01/2024',
-          hora: '16:45'
-        },
-        {
-          id: 4,
-          cliente: 'ANA PAULA RODRIGUES',
-          documento: 'CPF: 456.789.123-22',
-          veiculo: 'VOLKSWAGEN GOL 2018/2018',
-          placa: 'DEF-5678',
-          osNumero: '1418',
-          estrelas: 3,
-          comentario: 'Serviço ok, mas poderia ter sido mais rápido. O atendimento foi cordial, porém senti falta de mais informações sobre o que estava sendo feito.',
-          data: '12/01/2024',
-          hora: '09:20'
-        },
-        {
-          id: 5,
-          cliente: 'CARLOS EDUARDO LIMA',
-          documento: 'CPF: 789.123.456-33',
-          veiculo: 'FORD FIESTA 2017/2017',
-          placa: 'GHI-9012',
-          osNumero: '1417',
-          estrelas: 5,
-          comentario: 'Excepcional! Desde o agendamento até a finalização do serviço, tudo foi perfeito. Profissionais qualificados e honestos. Muito obrigado!',
-          data: '11/01/2024',
-          hora: '13:10'
+    const carregarAvaliacoes = async () => {
+      if (!user?.IdPontoAtendimento) return;
+      
+      try {
+        setLoading(true);
+        
+        // Carregar média das avaliações
+        const mediaResponse = await Api.getAvaliacaoMediaPontoAtendimento({ 
+          idPontoAtendimento: user.IdPontoAtendimento 
+        });
+        
+        if (mediaResponse?.status === 200) {
+          setMediaEstrelas(mediaResponse.data.MediaNotas || 0);
+          setTotalAvaliacoes(mediaResponse.data.TotalAvaliacoes || 0);
         }
-      ]);
-      setLoading(false);
-    }, 0);
-  }, []);
+        
+        // Carregar todas as avaliações
+        const avaliacoesResponse = await Api.getAvaliacoesPontoAtendimento({ 
+          idPontoAtendimento: user.IdPontoAtendimento 
+        });
+        
+        if (avaliacoesResponse?.status === 200 && avaliacoesResponse.data) {
+          // Transformar os dados da API para o formato esperado pela interface
+          const avaliacoesFormatadas = Array.isArray(avaliacoesResponse.data) 
+            ? avaliacoesResponse.data.map((avaliacao, index) => ({
+                id: avaliacao.IdSocioVeiculoAgenda || index + 1,
+                cliente: 'Cliente não informado', // API não retorna nome do cliente
+                documento: '', // API não retorna documento
+                veiculo: `${avaliacao.MarcaVeiculo} ${avaliacao.ModeloVeiculo} ${avaliacao.AnoVeiculo}`,
+                placa: avaliacao.PlacaVeiculo,
+                osNumero: avaliacao.NumeroOS,
+                estrelas: avaliacao.Nota,
+                comentario: avaliacao.Observacoes || 'Sem comentários',
+                data: new Date(avaliacao.DataLog).toLocaleDateString('pt-BR'),
+                hora: new Date(avaliacao.DataLog).toLocaleTimeString('pt-BR', { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })
+              }))
+            : [];
+          
+          setAvaliacoes(avaliacoesFormatadas);
+        } else {
+          setAvaliacoes([]);
+        }
+        
+      } catch (error) {
+        console.error('Erro ao carregar avaliações:', error);
+        toast.error('Erro ao carregar avaliações');
+        setAvaliacoes([]);
+        setMediaEstrelas(0);
+        setTotalAvaliacoes(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    carregarAvaliacoes();
+  }, [user?.IdPontoAtendimento]);
 
   // Função para renderizar estrelas
   const renderEstrelas = (quantidade) => {
@@ -99,11 +98,10 @@ const Avaliacoes = () => {
     ? avaliacoes 
     : avaliacoes.filter(avaliacao => avaliacao.estrelas === parseInt(filtroEstrelas));
 
-  // Calcular estatísticas
-  const totalAvaliacoes = avaliacoes.length;
-  const mediaEstrelas = totalAvaliacoes > 0 
+  // Calcular estatísticas locais para distribuição
+  const mediaEstrelasLocal = totalAvaliacoes > 0 
     ? (avaliacoes.reduce((acc, curr) => acc + curr.estrelas, 0) / totalAvaliacoes).toFixed(1)
-    : 0;
+    : mediaEstrelas.toFixed(1);
 
   const distribuicaoEstrelas = [5, 4, 3, 2, 1].map(estrela => {
     const quantidade = avaliacoes.filter(av => av.estrelas === estrela).length;
@@ -145,7 +143,7 @@ const Avaliacoes = () => {
           <div className="avaliacoes__resumo">
             <div className="avaliacoes__resumo-card">
               <div className="avaliacoes__media">
-                <span className="avaliacoes__media-numero">{mediaEstrelas}</span>
+                <span className="avaliacoes__media-numero">{mediaEstrelas.toFixed(1)}</span>
                 <div className="avaliacoes__media-estrelas">
                   {renderEstrelas(Math.round(parseFloat(mediaEstrelas)))}
                 </div>

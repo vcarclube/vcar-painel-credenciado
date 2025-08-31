@@ -766,7 +766,7 @@ router.get('/servicos-vinculados/:idSocioVeiculoAgenda', validateToken, async (r
         const servicos = result.recordset;
 
         return res.status(200).json({
-            servicos
+            servicos: servicos.filter(s => { return!s.label.includes("RESERVA DE AGENDA")})
         });
 
     } catch (error) {
@@ -1018,20 +1018,6 @@ router.get('/get-anotacoes/:idSocioVeiculoAgenda', validateToken, async (req, re
   }
 })
 
-
-/*
-
-SELECT TOP (1000) [IdSocioVeiculoAgendaNotaFiscal]
-      ,[IdSocioVeiculoAgenda]
-      ,[IdUsuario]
-      ,[DataLog]
-      ,[Arquivo]
-      ,[NomeArquivo]
-  FROM [vcarclube].[dbo].[SociosVeiculosAgendaNotasFiscais]
-
-
-*/
-
 router.get('/get-notas-fiscais/:idSocioVeiculoAgenda', validateToken, async (req, res) => {
   try{
 
@@ -1122,6 +1108,93 @@ router.post('/deletar-nota-fiscal', validateToken, async (req, res) => {
     });
   }catch (error) {
     console.error('Erro ao deletar nota fiscal:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
+router.get('/get-laudos/:idSocioVeiculoAgenda', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgenda } = req.params;
+    if (!idSocioVeiculoAgenda) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda é obrigatório' 
+      });
+    }
+    const laudos = await db.query(`
+      SELECT * FROM SociosVeiculosAgendaLaudos
+      WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda;
+    `, { idSocioVeiculoAgenda });
+    return res.status(200).json({
+      message: 'Laudos recuperados com sucesso',
+      laudos: laudos?.recordset
+    });
+  }catch (error) {
+    console.error('Erro ao recuperar laudos:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
+router.post('/adicionar-laudo', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgenda, idPontoAtendimentoUsuario, nomeArquivo, data } = req.body;
+    if (!idSocioVeiculoAgenda || !idPontoAtendimentoUsuario || !nomeArquivo || !data) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgenda, idPontoAtendimentoUsuario, laudo, nomeArquivo e data são obrigatórios' 
+      });
+    }
+    let idSocioVeiculoAgendaLaudoGenerated = Utils.generateUUID();
+    await db.query(`
+      INSERT INTO SociosVeiculosAgendaLaudos (
+        IdSocioVeiculoAgendaLaudo,
+        IdSocioVeiculoAgenda,
+        IdUsuario,
+        DataLog,
+        Arquivo,
+        NomeArquivo
+      )
+      VALUES (
+        @idSocioVeiculoAgendaLaudoGenerated,
+        @idSocioVeiculoAgenda,
+        @idPontoAtendimentoUsuario,
+        @data,
+        @nomeArquivo,
+        @nomeArquivo
+      );
+    `, { 
+      idSocioVeiculoAgendaLaudoGenerated,
+      idSocioVeiculoAgenda,
+      idPontoAtendimentoUsuario,
+      data,
+      nomeArquivo,
+      nomeArquivo
+    });
+    return res.status(200).json({
+      message: 'Laudo adicionado com sucesso',
+      laudo: idSocioVeiculoAgendaLaudoGenerated
+    });
+  }catch (error) {
+    console.error('Erro ao adicionar laudo:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+})
+
+router.post('/deletar-laudo', validateToken, async (req, res) => {
+  try{
+    const { idSocioVeiculoAgendaLaudo } = req.body;
+    if (!idSocioVeiculoAgendaLaudo) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idSocioVeiculoAgendaLaudo é obrigatório' 
+      });
+    }
+    await db.query(`
+      DELETE FROM SociosVeiculosAgendaLaudos
+      WHERE IdSocioVeiculoAgendaLaudo = @idSocioVeiculoAgendaLaudo;
+    `, { idSocioVeiculoAgendaLaudo });
+    return res.status(200).json({
+      message: 'Laudo deletado com sucesso'
+    });
+  }catch (error) {
+    console.error('Erro ao deletar laudo:', error);
     return res.status(400).json({ message: error.message, data: null });
   }
 })

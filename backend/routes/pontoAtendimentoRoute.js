@@ -29,7 +29,7 @@ router.get('/servicos/:idPontoAtendimento', validateToken, async (req, res) => {
     let servicos = result.recordset;
 
     return res.status(200).json({
-      servicos
+      servicos: servicos.filter(s => { return!s.label.includes("RESERVA DE AGENDA")})
     });
   } catch (error) {
     console.error('Erro ao obter servicos:', error);
