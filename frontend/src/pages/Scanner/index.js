@@ -593,7 +593,7 @@ const Scanner = () => {
 
     try {
       setEnviandoConvite(true);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await Api.enviarConvite({telefone: telefoneConvite, placa: detectedPlate});
       toast.success('Convite enviado com sucesso!');
       setShowConviteModal(false);
       setTelefoneConvite('');

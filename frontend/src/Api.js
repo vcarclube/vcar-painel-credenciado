@@ -259,6 +259,13 @@ const Api = {
         }).catch(err => {
             return err;
         });
+    },
+    enviarConvite: async ({telefone, placa}) => {
+        return await axios.post(`${API_BASE}/scanner/enviar-convite`, {telefone, placa}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
     }
 }
 

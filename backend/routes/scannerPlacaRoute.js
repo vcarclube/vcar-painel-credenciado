@@ -4,6 +4,7 @@ const router = express.Router();
 const { validateToken } = require('../middlewares/AuthMiddleware');
 
 const db = require('../database');
+const Utils = require('../utils');
 
 router.get('/get-agendamento-pontoatendimento-by-placa/:idPontoAtendimento/:placa', validateToken, async (req, res) => {
     try {
@@ -56,5 +57,31 @@ router.get('/get-agendamento-pontoatendimento-by-placa/:idPontoAtendimento/:plac
         return res.status(500).json({ message: "Erro no servidor. Tente novamente mais tarde." });
     }
 });
+
+router.post("/enviar-convite", validateToken, async (req, res) => {
+    try {
+        const { telefone, placa } = req.body;
+
+        await Utils.notificarWhatsapp({
+      phone: telefone,
+      message: `
+🚗💚 Proteja seu carro '${placa}' com quem entende de cuidado!
+
+Venha fazer parte da VCarClube, o plano de saúde veicular feito pra quem ama o seu carro! 🛠️🔧
+Com benefícios exclusivos, assistência 24h e muito mais!
+
+Seja um sócio agora mesmo 👉 https://socio.vcarclube.com.br/
+
+💚 Seu carro merece esse cuidado!
+      `
+    });
+
+    return res.status(200).json({ message: "Convite enviado com sucesso!" });
+
+    } catch (error) {
+        console.error('Erro no login:', error);
+        return res.status(500).json({ message: "Erro no servidor. Tente novamente mais tarde." });
+    }
+})
     
 module.exports = router;
