@@ -65,7 +65,7 @@ const Scanner = () => {
       workerRef.current = await createWorker('eng');
       
       await workerRef.current.setParameters({
-        tessedit_pageseg_mode: 6, // Bloco uniforme de texto
+        tessedit_pageseg_mode: 7, // ALTERADO: De 6 para 7 - trata como uma única linha de texto
         tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
         tessedit_ocr_engine_mode: 1,
         preserve_interword_spaces: '1',
@@ -469,7 +469,10 @@ const Scanner = () => {
         fullLength: detectedText.length
       });
       
-      if (confidence > 15) { // Threshold mais baixo
+      // ALTERAÇÃO: Aceitar qualquer resultado (confiança >= 0) OU se o texto tem formato de placa
+      const hasPlatePattern = /[A-Z]{3}[0-9]{4}|[A-Z]{3}[0-9][A-Z][0-9]{2}/.test(detectedText.replace(/[^A-Z0-9]/g, ''));
+      
+      if (confidence >= 0 || hasPlatePattern) { // ALTERADO: de 15 para 0
         // Extrair todas as possíveis placas
         const possiblePlates = extractAllPossiblePlates(detectedText);
         
@@ -707,10 +710,10 @@ const Scanner = () => {
                         <span className="scan-plate-text">{detectedPlate}</span>
                       </div>
                       <div className="scan-plate-actions">
-                        <Button variant='primary' onClick={confirmarPlaca}>
+                        {/*<Button variant='primary' onClick={confirmarPlaca}>
                           <FiCheck />
                           Confirmar
-                        </Button>
+                        </Button>*/}
                         <Button variant='transparent' onClick={tentarNovamente}>
                           <FiRefreshCw />
                           Tentar Novamente
