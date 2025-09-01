@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect, useContext } from 'react';
+import React, { useState, useRef, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCamera, FiX, FiRefreshCw, FiCheck, FiAlertCircle, FiUser, FiPhone } from 'react-icons/fi';
+import { FiCamera, FiRefreshCw, FiCheck, FiAlertCircle, FiUser, FiPhone } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation, AgendamentoModal, Button, Modal, Input } from '../../components';
 import { MainContext } from '../../helpers/MainContext';
 import Api from '../../Api';
@@ -8,7 +8,6 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useMask } from '@react-input/mask';
 import { createWorker } from 'tesseract.js';
-// import cv from 'opencv.js'; // Desabilitado devido a problemas de memória
 import '../Home/style.css';
 import './style.css';
 
@@ -17,6 +16,11 @@ const Scanner = () => {
   const navigate = useNavigate();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const workerRef = useRef(null);
+  const scanIntervalRef = useRef(null);
+  const isProcessingRef = useRef(false);
+  const isScanningActiveRef = useRef(false);
+  
   const [isScanning, setIsScanning] = useState(false);
   const [stream, setStream] = useState(null);
   const [detectedPlate, setDetectedPlate] = useState('');
@@ -27,650 +31,543 @@ const Scanner = () => {
   const [telefoneConvite, setTelefoneConvite] = useState('');
   const [enviandoConvite, setEnviandoConvite] = useState(false);
   const [error, setError] = useState('');
-  const [cameraPermission, setCameraPermission] = useState('checking'); // 'checking', 'granted', 'denied'
+  const [cameraPermission, setCameraPermission] = useState('checking');
+  const [scanCount, setScanCount] = useState(0);
 
-  // Verificar permissões da câmera
-  const checkCameraPermissions = async () => {
+  // Lista de palavras irrelevantes para filtrar
+  const IRRELEVANT_WORDS = [
+    'BRASIL', 'BRAZIL', 'MERCOSUL', 'MERCOSUR', 'REPUBLICA', 'FEDERATIVA',
+    // Estados
+    'ACRE', 'ALAGOAS', 'AMAPA', 'AMAZONAS', 'BAHIA', 'CEARA', 'DISTRITO', 'FEDERAL',
+    'ESPIRITO', 'SANTO', 'GOIAS', 'MARANHAO', 'MATO', 'GROSSO', 'MINAS', 'GERAIS',
+    'PARA', 'PARAIBA', 'PARANA', 'PERNAMBUCO', 'PIAUI', 'RIO', 'JANEIRO', 'GRANDE',
+    'NORTE', 'SUL', 'RONDONIA', 'RORAIMA', 'SANTA', 'CATARINA', 'SAO', 'PAULO',
+    'SERGIPE', 'TOCANTINS',
+    // Siglas dos estados
+    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+    'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+    // Cidades comuns
+    'BRASILIA', 'SALVADOR', 'FORTALEZA', 'RECIFE', 'MANAUS', 'BELEM', 'GOIANIA',
+    'CURITIBA', 'FLORIANOPOLIS', 'VITORIA', 'ARACAJU', 'MACEIO', 'JOAO', 'PESSOA',
+    'NATAL', 'TERESINA', 'CUIABA', 'PALMAS', 'MACAPA', 'BOA', 'VISTA', 'PORTO', 'ALEGRE',
+    // Palavras comuns em placas
+    'VEICULO', 'AUTOMOVEL', 'CARRO', 'MOTO', 'MOTOCICLETA', 'CAMINHAO', 'ONIBUS'
+  ];
+
+  // Inicializar worker do Tesseract
+  const initializeWorker = useCallback(async () => {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setCameraPermission('denied');
-        setError('Seu navegador não suporta acesso à câmera');
-        return false;
+      if (workerRef.current) {
+        await workerRef.current.terminate();
       }
-
-      // Verificar se está em HTTPS (necessário para câmera)
-        const isSecure = window.location.protocol === 'https:' || 
-                        window.location.hostname === 'localhost' || 
-                        window.location.hostname === '127.0.0.1' ||
-                        window.location.hostname === '0.0.0.0';
-        
-        if (!isSecure) {
-          setCameraPermission('denied');
-          setError('Acesso à câmera requer conexão segura (HTTPS) ou localhost');
-          return false;
-        }
-        
-        console.log('Protocolo verificado:', window.location.protocol, 'Host:', window.location.hostname);
-
+      
+      console.log('🔧 Inicializando worker OCR...');
+      workerRef.current = await createWorker('eng');
+      
+      await workerRef.current.setParameters({
+        tessedit_pageseg_mode: 6, // Bloco uniforme de texto
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        tessedit_ocr_engine_mode: 1,
+        preserve_interword_spaces: '1',
+        user_defined_dpi: '300',
+        tessedit_zero_rejection: '1'
+      });
+      
+      console.log('✅ Worker OCR inicializado com sucesso');
       return true;
-    } catch (err) {
-      console.error('Erro ao verificar permissões:', err);
-      setCameraPermission('denied');
-      setError('Erro ao verificar permissões da câmera');
+    } catch (error) {
+      console.error('❌ Erro ao inicializar worker:', error);
       return false;
     }
-  };
+  }, []);
 
   // Iniciar câmera
-  const startCamera = async () => {
-    try {
-      console.log('Tentando iniciar câmera...');
-      setError('');
-      setCameraPermission('checking');
-      
-      const hasPermission = await checkCameraPermissions();
-      if (!hasPermission) return;
-      
-      // Tentar primeiro com configurações básicas
-      let mediaStream;
-      try {
-        // Tentar com configurações específicas
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'environment', // Câmera traseira no mobile
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          }
-        });
-      } catch (specificError) {
-        console.log('Erro com configurações específicas, tentando configuração básica:', specificError);
-        // Fallback para configuração básica
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: true
-        });
-      }
-      
-      console.log('Stream obtido:', mediaStream);
-      setCameraPermission('granted');
-      
-      // Aguardar o elemento de vídeo estar disponível
-      const waitForVideoElement = () => {
-        return new Promise((resolve, reject) => {
-          let attempts = 0;
-          const maxAttempts = 20; // 2 segundos máximo
-          
-          const checkElement = () => {
-            if (videoRef.current) {
-              resolve(videoRef.current);
-            } else if (attempts < maxAttempts) {
-              attempts++;
-              setTimeout(checkElement, 100);
-            } else {
-              reject(new Error('Elemento de vídeo não encontrado após 2 segundos'));
-            }
-          };
-          
-          checkElement();
-        });
-      };
-      
-      try {
-        const videoElement = await waitForVideoElement();
-        console.log('Elemento de vídeo encontrado:', videoElement);
-        
-        videoElement.srcObject = mediaStream;
-        setStream(mediaStream);
-        
-        // Aguardar o vídeo estar pronto
-        videoElement.onloadedmetadata = () => {
-          console.log('Metadados do vídeo carregados');
-          videoElement.play().then(() => {
-            console.log('Vídeo iniciado com sucesso');
-            setIsScanning(true);
-          }).catch(playError => {
-            console.error('Erro ao reproduzir vídeo:', playError);
-            setError(`Erro ao reproduzir vídeo: ${playError.message}`);
-          });
-        };
-        
-        console.log('Stream atribuído ao vídeo');
-      } catch (elementError) {
-        console.error('Erro ao aguardar elemento de vídeo:', elementError);
-        setError('Erro interno: elemento de vídeo não disponível');
-        // Parar o stream se não conseguir usar
-        if (mediaStream) {
-          mediaStream.getTracks().forEach(track => track.stop());
-        }
-      }
-    } catch (err) {
-      console.error('Erro ao acessar câmera:', err);
-      setCameraPermission('denied');
-      if (err.name === 'NotAllowedError') {
-        setError('Permissão para acessar a câmera foi negada. Clique no ícone da câmera na barra de endereços e permita o acesso.');
-      } else if (err.name === 'NotFoundError') {
-        setError('Nenhuma câmera foi encontrada no dispositivo.');
-      } else {
-        setError(`Não foi possível acessar a câmera: ${err.message}`);
-      }
-    }
-  };
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-
-  // Iniciar câmera automaticamente ao carregar a página
-  useEffect(() => {
-    console.log('Componente Scanner montado, iniciando câmera...');
-    // Adicionar um pequeno delay para garantir que o DOM esteja pronto
-    const timer = setTimeout(() => {
-      startCamera();
-    }, 0);
+  const startCamera = useCallback(async () => {
+    console.log('📹 Iniciando câmera...');
+    setError('');
+    setIsProcessing(false);
+    isProcessingRef.current = false;
+    setCameraPermission('checking');
+    setIsScanning(false);
+    isScanningActiveRef.current = false;
+    setScanCount(0);
     
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Parar câmera
-  const stopCamera = () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
+    
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Câmera não suportada pelo navegador');
+      }
+
+      const constraints = [
+        { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } },
+        { video: { facingMode: 'environment' } },
+        { video: true }
+      ];
+
+      let mediaStream = null;
+      for (let i = 0; i < constraints.length; i++) {
+        try {
+          console.log(`🔄 Tentando configuração de câmera ${i + 1}...`);
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints[i]);
+          break;
+        } catch (err) {
+          console.log(`❌ Configuração ${i + 1} falhou:`, err.message);
+        }
+      }
+      
+      if (!mediaStream) {
+        throw new Error('Não foi possível acessar a câmera');
+      }
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        setStream(mediaStream);
+        
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Timeout ao carregar vídeo')), 8000);
+          
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play()
+              .then(() => {
+                clearTimeout(timeout);
+                console.log('✅ Vídeo carregado:', {
+                  width: videoRef.current.videoWidth,
+                  height: videoRef.current.videoHeight
+                });
+                resolve();
+              })
+              .catch(reject);
+          };
+          
+          videoRef.current.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error('Erro no vídeo'));
+          };
+        });
+        
+        setCameraPermission('granted');
+        setIsScanning(true);
+        isScanningActiveRef.current = true;
+        
+        // Inicializar worker e começar scanner
+        const workerReady = await initializeWorker();
+        if (workerReady) {
+          setTimeout(() => {
+            console.log('🚀 Iniciando scanner periódico...');
+            startPeriodicScan();
+          }, 1000);
+        }
+      }
+      
+    } catch (err) {
+      console.error('❌ Erro ao acessar câmera:', err);
+      setCameraPermission('denied');
+      setError(err.message || 'Erro ao acessar a câmera');
+    }
+  }, [stream, initializeWorker]);
+
+  // Parar câmera
+  const stopCamera = useCallback(() => {
+    console.log('🛑 Parando câmera e scanner...');
+    
+    isScanningActiveRef.current = false;
+    
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+      scanIntervalRef.current = null;
+    }
+    
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
+    }
+    
     setIsScanning(false);
     setDetectedPlate('');
+    setError('');
+    setIsProcessing(false);
+    isProcessingRef.current = false;
+    setScanCount(0);
+  }, [stream]);
+
+  // Iniciar verificação periódica A CADA SEGUNDO
+  const startPeriodicScan = useCallback(() => {
+    console.log('⏰ Configurando scanner para executar A CADA SEGUNDO...');
+    
+    if (scanIntervalRef.current) {
+      clearInterval(scanIntervalRef.current);
+    }
+    
+    // SCANNER A CADA 1 SEGUNDO
+    scanIntervalRef.current = setInterval(() => {
+      if (!isProcessingRef.current && 
+          isScanningActiveRef.current && 
+          videoRef.current && 
+          canvasRef.current && 
+          workerRef.current &&
+          videoRef.current.readyState >= 2) {
+        
+        setScanCount(prev => prev + 1);
+        console.log(`🔍 Executando scan #${scanCount + 1}...`);
+        captureAndAnalyze();
+      } else {
+        console.log('⏸️ Scanner pausado - condições não atendidas');
+      }
+    }, 1000); // ⭐ A CADA 1 SEGUNDO
+    
+    console.log('✅ Scanner periódico configurado para 1 segundo');
+  }, [scanCount]);
+
+  // Filtrar texto removendo palavras irrelevantes
+  const filterText = (text) => {
+    if (!text) return '';
+    
+    console.log('📝 Texto original:', text);
+    
+    // Converter para maiúsculas e limpar caracteres especiais
+    let cleanText = text.toUpperCase().replace(/[^A-Z0-9\s]/g, ' ');
+    
+    // Remover múltiplos espaços
+    cleanText = cleanText.replace(/\s+/g, ' ').trim();
+    
+    console.log('🧹 Texto limpo:', cleanText);
+    
+    // Dividir em palavras
+    const words = cleanText.split(' ');
+    
+    // Filtrar palavras irrelevantes
+    const filteredWords = words.filter(word => {
+      // Manter palavras com pelo menos 2 caracteres
+      if (word.length < 2) return false;
+      
+      // Remover palavras irrelevantes
+      if (IRRELEVANT_WORDS.includes(word)) return false;
+      
+      // Manter palavras que podem ser parte de placas
+      const hasLetters = /[A-Z]/.test(word);
+      const hasNumbers = /[0-9]/.test(word);
+      
+      // Manter se tem letras E números, ou se é uma sequência de letras/números válida
+      return (hasLetters && hasNumbers) || 
+             (hasLetters && word.length >= 2) || 
+             (hasNumbers && word.length >= 2);
+    });
+    
+    const filteredText = filteredWords.join(' ');
+    console.log('🎯 Texto filtrado:', filteredText);
+    
+    return filteredText;
   };
 
-
-
-
-
-  // Função de pré-processamento otimizada para placas distantes
-  const preprocessImageSimple = (canvas) => {
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
-    const width = canvas.width;
-    const height = canvas.height;
-
-    // Primeiro passo: converter para escala de cinza com pesos otimizados
-    for (let i = 0; i < data.length; i += 4) {
-      const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
-      data[i] = gray;
-      data[i + 1] = gray;
-      data[i + 2] = gray;
-    }
-
-    // Segundo passo: aplicar filtro de nitidez para destacar bordas
-    const sharpened = new Uint8ClampedArray(data.length);
+  // Extrair todas as possíveis placas do texto filtrado
+  const extractAllPossiblePlates = (text) => {
+    const filteredText = filterText(text);
+    if (!filteredText) return [];
     
-    // Kernel de nitidez 3x3
-    const kernel = [
-      0, -1, 0,
-      -1, 5, -1,
-      0, -1, 0
+    console.log('🔍 Buscando placas no texto filtrado:', filteredText);
+    
+    const possiblePlates = [];
+    
+    // 1. Buscar sequências contínuas de 7 caracteres
+    const continuousText = filteredText.replace(/\s+/g, '');
+    console.log('📋 Texto contínuo:', continuousText);
+    
+    for (let i = 0; i <= continuousText.length - 7; i++) {
+      const candidate = continuousText.substring(i, i + 7);
+      
+      // Verificar padrões de placa brasileira
+      if (/^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(candidate)) {
+        possiblePlates.push({ 
+          plate: candidate, 
+          format: 'Mercosul', 
+          source: 'continuous',
+          confidence: 0.9 
+        });
+        console.log('🎯 Placa Mercosul encontrada (contínua):', candidate);
+      } else if (/^[A-Z]{3}[0-9]{4}$/.test(candidate)) {
+        possiblePlates.push({ 
+          plate: candidate, 
+          format: 'Antiga', 
+          source: 'continuous',
+          confidence: 0.9 
+        });
+        console.log('🎯 Placa Antiga encontrada (contínua):', candidate);
+      }
+    }
+    
+    // 2. Buscar padrões com espaços usando regex
+    const patterns = [
+      {
+        regex: /([A-Z]{3})\s*([0-9])\s*([A-Z])\s*([0-9]{2})/g,
+        format: 'Mercosul',
+        confidence: 0.8
+      },
+      {
+        regex: /([A-Z]{3})\s*([0-9]{4})/g,
+        format: 'Antiga',
+        confidence: 0.8
+      }
     ];
     
-    for (let y = 1; y < height - 1; y++) {
-      for (let x = 1; x < width - 1; x++) {
-        let sum = 0;
-        
-        for (let ky = -1; ky <= 1; ky++) {
-          for (let kx = -1; kx <= 1; kx++) {
-            const pixelIndex = ((y + ky) * width + (x + kx)) * 4;
-            const kernelIndex = (ky + 1) * 3 + (kx + 1);
-            sum += data[pixelIndex] * kernel[kernelIndex];
-          }
-        }
-        
-        const currentIndex = (y * width + x) * 4;
-        const sharpValue = Math.min(255, Math.max(0, sum));
-        sharpened[currentIndex] = sharpValue;
-        sharpened[currentIndex + 1] = sharpValue;
-        sharpened[currentIndex + 2] = sharpValue;
-        sharpened[currentIndex + 3] = data[currentIndex + 3];
-      }
-    }
-    
-    // Terceiro passo: aumentar contraste adaptativo
-    for (let i = 0; i < sharpened.length; i += 4) {
-      if (sharpened[i] !== undefined) {
-        const gray = sharpened[i];
-        
-        // Contraste adaptativo baseado na intensidade
-        let contrast;
-        if (gray < 85) {
-          contrast = 2.0; // Alto contraste para áreas escuras
-        } else if (gray < 170) {
-          contrast = 1.8; // Contraste médio
+    patterns.forEach(pattern => {
+      const matches = [...filteredText.matchAll(pattern.regex)];
+      matches.forEach(match => {
+        let plate = '';
+        if (pattern.format === 'Mercosul') {
+          plate = match[1] + match[2] + match[3] + match[4];
         } else {
-          contrast = 1.5; // Contraste baixo para áreas claras
+          plate = match[1] + match[2];
         }
         
-        const factor = (259 * (contrast * 255 + 255)) / (255 * (259 - contrast * 255));
-        const newGray = Math.min(255, Math.max(0, factor * (gray - 128) + 128));
-        
-        data[i] = newGray;
-        data[i + 1] = newGray;
-        data[i + 2] = newGray;
+        if (plate.length === 7) {
+          possiblePlates.push({
+            plate,
+            format: pattern.format,
+            source: 'pattern',
+            confidence: pattern.confidence
+          });
+          console.log(`🎯 Placa ${pattern.format} encontrada (padrão):`, plate);
+        }
+      });
+    });
+    
+    // 3. Buscar combinando palavras adjacentes
+    const words = filteredText.split(/\s+/);
+    for (let i = 0; i < words.length - 1; i++) {
+      const combined = words[i] + words[i + 1];
+      if (combined.length === 7) {
+        if (/^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(combined)) {
+          possiblePlates.push({
+            plate: combined,
+            format: 'Mercosul',
+            source: 'words',
+            confidence: 0.7
+          });
+          console.log('🎯 Placa Mercosul encontrada (palavras):', combined);
+        } else if (/^[A-Z]{3}[0-9]{4}$/.test(combined)) {
+          possiblePlates.push({
+            plate: combined,
+            format: 'Antiga',
+            source: 'words',
+            confidence: 0.7
+          });
+          console.log('🎯 Placa Antiga encontrada (palavras):', combined);
+        }
       }
     }
     
-    // Quarto passo: aplicar threshold adaptativo para binarização
-    const threshold = calculateAdaptiveThreshold(data, width, height);
-    
-    for (let i = 0; i < data.length; i += 4) {
-      const gray = data[i];
-      const binary = gray > threshold ? 255 : 0;
-      
-      data[i] = binary;
-      data[i + 1] = binary;
-      data[i + 2] = binary;
-    }
-    
-    ctx.putImageData(imageData, 0, 0);
-    return canvas;
-  };
-  
-  // Função auxiliar para calcular threshold adaptativo
-  const calculateAdaptiveThreshold = (data, width, height) => {
-    let sum = 0;
-    let count = 0;
-    
-    // Calcular média dos pixels
-    for (let i = 0; i < data.length; i += 4) {
-      sum += data[i];
-      count++;
-    }
-    
-    const mean = sum / count;
-    
-    // Calcular desvio padrão
-    let variance = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      variance += Math.pow(data[i] - mean, 2);
-    }
-    
-    const stdDev = Math.sqrt(variance / count);
-    
-    // Threshold adaptativo baseado na média e desvio padrão
-    return Math.min(255, Math.max(0, mean + stdDev * 0.5));
-  };
-
-  // Função para extrair e validar placas brasileiras do texto OCR
-  const extractAndValidatePlate = (text) => {
-    if (!text) return { isValid: false, plate: '', confidence: 0 };
-    
-    // Limpar e normalizar texto
-    const cleanText = text.replace(/[^A-Z0-9\s]/g, '').toUpperCase();
-    
-    // Padrões de placas brasileiras mais flexíveis
-    const mercosulPattern = /[A-Z]{3}\s*[0-9]\s*[A-Z]\s*[0-9]{2}/g; // ABC 1 D 23
-    const oldPattern = /[A-Z]{3}\s*[0-9]{4}/g; // ABC 1234
-    
-    // Buscar todos os possíveis padrões de placa no texto
-    const mercosulMatches = [...cleanText.matchAll(mercosulPattern)];
-    const oldMatches = [...cleanText.matchAll(oldPattern)];
-    
-    const candidates = [];
-    
-    // Processar placas Mercosul
-    mercosulMatches.forEach(match => {
-      const plate = match[0].replace(/\s/g, '');
-      if (plate.length === 7) {
-        candidates.push({
-          plate: plate,
-          confidence: 0.95,
-          format: 'Mercosul',
-          position: match.index
-        });
+    // 4. Buscar em palavras individuais
+    words.forEach(word => {
+      if (word.length >= 7) {
+        const candidate = word.substring(0, 7);
+        if (/^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(candidate)) {
+          possiblePlates.push({
+            plate: candidate,
+            format: 'Mercosul',
+            source: 'word',
+            confidence: 0.6
+          });
+          console.log('🎯 Placa Mercosul encontrada (palavra):', candidate);
+        } else if (/^[A-Z]{3}[0-9]{4}$/.test(candidate)) {
+          possiblePlates.push({
+            plate: candidate,
+            format: 'Antiga',
+            source: 'word',
+            confidence: 0.6
+          });
+          console.log('🎯 Placa Antiga encontrada (palavra):', candidate);
+        }
       }
     });
     
-    // Processar placas antigas
-    oldMatches.forEach(match => {
-      const plate = match[0].replace(/\s/g, '');
-      if (plate.length === 7) {
-        candidates.push({
-          plate: plate,
-          confidence: 0.90,
-          format: 'Antiga',
-          position: match.index
-        });
-      }
-    });
+    // Remover duplicatas e ordenar por confiança
+    const uniquePlates = [];
+    const seen = new Set();
     
-    // Se não encontrou padrões exatos, tentar extrair sequências alfanuméricas
-    if (candidates.length === 0) {
-      const alphanumericSequences = cleanText.match(/[A-Z0-9]{6,8}/g) || [];
-      
-      alphanumericSequences.forEach(seq => {
-        if (seq.length === 7) {
-          // Verificar se parece com placa Mercosul
-          if (/^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(seq)) {
-            candidates.push({
-              plate: seq,
-              confidence: 0.75,
-              format: 'Mercosul',
-              position: cleanText.indexOf(seq)
-            });
-          }
-          // Verificar se parece com placa antiga
-          else if (/^[A-Z]{3}[0-9]{4}$/.test(seq)) {
-            candidates.push({
-              plate: seq,
-              confidence: 0.70,
-              format: 'Antiga',
-              position: cleanText.indexOf(seq)
-            });
-          }
+    possiblePlates
+      .sort((a, b) => b.confidence - a.confidence)
+      .forEach(item => {
+        if (!seen.has(item.plate)) {
+          seen.add(item.plate);
+          uniquePlates.push(item);
         }
       });
-    }
     
-    // Filtrar candidatos válidos e ordenar por confiança
-    const validCandidates = candidates
-      .filter(c => c.confidence > 0.6)
-      .sort((a, b) => b.confidence - a.confidence);
-    
-    if (validCandidates.length > 0) {
-      const best = validCandidates[0];
-      return {
-        isValid: true,
-        plate: best.plate,
-        confidence: best.confidence,
-        format: best.format,
-        allCandidates: validCandidates
-      };
-    }
-    
-    return { isValid: false, confidence: 0 };
-  };
-  
-  // Função para validar placa brasileira com múltiplos padrões (mantida para compatibilidade)
-  const validateBrazilianPlate = (text) => {
-    return extractAndValidatePlate(text);
+    console.log('📊 Placas únicas encontradas:', uniquePlates);
+    return uniquePlates;
   };
 
-
-
-  // Função simplificada para capturar frame e processar OCR
-  const captureFrame = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    const ctx = canvas.getContext('2d');
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
-
-    setIsProcessing(true);
-    
+  // Testar placa com a API
+  const testPlateWithAPI = async (plate) => {
     try {
-      console.log('Iniciando detecção com OpenCV...');
-      
-      // Usar pré-processamento otimizado para placas distantes
-      const targetCanvas = preprocessImageSimple(canvas);
-      
-      // Executar OCR com Tesseract otimizado para placas distantes
-      const worker = await createWorker('por');
-      await worker.setParameters({
-        tessedit_pageseg_mode: 7, // Melhor para texto isolado
-        tessedit_ocr_engine_mode: 1, // Engine LSTM
-        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-        preserve_interword_spaces: '0',
-        // Configurações específicas para caracteres grandes
-        textord_min_linesize: '2.5',
-        textord_tablefind_good_width: '3',
-        wordrec_enable_assoc: '0',
-        // Melhorar detecção de caracteres alfanuméricos
-        classify_enable_learning: '0',
-        classify_enable_adaptive_matcher: '0',
-        // Configurações para texto em alta resolução
-        textord_really_old_xheight: '1',
-        textord_min_xheight: '10',
-        // Reduzir ruído
-        edges_max_children_per_outline: '40',
-        // Configurações para melhor segmentação
-        tessedit_reject_mode: '0',
-        load_system_dawg: '0',
-        load_freq_dawg: '0',
-        load_unambig_dawg: '0',
-        load_punc_dawg: '0',
-        load_number_dawg: '0',
-        load_bigram_dawg: '0'
-      });
-      
-      // Tentar múltiplas configurações para melhor detecção
-      let bestResult = { text: '', confidence: 0 };
-      
-      // Primeira tentativa: configuração padrão otimizada
-      try {
-        const result1 = await worker.recognize(targetCanvas);
-        if (result1.data.confidence > bestResult.confidence) {
-          bestResult = result1.data;
-        }
-        console.log('Tentativa 1 - Texto:', result1.data.text, 'Confiança:', result1.data.confidence);
-      } catch (error) {
-        console.log('Erro na tentativa 1:', error);
-      }
-      
-      // Segunda tentativa: modo de linha única para placas muito distantes
-      try {
-        await worker.setParameters({
-          tessedit_pageseg_mode: 6, // Uniform block of text
-          tessedit_ocr_engine_mode: 1
-        });
-        
-        const result2 = await worker.recognize(targetCanvas);
-        if (result2.data.confidence > bestResult.confidence) {
-          bestResult = result2.data;
-        }
-        console.log('Tentativa 2 - Texto:', result2.data.text, 'Confiança:', result2.data.confidence);
-      } catch (error) {
-        console.log('Erro na tentativa 2:', error);
-      }
-      
-      // Terceira tentativa: modo de palavra única para casos extremos
-      try {
-        await worker.setParameters({
-          tessedit_pageseg_mode: 8, // Single word
-          tessedit_ocr_engine_mode: 1
-        });
-        
-        const result3 = await worker.recognize(targetCanvas);
-        if (result3.data.confidence > bestResult.confidence) {
-          bestResult = result3.data;
-        }
-        console.log('Tentativa 3 - Texto:', result3.data.text, 'Confiança:', result3.data.confidence);
-      } catch (error) {
-        console.log('Erro na tentativa 3:', error);
-      }
-      
-      await worker.terminate();
-      
-      const detectedText = bestResult.text.trim();
-      const confidence = bestResult.confidence;
-      
-      console.log('Melhor resultado - Texto:', detectedText);
-      console.log('Melhor resultado - Confiança:', confidence);
-      
-      // Extrair e validar placas brasileiras do texto
-      const validation = extractAndValidatePlate(detectedText);
-      
-      // Combinar confiança do OCR com confiança da validação da placa
-      const combinedConfidence = (confidence / 10) * validation.confidence;
-      
-      console.log('Texto detectado:', detectedText);
-      console.log('Confiança OCR:', confidence);
-      console.log('Validação placa:', validation);
-      console.log('Confiança combinada:', combinedConfidence);
-      
-      // Ajustar threshold baseado na distância (confiança mais baixa para placas distantes)
-      let confidenceThreshold = 0.3;
-      
-      // Se a confiança do OCR for muito baixa, aumentar threshold
-      if (confidence < 50) {
-        confidenceThreshold = 0.2;
-      }
-      
-      // Se encontrou múltiplos candidatos, ser mais flexível
-      if (validation.allCandidates && validation.allCandidates.length > 1) {
-        confidenceThreshold = 0.25;
-      }
-      
-      if (validation.isValid && validation.confidence >= 0.80) {
-        const formattedPlate = formatPlate(validation.plate, validation.format);
-        setDetectedPlate(formattedPlate);
-        console.log('Placa válida detectada:', formattedPlate);
-        
-        // Feedback baseado na confiança
-        if (combinedConfidence > 0.7) {
-          toast.success(`Placa detectada com alta confiança: ${formattedPlate} (${validation.format})`);
-        } else if (combinedConfidence > 0.5) {
-          toast.success(`Placa detectada: ${formattedPlate} (${validation.format}) - Confiança média`);
-        } else {
-          toast.success(`Placa detectada: ${formattedPlate} (${validation.format}) - Verifique se está correta`);
-        }
-        
-        consultarVeiculo(formattedPlate);
-      } else {
-        console.log('Placa não válida ou confiança baixa');
-        
-        // Feedback mais específico baseado no que foi encontrado
-        if (validation.allCandidates && validation.allCandidates.length > 0) {
-          const bestCandidate = validation.allCandidates[0];
-          toast.warning(`Possível placa detectada: ${bestCandidate.plate} - Aproxime-se mais para melhor detecção`);
-        } else if (detectedText.length > 0) {
-          toast.info(`Texto detectado mas não parece ser uma placa. Posicione melhor a câmera.`);
-        } else {
-          toast.error(`Nenhum texto detectado. Aproxime-se da placa e melhore a iluminação.`);
-        }
-      }
-      
-    } catch (error) {
-      console.error('Erro no OCR:', error);
-      toast.error('Erro ao processar imagem. Verifique se a câmera está funcionando corretamente.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Função para formatar placa conforme padrão
-  const formatPlate = (plate, format) => {
-    const clean = plate.replace(/[^A-Z0-9]/g, '');
-    
-    switch (format) {
-      case 'Mercosul':
-        return `${clean.slice(0, 3)}${clean.slice(3, 4)}${clean.slice(4, 5)}${clean.slice(5, 7)}`;
-      case 'Antiga':
-        return `${clean.slice(0, 3)}-${clean.slice(3, 7)}`;
-      case 'Moto Mercosul':
-        return `${clean.slice(0, 2)}${clean.slice(2, 3)}${clean.slice(3, 4)}${clean.slice(4, 6)}`;
-      case 'Moto Antiga':
-        return `${clean.slice(0, 2)}-${clean.slice(2, 6)}`;
-      default:
-        return clean;
-    }
-  };
-
-
-
-  // Consultar dados do veículo
-  const consultarVeiculo = async (placa) => {
-    try {
-      if (!user?.IdPontoAtendimento) {
-        toast.error('Usuário não autenticado');
-        return;
-      }
-
-      setIsProcessing(true);
+      console.log(`🔍 Testando placa ${plate} com a API...`);
       
       const response = await Api.getAgendamentoPontoAtendimentoByPlaca({
         idPontoAtendimento: user.IdPontoAtendimento,
-        placa: placa
+        placa: plate
+      });
+
+      if (response?.data) {
+        console.log(`✅ PLACA ${plate} ENCONTRADA NA API:`, response.data);
+        return { found: true, data: response.data };
+      } else {
+        console.log(`❌ Placa ${plate} não encontrada na API`);
+        return { found: false };
+      }
+    } catch (error) {
+      console.log(`❌ Erro ao testar placa ${plate}:`, error.message);
+      return { found: false, error: error.message };
+    }
+  };
+
+  // Capturar e analisar frame
+  const captureAndAnalyze = useCallback(async () => {
+    if (!videoRef.current || !canvasRef.current || !workerRef.current || isProcessingRef.current) {
+      return;
+    }
+
+    console.log(`🎬 === INICIANDO SCAN #${scanCount} ===`);
+    setIsProcessing(true);
+    isProcessingRef.current = true;
+    
+    try {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+
+      // Configurar canvas
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      if (canvas.width === 0 || canvas.height === 0) {
+        console.log('⏸️ Vídeo ainda não está pronto');
+        return;
+      }
+      
+      // Capturar frame completo
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      console.log('🔍 Executando OCR...');
+      
+      // Executar OCR na imagem completa
+      const result = await workerRef.current.recognize(canvas);
+      const detectedText = result.data.text.trim();
+      const confidence = result.data.confidence;
+      
+      console.log('📊 OCR resultado:', { 
+        text: detectedText.substring(0, 100) + (detectedText.length > 100 ? '...' : ''), 
+        confidence,
+        fullLength: detectedText.length
       });
       
-      console.log(response);
-
-      if (response && response.data) {
-        const dados = response.data;
+      if (confidence > 15) { // Threshold mais baixo
+        // Extrair todas as possíveis placas
+        const possiblePlates = extractAllPossiblePlates(detectedText);
         
-        console.log('Dados retornados da API:', dados);
-        
-        if (dados) {
-          const primeiroRegistro = dados;
+        if (possiblePlates.length > 0) {
+          console.log(`🎯 Encontradas ${possiblePlates.length} possíveis placas. Testando com a API...`);
           
-          console.log('Primeiro registro:', primeiroRegistro);
-          console.log('NomeSocio:', primeiroRegistro.NomeSocio);
-          console.log('IdSocioVeiculoAgenda:', primeiroRegistro.IdSocioVeiculoAgenda);
-          console.log('IdSocioVeiculo:', primeiroRegistro.IdSocioVeiculo);
+          // Testar cada placa com a API (ordenadas por confiança)
+          for (const plateInfo of possiblePlates) {
+            console.log(`🧪 Testando placa: ${plateInfo.plate} (${plateInfo.format}, confiança: ${plateInfo.confidence})`);
+            
+            const apiResult = await testPlateWithAPI(plateInfo.plate);
+            
+            if (apiResult.found) {
+              console.log(`🎉 PLACA VÁLIDA ENCONTRADA: ${plateInfo.plate}`);
+              
+              // Parar scanner
+              isScanningActiveRef.current = false;
+              if (scanIntervalRef.current) {
+                clearInterval(scanIntervalRef.current);
+                scanIntervalRef.current = null;
+              }
+              
+              const formattedPlate = formatPlate(plateInfo.plate, plateInfo.format);
+              setDetectedPlate(formattedPlate);
+              
+              toast.success(`Placa encontrada: ${formattedPlate} (${plateInfo.format})`);
+              
+              // Processar resultado da API
+              setTimeout(() => {
+                processAPIResult(apiResult.data, formattedPlate);
+              }, 500);
+              
+              return; // Parar o loop
+            }
+            
+            // Delay entre requisições
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
           
-          // Situação 1: Tem agendamento (IdSocioVeiculoAgenda existe)
-          if (primeiroRegistro.IdSocioVeiculoAgenda) {
-            toast.success('Agendamento encontrado! Redirecionando...');
-            setTimeout(() => {
-              navigate(`/execucao-os/${primeiroRegistro.IdSocioVeiculoAgenda}`);
-            }, 1500);
-          }
-          // Situação 2: É sócio mas não tem agendamento (tem NomeSocio mas IdSocioVeiculoAgenda é null)
-          else if (primeiroRegistro.NomeSocio && !primeiroRegistro.IdSocioVeiculoAgenda) {
-            setVehicleData({
-              placa: primeiroRegistro.PlacaVeiculo,
-              nomeSocio: primeiroRegistro.NomeSocio,
-              veiculo: `${primeiroRegistro.MarcaVeiculo} ${primeiroRegistro.ModeloVeiculo} ${primeiroRegistro.AnoVeiculo}`,
-              modelo: `${primeiroRegistro.MarcaVeiculo} ${primeiroRegistro.ModeloVeiculo}`,
-              ano: primeiroRegistro.AnoVeiculo,
-              proprietario: primeiroRegistro.NomeSocio,
-              idSocioVeiculo: primeiroRegistro.IdSocioVeiculo
-            });
-            setShowAgendamentoModal(true);
-            toast.info('Sócio encontrado! Abrindo modal de novo agendamento.');
-          }
-          // Situação 3: Tem sócio/veículo mas sem agendamento (fallback para compatibilidade)
-          else if (primeiroRegistro.IdSocioVeiculo) {
-            setVehicleData({
-              placa: primeiroRegistro.PlacaVeiculo,
-              nomeSocio: primeiroRegistro.NomeSocio,
-              veiculo: `${primeiroRegistro.MarcaVeiculo} ${primeiroRegistro.ModeloVeiculo} ${primeiroRegistro.AnoVeiculo}`,
-              modelo: `${primeiroRegistro.MarcaVeiculo} ${primeiroRegistro.ModeloVeiculo}`,
-              ano: primeiroRegistro.AnoVeiculo,
-              proprietario: primeiroRegistro.NomeSocio,
-              idSocioVeiculo: primeiroRegistro.IdSocioVeiculo
-            });
-            setShowAgendamentoModal(true);
-            toast.info('Veículo encontrado! Abrindo modal de agendamento.');
-          }
+          console.log('❌ Nenhuma das placas encontradas foi válida na API');
         } else {
-          // Situação 3: Não há dados - abrir modal de convite
-          setShowConviteModal(true);
-          toast.info('Veículo não encontrado. Envie um convite para o proprietário se tornar sócio.');
+          console.log('❌ Nenhuma possível placa encontrada no texto');
         }
       } else {
-        // Situação 3: Erro na API ou sem dados
-        setShowConviteModal(true);
-        toast.info('Veículo não encontrado. Envie um convite para o proprietário se tornar sócio.');
+        console.log('❌ Confiança do OCR muito baixa:', confidence);
       }
-    } catch (err) {
-      console.error('Erro ao consultar veículo:', err);
-      toast.error('Erro ao consultar dados do veículo.');
-      // Em caso de erro, também abre modal de convite
-      setShowConviteModal(true);
+      
+    } catch (error) {
+      console.error('❌ Erro na análise do frame:', error);
     } finally {
       setIsProcessing(false);
+      isProcessingRef.current = false;
+      console.log(`✅ Scan #${scanCount} finalizado`);
+    }
+  }, [scanCount]);
+
+  // Processar resultado da API
+  const processAPIResult = (dados, placa) => {
+    console.log('📋 Processando resultado da API:', dados);
+    
+    if (dados.IdSocioVeiculoAgenda) {
+      toast.success('Agendamento encontrado! Redirecionando...');
+      setTimeout(() => {
+        navigate(`/execucao-os/${dados.IdSocioVeiculoAgenda}`);
+      }, 1500);
+    } else if (dados.NomeSocio) {
+      setVehicleData({
+        placa: dados.PlacaVeiculo || placa,
+        nomeSocio: dados.NomeSocio,
+        veiculo: `${dados.MarcaVeiculo || ''} ${dados.ModeloVeiculo || ''} ${dados.AnoVeiculo || ''}`.trim(),
+        idSocioVeiculo: dados.IdSocioVeiculo
+      });
+      setShowAgendamentoModal(true);
+    } else {
+      setShowConviteModal(true);
+      toast.info('Veículo encontrado mas não é sócio. Envie um convite.');
+    }
+  };
+
+  // Formatar placa
+  const formatPlate = (plate, format) => {
+    const clean = plate.replace(/[^A-Z0-9]/g, '');
+    
+    if (format === 'Mercosul') {
+      return `${clean.slice(0, 3)}${clean.slice(3, 4)}${clean.slice(4, 5)}${clean.slice(5, 7)}`;
+    } else {
+      return `${clean.slice(0, 3)}-${clean.slice(3, 7)}`;
     }
   };
 
   // Confirmar placa detectada
   const confirmarPlaca = () => {
     if (detectedPlate) {
-      consultarVeiculo(detectedPlate);
-      stopCamera();
+      toast.success('Placa confirmada!');
     }
   };
 
-  // Enviar convite para se tornar sócio
+  // Enviar convite
   const enviarConvite = async () => {
     if (!telefoneConvite.trim()) {
       toast.error('Por favor, informe o número de telefone.');
@@ -679,16 +576,11 @@ const Scanner = () => {
 
     try {
       setEnviandoConvite(true);
-      
-      // Simular envio de convite (aqui você implementaria a API real)
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
       toast.success('Convite enviado com sucesso!');
       setShowConviteModal(false);
       setTelefoneConvite('');
       setDetectedPlate('');
-      
-      // Reiniciar scanner
       startCamera();
     } catch (error) {
       console.error('Erro ao enviar convite:', error);
@@ -703,14 +595,43 @@ const Scanner = () => {
     setDetectedPlate('');
     setError('');
     setIsProcessing(false);
+    isProcessingRef.current = false;
+    setScanCount(0);
+    isScanningActiveRef.current = true;
+    startPeriodicScan();
   };
 
-  // Cleanup ao desmontar componente
+  // Captura manual
+  const captureManual = () => {
+    if (!isProcessingRef.current) {
+      setScanCount(prev => prev + 1);
+      captureAndAnalyze();
+    }
+  };
+
+  // Inicialização
   useEffect(() => {
+    window.scrollTo(0, 0);
+    startCamera();
+    
     return () => {
       stopCamera();
     };
-  }, [stream]);
+  }, []);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      isScanningActiveRef.current = false;
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+      }
+      if (workerRef.current) {
+        workerRef.current.terminate();
+      }
+      stopCamera();
+    };
+  }, []);
 
   return (
     <div>
@@ -720,7 +641,7 @@ const Scanner = () => {
         <div className="scan-container">
           <div className="scan-header">
             <h1>Scanner de Placas</h1>
-            <p style={{marginBottom: '15px'}}>Posicione a placa do veículo dentro do quadro para escaneamento</p>
+            <p style={{marginBottom: '15px'}}>Posicione a placa do veículo na tela - verificação automática a cada segundo</p>
           </div>
 
           <div className="scan-content">
@@ -731,16 +652,6 @@ const Scanner = () => {
                 </div>
                 <h2>Problema com a Câmera</h2>
                 <p>{error}</p>
-                {cameraPermission === 'denied' && (
-                  <div className="scan-permission-help">
-                    <h3>Como permitir acesso à câmera:</h3>
-                    <ol>
-                      <li>Clique no ícone da câmera na barra de endereços</li>
-                      <li>Selecione "Permitir" para este site</li>
-                      <li>Recarregue a página ou clique em "Tentar Novamente"</li>
-                    </ol>
-                  </div>
-                )}
                 <Button variant='transparent' onClick={startCamera}>
                   <FiRefreshCw />
                   Tentar Novamente
@@ -748,19 +659,15 @@ const Scanner = () => {
               </div>
             ) : (
               <div className="scan-active">
-                {cameraPermission === 'checking' || !isScanning ? (
+                {(cameraPermission === 'checking' || (cameraPermission === 'granted' && !isScanning)) && (
                   <div className="scan-loading-overlay">
                     <div className="scan-loading-icon">
                       <FiCamera size={64} className="scan-spinning" />
                     </div>
                     <h2>Iniciando Câmera...</h2>
-                    <p>Aguarde enquanto ativamos a câmera para escaneamento</p>
-                    <Button variant='transparent' onClick={startCamera}>
-                      <FiCamera />
-                      Iniciar Câmera Manualmente
-                    </Button>
+                    <p>Aguarde enquanto ativamos a câmera e o sistema de OCR</p>
                   </div>
-                ) : null}
+                )}
                 
                 <div className="scan-video-container">
                   <video
@@ -779,13 +686,13 @@ const Scanner = () => {
                         <div className="scan-corner scan-corner-bottom-left"></div>
                         <div className="scan-corner scan-corner-bottom-right"></div>
                       </div>
-                      {isProcessing && (
+                      {/*isProcessing && (
                         <div className="scan-processing">
                           <FiRefreshCw className="scan-spinning" />
-                          <span>Reconhecendo placa...</span>
-                          <small>Aguarde, processando imagem com OCR</small>
+                          <span>Scan #{scanCount}</span>
+                          <small>Analisando texto e testando placas...</small>
                         </div>
-                      )}
+                      )*/}
                     </div>
                   </div>
                 </div>
@@ -811,19 +718,31 @@ const Scanner = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="scan-actions">
-                      <button 
-                        className="scan-btn-capture" 
-                        onClick={captureFrame}
-                        disabled={isProcessing}
-                      >
-                        <FiCamera />
-                        {isProcessing ? 'Processando...' : 'Capturar'}
-                      </button>
-                      <button className="scan-btn-stop" onClick={stopCamera}>
-                        <FiX />
-                        Parar
-                      </button>
+                    <div className="scan-status">
+                      {/*<div className="scan-manual-controls">
+                        <Button 
+                          variant='transparent' 
+                          onClick={captureManual}
+                          disabled={isProcessing}
+                        >
+                          <FiCamera />
+                          Capturar Agora
+                        </Button>
+                      </div>*/}
+                      
+                      {isProcessing && (
+                        <div className="scan-processing-indicator">
+                          <div className="scan-spinner"></div>
+                          <span>Capturando placa...</span>
+                        </div>
+                      )}
+                      
+                      {/* isScanning && !isProcessing && (
+                        <div className="scan-auto-indicator">
+                          <div className="scan-pulse"></div>
+                          <span>Scanner ativo - Verificando A CADA SEGUNDO</span>
+                        </div>
+                      )*/}
                     </div>
                   )}
                 </div>
@@ -842,7 +761,7 @@ const Scanner = () => {
         vehicleData={vehicleData}
       />
       
-      {/* Modal de Convite de Sócio */}
+      {/* Modal de Convite */}
       <Modal
         isOpen={showConviteModal}
         onClose={() => {

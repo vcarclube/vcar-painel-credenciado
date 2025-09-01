@@ -19,17 +19,17 @@
 }
 
 .socio-name {
-  font-size: 1.2rem;
-  color: var(--success);
+  font-size: 1rem;
+  color: var(--gray-700);
   margin-bottom: var(--spacing-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .vehicle-plate {
-  font-size: 1.1rem;
-  color: var(--primary);
+  font-size: 1rem;
+  color: var(--gray-700);
   margin-bottom: var(--spacing-sm);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .vehicle-details {
