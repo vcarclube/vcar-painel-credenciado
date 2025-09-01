@@ -252,6 +252,13 @@ const Api = {
         }).catch(err => {
             return err;
         });
+    },
+    listaMotivacoes: async () => {
+        return await axios.get(`${API_BASE}/agendamentos/lista-motivacoes`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
     }
 }
 

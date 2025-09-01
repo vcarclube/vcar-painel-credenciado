@@ -1199,4 +1199,25 @@ router.post('/deletar-laudo', validateToken, async (req, res) => {
   }
 })
 
+// Rota para listar motivações disponíveis
+router.get('/lista-motivacoes', validateToken, async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT * 
+      FROM Motivacoes 
+      WHERE AtivoInativo = 'A' 
+      ORDER BY CAST(Descricao AS NVARCHAR(MAX)) DESC;
+    `);
+    
+    let motivacoes = result.recordset;
+
+    return res.status(200).json({
+      motivacoes
+    });
+  } catch (error) {
+    console.error('Erro ao buscar motivações:', error);
+    return res.status(400).json({ message: error.message, data: null });
+  }
+});
+
 module.exports = router;

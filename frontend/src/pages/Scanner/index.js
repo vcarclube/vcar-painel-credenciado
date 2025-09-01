@@ -484,7 +484,24 @@ const Scanner = () => {
             console.log(`🧪 Testando placa: ${plateInfo.plate} (${plateInfo.format}, confiança: ${plateInfo.confidence})`);
             
             const apiResult = await testPlateWithAPI(plateInfo.plate);
-            
+
+            if(apiResult?.found == false){
+              // Parar scanner
+              isScanningActiveRef.current = false;
+              if (scanIntervalRef.current) {
+                clearInterval(scanIntervalRef.current);
+                scanIntervalRef.current = null;
+              }
+              
+              const formattedPlate = formatPlate(plateInfo.plate, plateInfo.format);
+              setDetectedPlate(formattedPlate);
+              
+              toast.info('Veículo encontrado mas não é sócio. Envie um convite.');
+              setShowConviteModal(true);
+              
+              return;
+            }
+
             if (apiResult.found) {
               console.log(`🎉 PLACA VÁLIDA ENCONTRADA: ${plateInfo.plate}`);
               
@@ -546,9 +563,6 @@ const Scanner = () => {
         idSocioVeiculo: dados.IdSocioVeiculo
       });
       setShowAgendamentoModal(true);
-    } else {
-      setShowConviteModal(true);
-      toast.info('Veículo encontrado mas não é sócio. Envie um convite.');
     }
   };
 
@@ -648,7 +662,7 @@ const Scanner = () => {
           </div>
 
           <div className="scan-content">
-            {cameraPermission === 'denied' || (error && !isScanning) ? (
+            {cameraPermission === 'denied' ? (
               <div className="scan-error">
                 <div className="scan-error-icon">
                   <FiAlertCircle size={64} />
@@ -771,6 +785,7 @@ const Scanner = () => {
           setShowConviteModal(false);
           setTelefoneConvite('');
           setDetectedPlate('');
+          startCamera();
         }}
         title="Convidar para ser Sócio"
         size="medium"
@@ -811,6 +826,7 @@ const Scanner = () => {
                 setShowConviteModal(false);
                 setTelefoneConvite('');
                 setDetectedPlate('');
+                startCamera();
               }}
               disabled={enviandoConvite}
             >

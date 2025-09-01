@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { FiCalendar, FiClock, FiTool } from 'react-icons/fi';
 import Modal from '../index';
 import { Button, SearchableSelect } from '../../index';
+import { toast } from 'react-toastify';
+import Api from '../../../Api';
+import { MainContext } from '../../../helpers/MainContext';
 import './style.css';
 
 const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
+  const { user } = useContext(MainContext);
   const [formData, setFormData] = useState({
     motivacao: '',
     dataAgendamento: '',
@@ -13,42 +17,45 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
+  const [horariosDisponiveis, setHorariosDisponiveis] = useState([{ value: '', label: '__:__' }]);
+  const [motivacoesDisponiveis, setMotivacoesDisponiveis] = useState([]);
 
-  // Opções para motivação de serviço
-  const motivacaoOptions = [
-    { value: 'manutencao-preventiva', label: 'Manutenção Preventiva' },
-    { value: 'manutencao-corretiva', label: 'Manutenção Corretiva' },
-    { value: 'revisao', label: 'Revisão' },
-    { value: 'troca-oleo', label: 'Troca de Óleo' },
-    { value: 'alinhamento', label: 'Alinhamento e Balanceamento' },
-    { value: 'freios', label: 'Sistema de Freios' },
-    { value: 'suspensao', label: 'Suspensão' },
-    { value: 'ar-condicionado', label: 'Ar Condicionado' },
-    { value: 'eletrica', label: 'Sistema Elétrico' },
-    { value: 'outros', label: 'Outros' }
-  ];
+  // useEffect para buscar horários disponíveis quando a data for selecionada
+  useEffect(() => {
+    if (user?.IdPontoAtendimento && formData.dataAgendamento) {
+      const dataAtual = new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })?.replace(",", "")?.split(" ")[0];
+      const horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-  // Opções para horário
-  const horarioOptions = [
-    { value: '08:00', label: '08:00' },
-    { value: '08:30', label: '08:30' },
-    { value: '09:00', label: '09:00' },
-    { value: '09:30', label: '09:30' },
-    { value: '10:00', label: '10:00' },
-    { value: '10:30', label: '10:30' },
-    { value: '11:00', label: '11:00' },
-    { value: '11:30', label: '11:30' },
-    { value: '13:00', label: '13:00' },
-    { value: '13:30', label: '13:30' },
-    { value: '14:00', label: '14:00' },
-    { value: '14:30', label: '14:30' },
-    { value: '15:00', label: '15:00' },
-    { value: '15:30', label: '15:30' },
-    { value: '16:00', label: '16:00' },
-    { value: '16:30', label: '16:30' },
-    { value: '17:00', label: '17:00' },
-    { value: '17:30', label: '17:30' }
-  ];
+      Api.listaHorariosDisponiveis({
+        idPontoAtendimento: user.IdPontoAtendimento,
+        dataAgendamento: formData.dataAgendamento,
+        dataAtual: dataAtual,
+        horaAtual: horaAtual
+      }).then(res => {
+        const horarios = res?.data || [];
+        setHorariosDisponiveis(horarios.map(horario => ({ value: horario, label: horario })));
+      }).catch(error => {
+        console.error('Erro ao buscar horários:', error);
+        toast.error('Erro ao carregar horários disponíveis');
+      });
+    }
+  }, [user?.IdPontoAtendimento, formData.dataAgendamento]);
+
+  // useEffect para buscar motivações disponíveis
+  useEffect(() => {
+    Api.listaMotivacoes().then(res => {
+      console.log(res?.data?.motivacoes);
+      const motivacoes = res?.data?.motivacoes || [];
+      setMotivacoesDisponiveis(motivacoes.map(motivacao => ({ 
+        value: motivacao.IdMotivacao, 
+        label: motivacao.Descricao?.toUpperCase() 
+      })));
+    }).catch(error => {
+      console.error('Erro ao buscar motivações:', error);
+      toast.error('Erro ao carregar motivações disponíveis');
+      setMotivacoesDisponiveis([]);
+    });
+  }, []);
 
   const handleInputChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -128,6 +135,7 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
         horario: ''
       });
       setErrors({});
+      setHorariosDisponiveis([]);
       onClose();
     }
   };
@@ -167,7 +175,7 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
               Motivação do Serviço *
             </label>
             <SearchableSelect
-              options={motivacaoOptions}
+              options={motivacoesDisponiveis}
               value={formData.motivacao}
               onChange={(option) => handleInputChange('motivacao', option?.value || '')}
               placeholder="Selecione a motivação..."
@@ -195,7 +203,7 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
               />
               {errors.dataAgendamento && <span className="error-text">{errors.dataAgendamento}</span>}
             </div>&nbsp;
-            
+
             <div className="form-group" style={{width: '100%'}}>
               <label htmlFor="horario">
                 <FiClock />
@@ -203,11 +211,12 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
               </label>
               <SearchableSelect
                 hideSearchInput={true}
-                options={horarioOptions}
+                options={horariosDisponiveis}
                 value={formData.horario}
                 onChange={(option) => handleInputChange('horario', option?.value || '')}
-                placeholder="Horário..."
+                placeholder={""}
                 className={errors.horario ? 'error' : ''}
+                disabled={horariosDisponiveis.length === 0}
               />
               {errors.horario && <span className="error-text">{errors.horario}</span>}
             </div>
