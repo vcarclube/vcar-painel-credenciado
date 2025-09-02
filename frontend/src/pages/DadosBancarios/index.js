@@ -334,7 +334,6 @@ const DadosBancarios = () => {
                     <th>Dados Bancários</th>
                     <th>Nome Titular</th>
                     <th>CPF/CNPJ</th>
-                    <th>Ponto Atendimento</th>
                     <th>Data Cadastro</th>
                     <th>Ações</th>
                   </tr>
@@ -383,7 +382,6 @@ const DadosBancarios = () => {
                         </td>
                       <td>{dado.NomeTitular}</td>
                       <td>{dado.DocumentoTitular}</td>
-                      <td>V-CAR</td>
                       <td>{new Date(dado.DataCadastro).toLocaleDateString('pt-BR')}</td>
                       <td>
                         <div className="acoes-container-dados-bancarios">

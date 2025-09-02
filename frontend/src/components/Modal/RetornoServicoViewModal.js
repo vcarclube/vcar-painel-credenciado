@@ -2,6 +2,7 @@ import React from 'react';
 import Modal from './index';
 import { Button } from '../index';
 import { FiUser, FiTruck, FiFileText, FiCalendar, FiClock } from 'react-icons/fi';
+import Api from '../../Api';
 
 const RetornoServicoViewModal = ({ isOpen, onClose, retorno }) => {
   if (!retorno) return null;
@@ -144,17 +145,43 @@ const RetornoServicoViewModal = ({ isOpen, onClose, retorno }) => {
               <FiFileText className="retorno-view-section-icon" />
               Arquivos
             </h4>
-            <div className="retorno-view-grid">
+            <div className="retorno-view-files">
               {retorno.Fotos && (
-                <div className="retorno-view-field">
-                  <span className="retorno-view-field-label">Fotos:</span>
-                  <span className="retorno-view-field-value">📷 {retorno.Fotos}</span>
+                <div className="retorno-view-file-group">
+                  <span className="retorno-view-file-label">📷 Fotos:</span>
+                  <div className="retorno-view-file-list">
+                    {retorno.Fotos.split(',').filter(f => f.trim()).map((foto, index) => (
+                      <div key={index} className="retorno-view-file-item">
+                        <a 
+                          href={Api.getUriUploadPath(foto.trim())} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="retorno-view-file-link"
+                        >
+                          {foto.trim()}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               {retorno.Videos && (
-                <div className="retorno-view-field">
-                  <span className="retorno-view-field-label">Vídeos:</span>
-                  <span className="retorno-view-field-value">🎥 {retorno.Videos}</span>
+                <div className="retorno-view-file-group">
+                  <span className="retorno-view-file-label">🎥 Vídeos:</span>
+                  <div className="retorno-view-file-list">
+                    {retorno.Videos.split(',').filter(f => f.trim()).map((video, index) => (
+                      <div key={index} className="retorno-view-file-item">
+                        <a 
+                          href={Api.getUriUploadPath(video.trim())} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="retorno-view-file-link"
+                        >
+                          {video.trim()}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -302,6 +329,52 @@ const RetornoServicoViewModal = ({ isOpen, onClose, retorno }) => {
           justify-content: flex-end;
           padding-top: 16px;
           border-top: 1px solid #e2e8f0;
+        }
+
+        .retorno-view-files {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .retorno-view-file-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .retorno-view-file-label {
+          font-size: 12px;
+          color: #64748b;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .retorno-view-file-list {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .retorno-view-file-item {
+          padding: 8px 12px;
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 6px;
+        }
+
+        .retorno-view-file-link {
+          color: #3b82f6;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 500;
+          word-break: break-all;
+        }
+
+        .retorno-view-file-link:hover {
+          color: #1d4ed8;
+          text-decoration: underline;
         }
 
         @media (max-width: 768px) {

@@ -121,15 +121,40 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSuccess, retorno }) => {
   };
 
   // Funções para upload de arquivos
-  const handleFileUpload = (event, type) => {
+  const handleFileUpload = async (event, type) => {
     const files = Array.from(event.target.files);
-    if (files.length > 0) {
-      // Por enquanto, vamos apenas armazenar o nome do primeiro arquivo
-      // Em uma implementação real, você faria upload para o servidor e armazenaria o caminho
-      setFormData(prev => ({
-        ...prev,
-        [type]: files[0].name
-      }));
+    if (files.length === 0) return;
+
+    setLoading(true);
+    try {
+      const uploadedFiles = [];
+      
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const uploadResponse = await Api.upload(formData);
+        
+        if (uploadResponse.success) {
+          uploadedFiles.push(uploadResponse.file);
+        }
+      }
+      
+      if (uploadedFiles.length > 0) {
+        const existingFiles = formData[type] ? formData[type].split(',').filter(f => f.trim()) : [];
+        const allFiles = [...existingFiles, ...uploadedFiles];
+        
+        setFormData(prev => ({
+          ...prev,
+          [type]: allFiles.join(',')
+        }));
+        toast.success(`${uploadedFiles.length} arquivo(s) enviado(s) com sucesso!`);
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      toast.error('Erro ao fazer upload dos arquivos');
+    } finally {
+      setLoading(false);
     }
   };
 
