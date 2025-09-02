@@ -240,34 +240,25 @@ const RetornoServico = () => {
                   <div className="card-content">
                     <div className="card-info">
                       <div className="card-status">
-                        <span className={`status-badge ${getStatusClass(retorno.status)}`}>
-                          {retorno.status}
-                          {retorno.status === 'PENDENTE' && (
-                            <span className="tag-novo-status">NOVO</span>
-                          )}
+                        <span className={`status-badge ${getStatusClass(retorno.Status)}`}>
+                          {getStatusLabel(retorno.Status)}
                         </span>
                         <span className="card-number">
-                          {retorno.numeroOS}
+                          {retorno.NumeroOS}
                         </span>
                       </div>
                       <div className="card-details">
                         <div className="card-date-time">
-                          📅 {retorno.dataRetorno} • ⏰ {retorno.horaRetorno}
+                          📅 {formatarData(retorno.DataAgendamento)} • ⏰ {formatarHora(retorno.DataAgendamento)}
                         </div>
                         <div className="card-client">
-                          👤 {retorno.cliente}
-                        </div>
-                        <div className="card-document">
-                          📄 {retorno.documento}
+                          👤 {retorno.NomeSocio}
                         </div>
                         <div className="card-vehicle">
-                          🚗 {retorno.veiculo}
+                          🚗 {retorno.PlacaVeiculo}
                         </div>
                         <div className="card-service">
-                          🔧 {retorno.servico}
-                        </div>
-                        <div className="card-partner">
-                          🏢 {retorno.parceiro}
+                          🔧 {retorno.NomeServico}
                         </div>
                       </div>
                     </div>
@@ -341,7 +332,6 @@ const RetornoServico = () => {
                       <td className="cliente">
                         <div className="cliente-info">
                           <div className="nome">{retorno.NomeSocio}</div>
-                          <div className="documento">{retorno.DocumentoSocio}</div>
                         </div>
                       </td>
                       <td className="veiculo">
