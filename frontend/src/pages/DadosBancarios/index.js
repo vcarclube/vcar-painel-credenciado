@@ -239,9 +239,9 @@ const DadosBancarios = () => {
                     value={filtroSelecionado}
                     onChange={(e) => setFiltroSelecionado(e.target.value)}
                   >
-                    <option value="">Todos</option>
-                    <option value="S">Sim</option>
-                    <option value="N">Não</option>
+                    <option value="">[ TODOS ]</option>
+                    <option value="S">SIM</option>
+                    <option value="N">NÃO</option>
                   </select>
                 </div>
                 
