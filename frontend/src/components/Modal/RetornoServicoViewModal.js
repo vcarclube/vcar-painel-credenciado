@@ -299,7 +299,7 @@ const RetornoServicoViewModal = ({ isOpen, onClose, retorno }) => {
 
         .retorno-view-actions {
           display: flex;
-          justify-content: center;
+          justify-content: flex-end;
           padding-top: 16px;
           border-top: 1px solid #e2e8f0;
         }
