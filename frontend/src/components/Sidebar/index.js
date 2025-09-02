@@ -101,7 +101,7 @@ function Sidebar() {
           )}
         </div>
 
-        {/* Suporte */}
+        {/* Suporte 
         <div className="sidebar-item" onClick={() => navigate('/suporte')}>
           <div className={`sidebar-link ${(location.pathname === '/suporte') ? 'active' : ''}`}>
             <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -110,7 +110,7 @@ function Sidebar() {
             </svg>
             <span>Suporte</span>
           </div>
-        </div>
+        </div>*/}
 
         {/* Dropdown Informações */}
         <div className="sidebar-item">

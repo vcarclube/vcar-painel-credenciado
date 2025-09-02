@@ -221,14 +221,14 @@ function App() {
               </PrivateRoute>
             }
           />
-          <Route
+          {/*<Route
             path="/suporte"
             element={
               <PrivateRoute>
                 <Suporte />
               </PrivateRoute>
             }
-          />
+          />*/}
 
           <Route path="*" element={<PageNotFound />} />
         </Routes>

@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import {
   FiCalendar,
   FiStar,
-  FiHeadphones,
   FiMaximize,
-  FiMenu
+  FiMenu,
+  FiDollarSign
 } from 'react-icons/fi';
 import DrawerMenu from '../DrawerMenu';
 import './style.css';
@@ -35,10 +35,10 @@ const BottomNavigation = () => {
       path: '/scan'
     },
     {
-      id: 'suporte',
-      label: 'Suporte',
-      icon: FiHeadphones,
-      path: '/suporte'
+      id: 'espelho',
+      label: 'Financeiro',
+      icon: FiDollarSign,
+      path: '/espelho'
     },
     {
       id: 'menu',
