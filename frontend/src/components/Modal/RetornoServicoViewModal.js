@@ -25,19 +25,28 @@ const RetornoServicoViewModal = ({ isOpen, onClose, retorno }) => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Pendente': return '#f59e0b';
-      case 'Em Andamento': return '#3b82f6';
-      case 'Concluído': return '#10b981';
-      case 'Cancelado': return '#ef4444';
+      case 'A': return '#f59e0b'; // Aberto
+      case 'P': return '#3b82f6'; // Em Chamado
+      case 'C': return '#10b981'; // Concluído
       default: return '#6b7280';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'A': return 'ABERTO';
+      case 'P': return 'EM CHAMADO';
+      case 'C': return 'CONCLUÍDO';
+      default: return status;
     }
   };
 
   const getTipoColor = (tipo) => {
     switch (tipo) {
-      case 'Garantia': return '#10b981';
-      case 'Retrabalho': return '#f59e0b';
-      case 'Manutenção': return '#3b82f6';
+      case 'PEÇA': return '#10b981';
+      case 'MÃO DE OBRA': return '#f59e0b';
+      case 'ATENDIMENTO': return '#3b82f6';
+      case 'OUTROS': return '#6b7280';
       default: return '#6b7280';
     }
   };
@@ -55,8 +64,8 @@ const RetornoServicoViewModal = ({ isOpen, onClose, retorno }) => {
           <div className="retorno-view-os">
             <FiFileText className="retorno-view-icon" />
             <div>
-              <span className="retorno-view-label">ID</span>
-              <span className="retorno-view-value">{retorno.IdRetornoServico}</span>
+              <span className="retorno-view-label">Nº OS</span>
+              <span className="retorno-view-value">{retorno.NumeroOS || 'N/A'}</span>
             </div>
           </div>
           
@@ -65,7 +74,7 @@ const RetornoServicoViewModal = ({ isOpen, onClose, retorno }) => {
               className="retorno-view-status-badge"
               style={{ backgroundColor: getStatusColor(retorno.Status) }}
             >
-              {retorno.Status}
+              {getStatusLabel(retorno.Status)}
             </span>
             <span 
               className="retorno-view-tipo-badge"
@@ -76,42 +85,54 @@ const RetornoServicoViewModal = ({ isOpen, onClose, retorno }) => {
           </div>
         </div>
 
-        {/* Informações do agendamento */}
+        {/* Informações do cliente */}
         <div className="retorno-view-section">
           <h4 className="retorno-view-section-title">
             <FiUser className="retorno-view-section-icon" />
-            Agendamento
+            Cliente
           </h4>
           <div className="retorno-view-grid">
             <div className="retorno-view-field">
-              <span className="retorno-view-field-label">ID Agendamento:</span>
-              <span className="retorno-view-field-value">{retorno.IdSocioVeiculoAgenda}</span>
+              <span className="retorno-view-field-label">Nome:</span>
+              <span className="retorno-view-field-value">{retorno.NomeSocio || 'N/A'}</span>
+            </div>
+            <div className="retorno-view-field">
+              <span className="retorno-view-field-label">Data Agendamento:</span>
+              <span className="retorno-view-field-value">{retorno.DataAgendamento ? formatDate(retorno.DataAgendamento) : 'N/A'}</span>
             </div>
           </div>
         </div>
 
-        {/* Informações do serviço */}
+        {/* Informações do veículo */}
         <div className="retorno-view-section">
           <h4 className="retorno-view-section-title">
             <FiTruck className="retorno-view-section-icon" />
-            Serviço
+            Veículo e Serviço
           </h4>
           <div className="retorno-view-grid">
             <div className="retorno-view-field">
-              <span className="retorno-view-field-label">Tipo:</span>
+              <span className="retorno-view-field-label">Placa:</span>
+              <span className="retorno-view-field-value">{retorno.PlacaVeiculo || 'N/A'}</span>
+            </div>
+            <div className="retorno-view-field">
+              <span className="retorno-view-field-label">Serviço:</span>
+              <span className="retorno-view-field-value">{retorno.NomeServico || 'N/A'}</span>
+            </div>
+            <div className="retorno-view-field">
+              <span className="retorno-view-field-label">Tipo do Retorno:</span>
               <span className="retorno-view-field-value">{retorno.Tipo}</span>
             </div>
             <div className="retorno-view-field">
               <span className="retorno-view-field-label">Status:</span>
-              <span className="retorno-view-field-value">{retorno.Status}</span>
+              <span className="retorno-view-field-value">{getStatusLabel(retorno.Status)}</span>
             </div>
-          </div>
-          {retorno.Descricao && (
+            {retorno.Descricao && (
             <div className="retorno-view-field">
               <span className="retorno-view-field-label">Descrição:</span>
               <span className="retorno-view-field-value">{retorno.Descricao}</span>
             </div>
           )}
+          </div>
         </div>
 
 
