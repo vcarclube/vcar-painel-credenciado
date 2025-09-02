@@ -337,13 +337,6 @@ const Api = {
             return err;
         });
     },
-    getPontosAtendimento: async () => {
-        return await axios.get(`${API_BASE}/retorno-servico/pontos-atendimento`, Environment.HEADERS).then(async (response) => {
-            return await response;
-        }).catch(err => {
-            return err;
-        });
-    },
     concluirAgendamento: async ({idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio}) => {
         return await axios.post(`${API_BASE}/agendamentos/concluir`, {idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio}, Environment.HEADERS).then(async (response) => {
             return await response;
@@ -351,6 +344,20 @@ const Api = {
             return err;
         });
     },
+    getDadosCadastrais: async ({idPontoAtendimento}) => {
+        return await axios.get(`${API_BASE}/ponto-atendimento/dados-cadastrais/${idPontoAtendimento}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    atualizarDadosCadastrais: async ({data}) => {
+        return await axios.post(`${API_BASE}/ponto-atendimento/atualizar-dados-cadastrais`, data, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    }
 }
 
 export default Api;

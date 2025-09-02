@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   FaUser,
   FaMapMarkerAlt,
@@ -13,14 +13,20 @@ import {
   FaServicestack
 } from 'react-icons/fa';
 import { Header, Sidebar, BottomNavigation, Modal } from '../../components';
+import { toast } from 'react-toastify';
+import Api from '../../Api';
 import '../Home/style.css';
 import './style.css';
+import { MainContext } from '../../helpers/MainContext';
 
 const DadosCadastrais = () => {
+  const { user } = useContext(MainContext);
+
   // Estados principais
   const [isEditing, setIsEditing] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [showServicesModal, setShowServicesModal] = useState(false);
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [originalData, setOriginalData] = useState({});
@@ -28,25 +34,31 @@ const DadosCadastrais = () => {
   // Dados do formulário
   const [formData, setFormData] = useState({
     // Dados pessoais
-    nome: 'Elevadores TechLift Ltda',
-    cnpj: '12.345.678/0001-90',
-    razaoSocial: 'TechLift Elevadores e Manutenção Ltda',
-    inscricaoEstadual: '123.456.789.012',
-    qtdElevadores: '25',
-    cep: '01310-100',
+    RazaoSocial: '',
+    Cnpj: '',
+    InscricaoEstadual: '',
+    QtdeElevadores: '',
+    EnderecoCep: '',
 
     // Endereço
-    endereco: 'Av. Paulista, 1578',
-    uf: 'SP',
-    cidade: 'São Paulo',
-    bairro: 'Bela Vista',
-    complemento: 'Sala 1205',
+    Endereco: '',
+    EnderecoUf: '',
+    EnderecoCidade: '',
+    EnderecoBairro: '',
+    EnderecoComplemento: '',
 
     // Horários
-    segundaASexta: { inicio: '08:00', fim: '18:00' },
-    sabados: { inicio: '08:00', fim: '12:00' },
-    domingos: { inicio: '', fim: '' },
-    feriados: { inicio: '', fim: '' }
+    SegSexInicio: '',
+    SegSexFim: '',
+    SabadoInicio: '',
+    SabadoFim: '',
+    DomingoInicio: '',
+    DomingoFim: '',
+    FeriadoInicio: '',
+    FeriadoFim: '',
+    
+    // Descrição
+    Descricao: ''
   });
 
   // Dados iniciais para comparação
@@ -70,9 +82,60 @@ const DadosCadastrais = () => {
     { id: 3, name: 'Pedro Costa', email: 'pedro@techlift.com', role: 'Técnico' }
   ]);
 
+  // Função para extrair hora de timestamp ISO
+  const extractTimeFromISO = (isoString) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const hours = date.getUTCHours().toString().padStart(2, '0');
+    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  // Função para carregar dados da API
+  const loadDadosCadastrais = async () => {
+    try {
+      setIsLoading(true);
+      const response = await Api.getDadosCadastrais({idPontoAtendimento: user.IdPontoAtendimento});
+      
+      if (response.status === 200 && response.data.success) {
+        const data = response.data.data;
+        const mappedData = {
+          RazaoSocial: data.RazaoSocial || '',
+          Cnpj: data.Cnpj || '',
+          InscricaoEstadual: data.InscricaoEstadual || '',
+          QtdeElevadores: data.QtdeElevadores || '',
+          EnderecoCep: data.EnderecoCep || '',
+          Endereco: data.Endereco || '',
+          EnderecoUf: data.EnderecoUf || '',
+          EnderecoCidade: data.EnderecoCidade || '',
+          EnderecoBairro: data.EnderecoBairro || '',
+          EnderecoComplemento: data.EnderecoComplemento || '',
+          SegSexInicio: extractTimeFromISO(data.SegSexInicio),
+           SegSexFim: extractTimeFromISO(data.SegSexFim),
+           SabInicio: extractTimeFromISO(data.SabadoInicio),
+           SabFim: extractTimeFromISO(data.SabadoFim),
+           DomInicio: extractTimeFromISO(data.DomingoInicio),
+           DomFim: extractTimeFromISO(data.DomingoFim),
+           FerInicio: extractTimeFromISO(data.FeriadoInicio),
+           FerFim: extractTimeFromISO(data.FeriadoFim),
+          Descricao: data.Descricao || ''
+        };
+        setFormData(mappedData);
+        setInitialData(JSON.parse(JSON.stringify(mappedData)));
+      } else {
+        toast.error('Erro ao carregar dados cadastrais');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      toast.error('Erro ao carregar dados cadastrais');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Inicializar dados
   useEffect(() => {
-    setInitialData(JSON.parse(JSON.stringify(formData)));
+    loadDadosCadastrais();
   }, []);
 
   // Verificar mudanças
@@ -121,19 +184,57 @@ const DadosCadastrais = () => {
     setHasChanges(false);
   };
 
+  const convertTimeToISO = (timeString) => {
+    if (!timeString) return null;
+    const [hours, minutes] = timeString.split(':');
+    const date = new Date('1970-01-01T00:00:00.000Z');
+    date.setUTCHours(parseInt(hours), parseInt(minutes), 0, 0);
+    return date.toISOString();
+  };
+
   const handleSave = async () => {
-    setIsSaving(true);
-
-    // Simular salvamento
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    setInitialData(JSON.parse(JSON.stringify(formData)));
-    setOriginalData(JSON.parse(JSON.stringify(formData)));
-    setIsEditing(false);
-    setHasChanges(false);
-    setIsSaving(false);
-
-    console.log('Dados salvos:', formData);
+    try {
+      setIsSaving(true);
+      
+      // Converter horários de volta para formato ISO
+      const dataToSend = {
+        ...formData,
+        SegSexInicio: convertTimeToISO(formData.SegSexInicio),
+        SegSexFim: convertTimeToISO(formData.SegSexFim),
+        SabadoInicio: convertTimeToISO(formData.SabInicio),
+        SabadoFim: convertTimeToISO(formData.SabFim),
+        DomingoInicio: convertTimeToISO(formData.DomInicio),
+        DomingoFim: convertTimeToISO(formData.DomFim),
+        FeriadoInicio: convertTimeToISO(formData.FerInicio),
+        FeriadoFim: convertTimeToISO(formData.FerFim),
+        IdPontoAtendimento: user.IdPontoAtendimento,
+      };
+      
+      // Remover campos que não devem ser enviados
+      delete dataToSend.SabInicio;
+      delete dataToSend.SabFim;
+      delete dataToSend.DomInicio;
+      delete dataToSend.DomFim;
+      delete dataToSend.FerInicio;
+      delete dataToSend.FerFim;
+      
+      const response = await Api.atualizarDadosCadastrais({ data: dataToSend });
+      
+      if (response.status === 200) {
+        toast.success('Dados atualizados com sucesso!');
+        setInitialData(JSON.parse(JSON.stringify(formData)));
+        setOriginalData(JSON.parse(JSON.stringify(formData)));
+        setIsEditing(false);
+        setHasChanges(false);
+      } else {
+        toast.error('Erro ao atualizar dados cadastrais');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar dados:', error);
+      toast.error('Erro ao atualizar dados cadastrais');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Handlers dos modais
@@ -241,22 +342,12 @@ const DadosCadastrais = () => {
                   </div>
                   <div className="dadoscadastrais-card-content">
                     <div className="dadoscadastrais-form-grid">
-                      <div className="dadoscadastrais-form-group">
-                        <label>Nome</label>
+                      <div className="dadoscadastrais-form-group dadoscadastrais-full-width">
+                        <label>Razão Social</label>
                         <input
                           type="text"
-                          value={formData.nome}
-                          onChange={(e) => handleInputChange('nome', e.target.value)}
-                          disabled={!isEditing}
-                          className={isEditing ? 'dadoscadastrais-editing' : ''}
-                        />
-                      </div>
-                      <div className="dadoscadastrais-form-group">
-                        <label>Qtde. Elevadores</label>
-                        <input
-                          type="number"
-                          value={formData.qtdElevadores}
-                          onChange={(e) => handleInputChange('qtdElevadores', e.target.value)}
+                          value={formData.RazaoSocial}
+                          onChange={(e) => handleInputChange('RazaoSocial', e.target.value)}
                           disabled={!isEditing}
                           className={isEditing ? 'dadoscadastrais-editing' : ''}
                         />
@@ -265,18 +356,8 @@ const DadosCadastrais = () => {
                         <label>CNPJ</label>
                         <input
                           type="text"
-                          value={formData.cnpj}
-                          onChange={(e) => handleInputChange('cnpj', e.target.value)}
-                          disabled={!isEditing}
-                          className={isEditing ? 'dadoscadastrais-editing' : ''}
-                        />
-                      </div>
-                      <div className="dadoscadastrais-form-group dadoscadastrais-full-width">
-                        <label>Razão Social</label>
-                        <input
-                          type="text"
-                          value={formData.razaoSocial}
-                          onChange={(e) => handleInputChange('razaoSocial', e.target.value)}
+                          value={formData.Cnpj}
+                          onChange={(e) => handleInputChange('Cnpj', e.target.value)}
                           disabled={!isEditing}
                           className={isEditing ? 'dadoscadastrais-editing' : ''}
                         />
@@ -285,8 +366,18 @@ const DadosCadastrais = () => {
                         <label>Inscrição Estadual</label>
                         <input
                           type="text"
-                          value={formData.inscricaoEstadual}
-                          onChange={(e) => handleInputChange('inscricaoEstadual', e.target.value)}
+                          value={formData.InscricaoEstadual}
+                          onChange={(e) => handleInputChange('InscricaoEstadual', e.target.value)}
+                          disabled={!isEditing}
+                          className={isEditing ? 'dadoscadastrais-editing' : ''}
+                        />
+                      </div>
+                      <div className="dadoscadastrais-form-group">
+                        <label>Qtde. Elevadores</label>
+                        <input
+                          type="number"
+                          value={formData.QtdeElevadores}
+                          onChange={(e) => handleInputChange('QtdeElevadores', e.target.value)}
                           disabled={!isEditing}
                           className={isEditing ? 'dadoscadastrais-editing' : ''}
                         />
@@ -295,8 +386,8 @@ const DadosCadastrais = () => {
                         <label>CEP</label>
                         <input
                           type="text"
-                          value={formData.cep}
-                          onChange={(e) => handleInputChange('cep', e.target.value)}
+                          value={formData.EnderecoCep}
+                          onChange={(e) => handleInputChange('EnderecoCep', e.target.value)}
                           disabled={!isEditing}
                           className={isEditing ? 'dadoscadastrais-editing' : ''}
                         />
@@ -316,8 +407,8 @@ const DadosCadastrais = () => {
                         <label>Endereço</label>
                         <input
                           type="text"
-                          value={formData.endereco}
-                          onChange={(e) => handleInputChange('endereco', e.target.value)}
+                          value={formData.Endereco}
+                          onChange={(e) => handleInputChange('Endereco', e.target.value)}
                           disabled={!isEditing}
                           className={isEditing ? 'dadoscadastrais-editing' : ''}
                         />
@@ -325,23 +416,47 @@ const DadosCadastrais = () => {
                       <div className="dadoscadastrais-form-group">
                         <label>UF</label>
                         <select
-                          value={formData.uf}
-                          onChange={(e) => handleInputChange('uf', e.target.value)}
+                          value={formData.EnderecoUf}
+                          onChange={(e) => handleInputChange('EnderecoUf', e.target.value)}
                           disabled={!isEditing}
                           className={isEditing ? 'dadoscadastrais-editing' : ''}
                         >
-                          <option value="SP">SP</option>
-                          <option value="RJ">RJ</option>
+                          <option value="">Selecione</option>
+                          <option value="AC">AC</option>
+                          <option value="AL">AL</option>
+                          <option value="AP">AP</option>
+                          <option value="AM">AM</option>
+                          <option value="BA">BA</option>
+                          <option value="CE">CE</option>
+                          <option value="DF">DF</option>
+                          <option value="ES">ES</option>
+                          <option value="GO">GO</option>
+                          <option value="MA">MA</option>
+                          <option value="MT">MT</option>
+                          <option value="MS">MS</option>
                           <option value="MG">MG</option>
+                          <option value="PA">PA</option>
+                          <option value="PB">PB</option>
+                          <option value="PR">PR</option>
+                          <option value="PE">PE</option>
+                          <option value="PI">PI</option>
+                          <option value="RJ">RJ</option>
+                          <option value="RN">RN</option>
                           <option value="RS">RS</option>
+                          <option value="RO">RO</option>
+                          <option value="RR">RR</option>
+                          <option value="SC">SC</option>
+                          <option value="SP">SP</option>
+                          <option value="SE">SE</option>
+                          <option value="TO">TO</option>
                         </select>
                       </div>
                       <div className="dadoscadastrais-form-group">
                         <label>Cidade</label>
                         <input
                           type="text"
-                          value={formData.cidade}
-                          onChange={(e) => handleInputChange('cidade', e.target.value)}
+                          value={formData.EnderecoCidade}
+                          onChange={(e) => handleInputChange('EnderecoCidade', e.target.value)}
                           disabled={!isEditing}
                           className={isEditing ? 'dadoscadastrais-editing' : ''}
                         />
@@ -350,8 +465,8 @@ const DadosCadastrais = () => {
                         <label>Bairro</label>
                         <input
                           type="text"
-                          value={formData.bairro}
-                          onChange={(e) => handleInputChange('bairro', e.target.value)}
+                          value={formData.EnderecoBairro}
+                          onChange={(e) => handleInputChange('EnderecoBairro', e.target.value)}
                           disabled={!isEditing}
                           className={isEditing ? 'dadoscadastrais-editing' : ''}
                         />
@@ -360,8 +475,8 @@ const DadosCadastrais = () => {
                         <label>Complemento</label>
                         <input
                           type="text"
-                          value={formData.complemento}
-                          onChange={(e) => handleInputChange('complemento', e.target.value)}
+                          value={formData.EnderecoComplemento}
+                          onChange={(e) => handleInputChange('EnderecoComplemento', e.target.value)}
                           disabled={!isEditing}
                           className={isEditing ? 'dadoscadastrais-editing' : ''}
                         />
@@ -382,16 +497,8 @@ const DadosCadastrais = () => {
                         <label>Segunda a Sexta</label>
                         <div className="dadoscadastrais-horario-inputs">
                           <select
-                            value={formData.segundaASexta.inicio}
-                            onChange={(e) => {
-                              const newFormData = {
-                                ...formData,
-                                segundaASexta: { ...formData.segundaASexta, inicio: e.target.value }
-                              };
-                              setFormData(newFormData);
-                              const hasDataChanged = JSON.stringify(newFormData) !== JSON.stringify(originalData);
-                              setHasChanges(hasDataChanged);
-                            }}
+                            value={formData.SegSexInicio}
+                            onChange={(e) => handleInputChange('SegSexInicio', e.target.value)}
                             disabled={!isEditing}
                             className={isEditing ? 'dadoscadastrais-editing' : ''}
                           >
@@ -405,16 +512,8 @@ const DadosCadastrais = () => {
                           </select>
                           <span className="dadoscadastrais-time-separator">às</span>
                           <select
-                            value={formData.segundaASexta.fim}
-                            onChange={(e) => {
-                              const newFormData = {
-                                ...formData,
-                                segundaASexta: { ...formData.segundaASexta, fim: e.target.value }
-                              };
-                              setFormData(newFormData);
-                              const hasDataChanged = JSON.stringify(newFormData) !== JSON.stringify(originalData);
-                              setHasChanges(hasDataChanged);
-                            }}
+                            value={formData.SegSexFim}
+                            onChange={(e) => handleInputChange('SegSexFim', e.target.value)}
                             disabled={!isEditing}
                             className={isEditing ? 'dadoscadastrais-editing' : ''}
                           >
@@ -434,16 +533,8 @@ const DadosCadastrais = () => {
                         <label>Sábados</label>
                         <div className="dadoscadastrais-horario-inputs">
                           <select
-                            value={formData.sabados.inicio}
-                            onChange={(e) => {
-                              const newFormData = {
-                                ...formData,
-                                sabados: { ...formData.sabados, inicio: e.target.value }
-                              };
-                              setFormData(newFormData);
-                              const hasDataChanged = JSON.stringify(newFormData) !== JSON.stringify(originalData);
-                              setHasChanges(hasDataChanged);
-                            }}
+                            value={formData.SabInicio}
+                            onChange={(e) => handleInputChange('SabInicio', e.target.value)}
                             disabled={!isEditing}
                             className={isEditing ? 'dadoscadastrais-editing' : ''}
                           >
@@ -457,16 +548,8 @@ const DadosCadastrais = () => {
                           </select>
                           <span className="dadoscadastrais-time-separator">às</span>
                           <select
-                            value={formData.sabados.fim}
-                            onChange={(e) => {
-                              const newFormData = {
-                                ...formData,
-                                sabados: { ...formData.sabados, fim: e.target.value }
-                              };
-                              setFormData(newFormData);
-                              const hasDataChanged = JSON.stringify(newFormData) !== JSON.stringify(originalData);
-                              setHasChanges(hasDataChanged);
-                            }}
+                            value={formData.SabFim}
+                            onChange={(e) => handleInputChange('SabFim', e.target.value)}
                             disabled={!isEditing}
                             className={isEditing ? 'dadoscadastrais-editing' : ''}
                           >
@@ -486,16 +569,8 @@ const DadosCadastrais = () => {
                         <label>Domingos</label>
                         <div className="dadoscadastrais-horario-inputs">
                           <select
-                            value={formData.domingos.inicio}
-                            onChange={(e) => {
-                              const newFormData = {
-                                ...formData,
-                                domingos: { ...formData.domingos, inicio: e.target.value }
-                              };
-                              setFormData(newFormData);
-                              const hasDataChanged = JSON.stringify(newFormData) !== JSON.stringify(originalData);
-                              setHasChanges(hasDataChanged);
-                            }}
+                            value={formData.DomInicio}
+                            onChange={(e) => handleInputChange('DomInicio', e.target.value)}
                             disabled={!isEditing}
                             className={isEditing ? 'dadoscadastrais-editing' : ''}
                           >
@@ -509,16 +584,8 @@ const DadosCadastrais = () => {
                           </select>
                           <span className="dadoscadastrais-time-separator">às</span>
                           <select
-                            value={formData.domingos.fim}
-                            onChange={(e) => {
-                              const newFormData = {
-                                ...formData,
-                                domingos: { ...formData.domingos, fim: e.target.value }
-                              };
-                              setFormData(newFormData);
-                              const hasDataChanged = JSON.stringify(newFormData) !== JSON.stringify(originalData);
-                              setHasChanges(hasDataChanged);
-                            }}
+                            value={formData.DomFim}
+                            onChange={(e) => handleInputChange('DomFim', e.target.value)}
                             disabled={!isEditing}
                             className={isEditing ? 'dadoscadastrais-editing' : ''}
                           >
@@ -538,16 +605,8 @@ const DadosCadastrais = () => {
                         <label>Feriados</label>
                         <div className="dadoscadastrais-horario-inputs">
                           <select
-                            value={formData.feriados.inicio}
-                            onChange={(e) => {
-                              const newFormData = {
-                                ...formData,
-                                feriados: { ...formData.feriados, inicio: e.target.value }
-                              };
-                              setFormData(newFormData);
-                              const hasDataChanged = JSON.stringify(newFormData) !== JSON.stringify(originalData);
-                              setHasChanges(hasDataChanged);
-                            }}
+                            value={formData.FerInicio}
+                            onChange={(e) => handleInputChange('FerInicio', e.target.value)}
                             disabled={!isEditing}
                             className={isEditing ? 'dadoscadastrais-editing' : ''}
                           >
@@ -561,16 +620,8 @@ const DadosCadastrais = () => {
                           </select>
                           <span className="dadoscadastrais-time-separator">às</span>
                           <select
-                            value={formData.feriados.fim}
-                            onChange={(e) => {
-                              const newFormData = {
-                                ...formData,
-                                feriados: { ...formData.feriados, fim: e.target.value }
-                              };
-                              setFormData(newFormData);
-                              const hasDataChanged = JSON.stringify(newFormData) !== JSON.stringify(originalData);
-                              setHasChanges(hasDataChanged);
-                            }}
+                            value={formData.FerFim}
+                            onChange={(e) => handleInputChange('FerFim', e.target.value)}
                             disabled={!isEditing}
                             className={isEditing ? 'dadoscadastrais-editing' : ''}
                           >

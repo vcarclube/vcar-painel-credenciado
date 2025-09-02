@@ -244,4 +244,114 @@ router.post('/delete-dado-bancario', validateToken, async (req, res) => {
   }
 })
 
+router.get('/dados-cadastrais/:idPontoAtendimento', validateToken, async (req, res) => {
+  try {
+    
+    const { idPontoAtendimento } = req.params;
+
+    if (!idPontoAtendimento) {
+      return res.status(400).json({ 
+        message: 'Dados incompletos: idPontoAtendimento é obrigatório' 
+      });
+    }
+
+    const result = await db.query(`
+      SELECT 
+        Cnpj,
+        RazaoSocial,
+        InscricaoEstadual,
+        QtdeElevadores,
+        EnderecoCep,
+        Endereco,
+        EnderecoCidade,
+        EnderecoUf,
+        EnderecoComplemento,
+        EnderecoBairro,
+        SegSexInicio,
+        SegSexFim,
+        SabadoInicio,
+        SabadoFim,
+        DomingoInicio,
+        DomingoFim,
+        FeriadoInicio,
+        FeriadoFim,
+        Descricao
+      FROM PontosAtendimento 
+      WHERE IdPontoAtendimento = @IdPontoAtendimento
+    `, { idPontoAtendimento });
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ 
+        message: 'Ponto de atendimento não encontrado' 
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: result.recordset[0]
+    });
+  } catch (error) {
+    console.error('Erro ao buscar dados cadastrais:', error);
+    return res.status(500).json({ 
+      message: 'Erro interno do servidor' 
+    });
+  }
+});
+
+router.post('/atualizar-dados-cadastrais', validateToken, async (req, res) => {
+  try {
+    const data = req.body;
+
+    if (!data) {
+      return res.status(400).json({
+        message: 'Dados são obrigatórios'
+      });
+    }
+
+    // Construir query de atualização dinamicamente
+    const updateFields = [];
+    const queryParams = { IdPontoAtendimento: data.IdPontoAtendimento };
+
+    // Campos permitidos para atualização
+    const allowedFields = [
+      'Cnpj', 'EnderecoCep', 'Endereco', 'EnderecoCidade', 'EnderecoUf', 
+      'EnderecoComplemento', 'EnderecoBairro', 'RazaoSocial', 'QtdeElevadores',
+      'InscricaoEstadual', 'SegSexInicio', 'SegSexFim', 'SabadoInicio', 
+      'SabadoFim', 'DomingoInicio', 'DomingoFim', 'FeriadoInicio', 
+      'FeriadoFim', 'Descricao'
+    ];
+
+    // Adicionar campos que foram enviados para atualização
+    allowedFields.forEach(field => {
+      if (data.hasOwnProperty(field)) {
+        updateFields.push(`${field} = @${field}`);
+        queryParams[field] = data[field];
+      }
+    });
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({
+        message: 'Nenhum campo válido para atualização foi fornecido'
+      });
+    }
+
+    const query = `
+      UPDATE PontosAtendimento 
+      SET ${updateFields.join(', ')}
+      WHERE IdPontoAtendimento = @IdPontoAtendimento
+    `;
+
+    await db.query(query, queryParams);
+
+    return res.status(200).json({
+      message: 'Dados atualizados com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar dados cadastrais:', error);
+    return res.status(500).json({ 
+      message: 'Erro interno do servidor' 
+    });
+  }
+});
+
 module.exports = router;

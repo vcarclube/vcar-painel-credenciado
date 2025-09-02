@@ -425,39 +425,4 @@ router.get('/agendamentos-disponiveis/:idPontoAtendimento', validateToken, async
   }
 });
 
-// Listar pontos de atendimento
-router.get('/pontos-atendimento', validateToken, async (req, res) => {
-  try {
-    const query = `
-      SELECT 
-        IdPontoAtendimento, 
-        RazaoSocial, 
-        Cnpj, 
-        Descricao, 
-        EnderecoCidade, 
-        EnderecoUf, 
-        EnderecoBairro, 
-        AtivoInativo 
-      FROM PontosAtendimento 
-      WHERE AtivoInativo = 'A' 
-      ORDER BY RazaoSocial
-    `;
-
-    const result = await db.query(query);
-
-    res.json({
-      success: true,
-      data: result.recordset
-    });
-
-  } catch (error) {
-    console.error('Erro ao buscar pontos de atendimento:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erro interno do servidor',
-      error: error.message
-    });
-  }
-});
-
 module.exports = router;

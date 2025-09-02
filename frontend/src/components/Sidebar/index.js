@@ -131,7 +131,7 @@ function Sidebar() {
           {openDropdowns.informacoes && (
             <div className="dropdown-menu">
               <div className="dropdown-item">
-                <span>Contratos</span>
+                <span>Contrato</span>
               </div>
               <div className="dropdown-item">
                 <span>Política de Privacidade</span>
