@@ -43,7 +43,7 @@ const RetornoServicoCreateModal = ({ isOpen, onClose, onSuccess }) => {
   }, [isOpen]);
 
   const loadAgendamentos = async () => {
-    setLoadingAgendamentos(true);
+    setLoadingAgendamentos(true); 
     try {
       const response = await Api.getAgendamentosDisponiveis({idPontoAtendimento: user.IdPontoAtendimento});
       if (response?.data?.success) {

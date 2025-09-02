@@ -9,6 +9,7 @@ import Api from '../../Api';
 const RetornoServicoEditModal = ({ isOpen, onClose, onSuccess, retorno }) => {
   const { user } = useContext(MainContext);
   const [formData, setFormData] = useState({
+    IdRetornoServico: '',
     IdSocioVeiculoAgenda: '',
     Tipo: '',
     Status: '',
@@ -39,6 +40,7 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSuccess, retorno }) => {
   useEffect(() => {
     if (isOpen && retorno) {
       setFormData({
+        IdRetornoServico: retorno.IdRetornoServico || '',
         IdSocioVeiculoAgenda: retorno.IdSocioVeiculoAgenda || '',
         Tipo: retorno.Tipo || '',
         Status: retorno.Status || '',
@@ -54,7 +56,7 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSuccess, retorno }) => {
   const loadAgendamentos = async () => {
     setLoadingAgendamentos(true);
     try {
-      const response = await Api.getAgendamentosDisponiveis({idPontoAtendimento: user?.idPontoAtendimento});
+      const response = await Api.getAgendamentosDisponiveis({idPontoAtendimento: user.IdPontoAtendimento});
       if (response?.data?.success) {
         const agendamentosFormatados = response.data.data.map(agendamento => ({
           value: agendamento.IdSocioVeiculoAgenda,
