@@ -185,6 +185,7 @@ const DadosCadastrais = () => {
                       <button
                         className="dadoscadastrais-btn dadoscadastrais-btn-outline"
                         onClick={() => setShowServicesModal(true)}
+                        style={{display: 'none'}}
                       >
                         <FaServicestack />
                         <span>Serviços</span>
@@ -192,6 +193,7 @@ const DadosCadastrais = () => {
                       <button
                         className="dadoscadastrais-btn dadoscadastrais-btn-outline"
                         onClick={() => setShowUsersModal(true)}
+                        style={{display: 'none'}}
                       >
                         <FaUsers />
                         <span>Usuários</span>
