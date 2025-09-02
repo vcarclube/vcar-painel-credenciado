@@ -99,7 +99,15 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
     
     try {
       // Simular chamada da API
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await Api.agendar({
+        idPontoAtendimento: user.IdPontoAtendimento,
+        idSocio: user.IdSocio,
+        idSocioVeiculo: vehicleData?.idSocioVeiculo,
+        data: formData.dataAgendamento,
+        hora: formData.horario,
+        motivo: formData.motivacao,
+        pecaPorContaDoSocio: 'N'
+      });
       
       console.log('Dados do agendamento:', {
         ...formData,

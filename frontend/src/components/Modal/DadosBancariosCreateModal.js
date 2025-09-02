@@ -1,38 +1,91 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './index';
-import { Button } from '../index';
+import { Button, Input } from '../index';
+import Api from '../../Api';
+import { toast } from 'react-toastify';
+import { FiSave, FiX } from 'react-icons/fi';
+import { useMask } from '@react-input/mask';
+import './style.css';
 
 const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => {
   const [formData, setFormData] = useState({
-    banco: '',
-    agencia: '',
-    conta: '',
-    tipoConta: 'CORRENTE',
-    pix: '',
-    status: 'ATIVO'
+    tipoPagamento: 'PIX',
+    TipoChavePix: 'CPF',
+    ChavePix: '',
+    Banco: '',
+    NumeroAgencia: '',
+    NumeroConta: '',
+    TipoConta: 'CORRENTE',
+    NomeTitular: '',
+    DocumentoTitular: '',
+    Selecionado: 'N'
   });
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
+  // Declarar todas as máscaras no topo para evitar erros de React Hooks
+  const phonePixMask = useMask({
+    mask: '(__) _____-____',
+    replacement: { _: /\d/ }
+  });
+  
+  const cpfPixMask = useMask({
+    mask: '___.___.___-__',
+    replacement: { _: /\d/ }
+  });
+  
+  const cnpjPixMask = useMask({
+    mask: '__.___.___/____-__',
+    replacement: { _: /\d/ }
+  });
+  
+  const cpfTitularMask = useMask({
+    mask: '___.___.___-__',
+    replacement: { _: /\d/ }
+  });
+  
+  const cnpjTitularMask = useMask({
+    mask: '__.___.___/____-__',
+    replacement: { _: /\d/ }
+  });
+  
+  const agenciaMask = useMask({
+    mask: '____-_',
+    replacement: { _: /\d/ }
+  });
+  
+  const contaMask = useMask({
+    mask: '_______-_',
+    replacement: { _: /\d/ }
+  });
+
   useEffect(() => {
     if (dado && isOpen) {
       setFormData({
-        banco: dado.banco || '',
-        agencia: dado.agencia || '',
-        conta: dado.conta || '',
-        tipoConta: dado.tipoConta || 'CORRENTE',
-        pix: dado.pix || '',
-        status: dado.status || 'ATIVO'
+        tipoPagamento: (dado.ChavePix && dado.TipoChavePix) ? 'PIX' : 'TRANSFERENCIA',
+        TipoChavePix: dado.TipoChavePix || 'CPF',
+        ChavePix: dado.ChavePix || '',
+        Banco: dado.Banco || '',
+        NumeroAgencia: dado.NumeroAgencia || '',
+        NumeroConta: dado.NumeroConta || '',
+        TipoConta: dado.TipoConta || 'CORRENTE',
+        NomeTitular: dado.NomeTitular || '',
+        DocumentoTitular: dado.DocumentoTitular || '',
+        Selecionado: dado.Selecionado || 'N'
       });
     } else if (!dado && isOpen) {
       setFormData({
-        banco: '',
-        agencia: '',
-        conta: '',
-        tipoConta: 'CORRENTE',
-        pix: '',
-        status: 'ATIVO'
+        tipoPagamento: 'PIX',
+        TipoChavePix: 'CPF',
+        ChavePix: '',
+        Banco: '',
+        NumeroAgencia: '',
+        NumeroConta: '',
+        TipoConta: 'CORRENTE',
+        NomeTitular: '',
+        DocumentoTitular: '',
+        Selecionado: 'N'
       });
     }
     setErrors({});
@@ -53,26 +106,54 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
       }));
     }
   };
+  
+  const handleInputChangeEvent = (e) => {
+    const { name, value } = e.target;
+    handleInputChange(name, value);
+  };
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.banco.trim()) {
-      newErrors.banco = 'Nome do banco é obrigatório';
+    
+    // Validações para PIX
+    if (formData.tipoPagamento === 'PIX') {
+      if (!formData.TipoChavePix) {
+        newErrors.TipoChavePix = 'Tipo de chave PIX é obrigatório';
+      }
+      
+      if (!formData.ChavePix.trim()) {
+        newErrors.ChavePix = 'Chave PIX é obrigatória';
+      }
     }
-
-    if (!formData.agencia.trim()) {
-      newErrors.agencia = 'Agência é obrigatória';
+    
+    // Validações para TRANSFERENCIA
+    if (formData.tipoPagamento === 'TRANSFERENCIA') {
+      if (!formData.Banco.trim()) {
+        newErrors.Banco = 'Nome do banco é obrigatório';
+      }
+      
+      if (!formData.NumeroAgencia.trim()) {
+        newErrors.NumeroAgencia = 'Número da agência é obrigatório';
+      }
+      
+      if (!formData.NumeroConta.trim()) {
+        newErrors.NumeroConta = 'Número da conta é obrigatório';
+      }
+      
+      if (!formData.TipoConta) {
+        newErrors.TipoConta = 'Tipo de conta é obrigatório';
+      }
     }
-
-    if (!formData.conta.trim()) {
-      newErrors.conta = 'Conta é obrigatória';
+    
+    // Validações comuns
+    if (!formData.NomeTitular.trim()) {
+      newErrors.NomeTitular = 'Nome do titular é obrigatório';
     }
-
-    if (!formData.tipoConta) {
-      newErrors.tipoConta = 'Tipo de conta é obrigatório';
+    
+    if (!formData.DocumentoTitular.trim()) {
+      newErrors.DocumentoTitular = 'CPF/CNPJ do titular é obrigatório';
     }
-
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -84,11 +165,24 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
 
     setLoading(true);
     try {
+      const idPontoAtendimento = localStorage.getItem('idPontoAtendimento') || 'C75C6ADC-E2CA-4212-AD69-77A01610D25A';
+      
       const dadoToSave = {
-        ...formData,
-        id: dado?.id || Date.now(),
-        dataCadastro: dado?.dataCadastro || new Date().toLocaleDateString('pt-BR')
+        TipoChavePix: formData.tipoPagamento === 'PIX' ? formData.TipoChavePix : '',
+        ChavePix: formData.tipoPagamento === 'PIX' ? formData.ChavePix : '',
+        Banco: formData.tipoPagamento === 'TRANSFERENCIA' ? formData.Banco : '',
+        NumeroAgencia: formData.tipoPagamento === 'TRANSFERENCIA' ? formData.NumeroAgencia : '',
+        NumeroConta: formData.tipoPagamento === 'TRANSFERENCIA' ? formData.NumeroConta : '',
+        TipoConta: formData.tipoPagamento === 'TRANSFERENCIA' ? formData.TipoConta : '',
+        NomeTitular: formData.NomeTitular,
+        DocumentoTitular: formData.DocumentoTitular,
+        Selecionado: formData.Selecionado,
+        IdPontoAtendimento: idPontoAtendimento
       };
+      
+      if (dado) {
+        dadoToSave.IdDadoBancario = dado.IdDadoBancario;
+      }
       
       await onSave(dadoToSave);
       handleClose();
@@ -103,12 +197,15 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
   const handleClose = () => {
     if (!loading) {
       setFormData({
+        TipoChavePix: 'CPF',
+        ChavePix: '',
         banco: '',
         agencia: '',
         conta: '',
         tipoConta: 'CORRENTE',
-        pix: '',
-        status: 'ATIVO'
+        NomeTitular: '',
+        DocumentoTitular: '',
+        Selecionado: 'N'
       });
       setErrors({});
       setLoading(false);
@@ -125,90 +222,218 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
     >
       <div className="create-modal-content">
         <form onSubmit={handleSubmit} className="create-form">
-          <div className="">
-            <h4 className="section-title">Informações Bancárias</h4>
-            
+          <div className="form-section">
+            <h4 className="section-title">Tipo de Pagamento</h4>
             <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Nome do Banco *</label>
-                <input
-                  type="text"
-                  value={formData.banco}
-                  onChange={(e) => handleInputChange('banco', e.target.value)}
-                  className={`form-input ${errors.banco ? 'error' : ''}`}
-                  placeholder="Ex: Banco do Brasil"
-                  disabled={loading}
-                />
-                {errors.banco && <span className="form-error">{errors.banco}</span>}
-              </div>
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Agência *</label>
-                <input
-                  type="text"
-                  value={formData.agencia}
-                  onChange={(e) => handleInputChange('agencia', e.target.value)}
-                  className={`form-input ${errors.agencia ? 'error' : ''}`}
-                  placeholder="Ex: 1234-5"
-                  disabled={loading}
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Conta *</label>
-                <input
-                  type="text"
-                  value={formData.conta}
-                  onChange={(e) => handleInputChange('conta', e.target.value)}
-                  className={`form-input ${errors.conta ? 'error' : ''}`}
-                  placeholder="Ex: 12345-6"
-                  disabled={loading}
-                />
-              </div>
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Tipo de Conta *</label>
+              <div className="form-group full-width">
+                <label className="form-label">Tipo de Pagamento *</label>
                 <select
-                  value={formData.tipoConta}
-                  onChange={(e) => handleInputChange('tipoConta', e.target.value)}
-                  className={`form-select ${errors.tipoConta ? 'error' : ''}`}
-                  disabled={loading}
-                >
-                  <option value="CORRENTE">Conta Corrente</option>
-                  <option value="POUPANÇA">Conta Poupança</option>
-                </select>
-                {errors.tipoConta && <span className="form-error">{errors.tipoConta}</span>}
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => handleInputChange('status', e.target.value)}
+                  name="tipoPagamento"
+                  value={formData.tipoPagamento}
+                  onChange={handleInputChangeEvent}
                   className="form-select"
                   disabled={loading}
                 >
-                  <option value="ATIVO">Ativo</option>
-                  <option value="INATIVO">Inativo</option>
+                  <option value="PIX">PIX</option>
+                  <option value="TRANSFERENCIA">TRANSFERÊNCIA</option>
                 </select>
+              </div>
+            </div>
+          </div>
+          
+          {formData.tipoPagamento === 'PIX' && (
+            <div className="form-section">
+              <h4 className="section-title">Dados PIX</h4>
+              <p className="section-subtitle">Configure os dados para recebimento via PIX</p>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Tipo de Chave PIX *</label>
+                  <select
+                    name="TipoChavePix"
+                    value={formData.TipoChavePix}
+                    onChange={handleInputChangeEvent}
+                    className="form-select"
+                    disabled={loading}
+                  >
+                    <option value="CPF">CPF</option>
+                    <option value="CNPJ">CNPJ</option>
+                    <option value="EMAIL">E-mail</option>
+                    <option value="TELEFONE">Telefone</option>
+                    <option value="CHAVE_ALEATORIA">Chave Aleatória</option>
+                  </select>
+                </div>
+                
+                <div className="form-group">
+                        <label className="form-label">Chave PIX *</label>
+                        {(formData.TipoChavePix === 'TELEFONE' || formData.TipoChavePix === 'CPF' || formData.TipoChavePix === 'CNPJ') ? (
+                          <Input
+                            ref={
+                              formData.TipoChavePix === 'TELEFONE' ? phonePixMask :
+                              formData.TipoChavePix === 'CPF' ? cpfPixMask :
+                              cnpjPixMask
+                            }
+                            type="text"
+                            name="ChavePix"
+                            value={formData.ChavePix}
+                            onChange={handleInputChangeEvent}
+                            placeholder={
+                              formData.TipoChavePix === 'TELEFONE' ? '(11) 99999-9999' :
+                              formData.TipoChavePix === 'CPF' ? '000.000.000-00' :
+                              '00.000.000/0000-00'
+                            }
+                            disabled={loading}
+                            className="form-input"
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            name="ChavePix"
+                            value={formData.ChavePix}
+                            onChange={handleInputChangeEvent}
+                            placeholder={
+                              formData.TipoChavePix === 'EMAIL' ? 'email@exemplo.com' :
+                              'Chave aleatória'
+                            }
+                            disabled={loading}
+                            className="form-input"
+                          />
+                        )}
+                        {errors.ChavePix && <span className="error-message">{errors.ChavePix}</span>}
+                      </div>
+              </div>
+            </div>
+          )}
+          
+          {formData.tipoPagamento === 'TRANSFERENCIA' && (
+            <div className="form-section">
+              <h4 className="section-title">Dados Bancários</h4>
+              <p className="section-subtitle">Configure os dados para recebimento via transferência</p>
+              
+              <div className="form-row">
+                <div className="form-group">
+                <label className="form-label">Banco *</label>
+                <input
+                  type="text"
+                  name="Banco"
+                  value={formData.Banco}
+                  onChange={handleInputChangeEvent}
+                  placeholder="Nome do banco"
+                  disabled={loading}
+                  className="form-input"
+                />
+                {errors.Banco && <span className="error-message">{errors.Banco}</span>}
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Agência *</label>
+                <Input
+                  ref={agenciaMask}
+                  type="text"
+                  name="NumeroAgencia"
+                  value={formData.NumeroAgencia}
+                  onChange={handleInputChangeEvent}
+                  placeholder="0000-0"
+                  disabled={loading}
+                  className="form-input"
+                />
+                {errors.NumeroAgencia && <span className="error-message">{errors.NumeroAgencia}</span>}
+              </div>
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Conta *</label>
+                  <Input
+                    ref={contaMask}
+                    type="text"
+                    name="NumeroConta"
+                    value={formData.NumeroConta}
+                    onChange={handleInputChangeEvent}
+                    placeholder="00000-0"
+                    disabled={loading}
+                    className="form-input"
+                  />
+                  {errors.NumeroConta && <span className="error-message">{errors.NumeroConta}</span>}
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Tipo de Conta *</label>
+                  <select
+                    name="TipoConta"
+                    value={formData.TipoConta}
+                    onChange={handleInputChangeEvent}
+                    className="form-select"
+                    disabled={loading}
+                  >
+                    <option value="">Selecione o tipo de conta</option>
+                    <option value="CORRENTE">Conta Corrente</option>
+                    <option value="POUPANCA">Conta Poupança</option>
+                  </select>
+                  {errors.TipoConta && <span className="error-message">{errors.TipoConta}</span>}
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="form-section">
+            <h4 className="section-title">Dados do Titular</h4>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Nome do Titular *</label>
+                <input
+                  type="text"
+                  name="NomeTitular"
+                  value={formData.NomeTitular}
+                  onChange={handleInputChangeEvent}
+                  placeholder="Nome completo do titular"
+                  disabled={loading}
+                  className="form-input"
+                />
+                {errors.NomeTitular && <span className="error-message">{errors.NomeTitular}</span>}
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">CPF/CNPJ do Titular *</label>
+                <Input
+                  ref={formData.DocumentoTitular?.length <= 14 ? cpfTitularMask : cnpjTitularMask}
+                  type="text"
+                  name="DocumentoTitular"
+                  value={formData.DocumentoTitular}
+                  onChange={handleInputChangeEvent}
+                  placeholder="CPF ou CNPJ do titular"
+                  disabled={loading}
+                  className="form-input"
+                />
+                {errors.DocumentoTitular && <span className="error-message">{errors.DocumentoTitular}</span>}
               </div>
             </div>
             
             <div className="form-row">
-              <div className="form-group full-width">
-                <label className="form-label">Chave PIX (opcional)</label>
-                <input
-                  type="text"
-                  value={formData.pix}
-                  onChange={(e) => handleInputChange('pix', e.target.value)}
-                  className="form-input"
-                  placeholder="Ex: email@exemplo.com, CPF, telefone..."
+              <div className="form-group">
+                <label className="form-label">Selecionado *</label>
+                <select
+                  name="Selecionado"
+                  value={formData.Selecionado}
+                  onChange={handleInputChangeEvent}
+                  className="form-select"
                   disabled={loading}
-                />
+                >
+                  <option value="S">Sim</option>
+                  <option value="N">Não</option>
+                </select>
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Ponto de Atendimento *</label>
+                <select
+                  value="V-CAR"
+                  className="form-select"
+                  disabled
+                >
+                  <option value="V-CAR">V-CAR</option>
+                </select>
               </div>
             </div>
           </div>
@@ -244,7 +469,6 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
         }
 
         .form-section {
-          padding: 24px;
           border-bottom: 1px solid #e9ecef;
         }
 
@@ -288,6 +512,7 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
           border: 1px solid #ced4da;
           border-radius: 6px;
           font-size: 14px;
+          height: 57px;
           transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
           background: white;
         }

@@ -224,6 +224,48 @@ module.exports = {
             return false;
         }
     },
+    getServicoByNameReserva: async () => {
+        let result = await db.query(`
+                SELECT
+                A.IdServico,
+                A.Descricao,
+                LEFT(CONVERT(VARCHAR, TempoMedio),5) AS TempoMedio,
+                A.IdUsuario,
+                A.DataLog,
+                A.AtivoInativo,
+                A.ValorServico,
+                A.ValorRepasse,
+                A.Observacoes,
+                B.Nome,
+                A.LimiteAnual,
+                A.ValorAdicional,
+                A.Visivel,
+                A.Garantia,
+                A.TipoVeiculo,
+                A.Tipo,
+                A.FornecidoPelaVcar
+                FROM Servicos AS A
+                JOIN Usuarios AS B
+                ON A.IdUsuario = B.IdUsuario
+                WHERE A.AtivoInativo = 'A' AND A.Tipo='RESERVA';
+            `, {});
+        
+        return result.recordset[0];
+    },
+    getServicoTrocaDeOleoByVeiculoTipo: async (motivacaoTrocaDeOleo, tipoVeiculo) => {
+        let result = await db.query(`
+                SELECT IdServico FROM Servicos WHERE Tipo=@motivacaoTrocaDeOleo AND TipoVeiculo=@tipoVeiculo AND AtivoInativo='A';
+            `, {motivacaoTrocaDeOleo, tipoVeiculo});
+        return result.recordset[0];
+    },
+    getSocioVeiculoCapacidadeLitros: async (idSocioVeiculo) => {
+        let result = await db.query(`
+            SELECT Litragem 
+            FROM SociosVeiculos 
+            WHERE IdSocioVeiculo = @idSocioVeiculo;
+        `, {idSocioVeiculo});
+        return result.recordset[0];
+    },
     getAgendamentosByPontoAtendimento: async (idPontoAtendimento, dataAgendamento) => {
         let result = await db.query(`
             SELECT 

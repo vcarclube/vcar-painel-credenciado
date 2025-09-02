@@ -1,7 +1,6 @@
 .dados-bancarios-container {
   padding: var(--spacing-lg);
   max-width: 1400px;
-  margin: 0 auto;
 }
 
 .dados-bancarios-header {
@@ -10,6 +9,12 @@
   padding: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
+}
+
+.acoes-container-dados-bancarios{
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .dados-bancarios-title {
@@ -542,4 +547,47 @@
   .btn-acao span {
     font-size: 10px;
   }
+}
+
+/* Estilos para linha selecionada */
+.linha-selecionada {
+  background-color: #f0f9ff !important;
+  border-left: 4px solid #0ea5e9;
+}
+
+.linha-selecionada:hover {
+  background-color: #e0f2fe !important;
+}
+
+/* Estilos para status de seleção */
+.status-selecionado {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-selecionado.selecionado {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.status-selecionado.nao-selecionado {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* Destaque para cards mobile selecionados */
+.dados-bancarios-card.selecionado {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-left: 4px solid #0ea5e9;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+}
+
+.dados-bancarios-card.selecionado .card-header {
+  background-color: rgba(14, 165, 233, 0.1);
 }

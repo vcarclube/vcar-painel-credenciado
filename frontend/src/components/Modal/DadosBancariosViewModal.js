@@ -13,43 +13,102 @@ const DadosBancariosViewModal = ({ isOpen, onClose, dado }) => {
       size="medium"
     >
       <div className="view-modal-content">
+        {/* Seção PIX - só mostra se tiver dados PIX */}
+        {dado.ChavePix && (
+          <div className="view-info">
+            <div className="info-header">
+              <h4 className="info-title">PIX</h4>
+              <span className="info-subtitle">Dados para recebimento via PIX</span>
+            </div>
+            
+            <div className="info-details">
+              <div className="detail-row">
+                <div className="detail-item">
+                  <label className="detail-label">Tipo de Chave PIX</label>
+                  <span className="detail-value">{dado.TipoChavePix || 'CPF'}</span>
+                </div>
+                
+                <div className="detail-item">
+                  <label className="detail-label">Chave PIX</label>
+                  <span className="detail-value">{dado.ChavePix}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Seção Dados Bancários - só mostra se tiver dados bancários */}
+        {dado.Banco && (
+          <div className="view-info">
+            <div className="info-header">
+              <h4 className="info-title">Dados Bancários</h4>
+              <span className="info-subtitle">Dados para recebimento via transferência</span>
+            </div>
+            
+            <div className="info-details">
+              <div className="detail-row">
+                <div className="detail-item">
+                  <label className="detail-label">Banco</label>
+                  <span className="detail-value">{dado.Banco}</span>
+                </div>
+                
+                <div className="detail-item">
+                  <label className="detail-label">Agência</label>
+                  <span className="detail-value">{dado.NumeroAgencia}</span>
+                </div>
+              </div>
+              
+              <div className="detail-row">
+                <div className="detail-item">
+                  <label className="detail-label">Conta</label>
+                  <span className="detail-value">{dado.NumeroConta}</span>
+                </div>
+                
+                <div className="detail-item">
+                  <label className="detail-label">Tipo de Conta</label>
+                  <span className="detail-value">{dado.TipoConta === 'CORRENTE' ? 'Conta Corrente' : 'Conta Poupança'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="view-info">
           <div className="info-header">
-            <h4 className="info-title">Informações Bancárias</h4>
-            <span className={`status-badge status-${dado.status?.toLowerCase()}`}>
-              {dado.status}
-            </span>
+            <h4 className="info-title">Dados do Titular</h4>
           </div>
           
           <div className="info-details">
             <div className="detail-row">
               <div className="detail-item">
-                <label className="detail-label">Banco:</label>
-                <span className="detail-value">{dado.banco}</span>
+                <label className="detail-label">Nome do Titular</label>
+                <span className="detail-value">{dado.NomeTitular}</span>
               </div>
               
               <div className="detail-item">
-                <label className="detail-label">Agência:</label>
-                <span className="detail-value">{dado.agencia}</span>
+                <label className="detail-label">CPF/CNPJ do Titular</label>
+                <span className="detail-value">{dado.DocumentoTitular}</span>
               </div>
             </div>
             
             <div className="detail-row">
               <div className="detail-item">
-                <label className="detail-label">Conta:</label>
-                <span className="detail-value">{dado.conta}</span>
+                <label className="detail-label">Selecionado</label>
+                <span className={`detail-value status-badge ${dado.Selecionado === 'S' ? 'selecionado' : 'nao-selecionado'}`}>
+                  {dado.Selecionado === 'S' ? 'SIM' : 'NÃO'}
+                </span>
               </div>
               
               <div className="detail-item">
-                <label className="detail-label">Tipo de Conta:</label>
-                <span className="detail-value">{dado.tipoConta}</span>
+                <label className="detail-label">Ponto de Atendimento</label>
+                <span className="detail-value">V-CAR</span>
               </div>
             </div>
             
             <div className="detail-row">
-              <div className="detail-item full-width">
-                <label className="detail-label">PIX:</label>
-                <span className="detail-value">{dado.pix || 'Não informado'}</span>
+              <div className="detail-item">
+                <label className="detail-label">Data de Cadastro</label>
+                <span className="detail-value">{new Date(dado.DataCadastro).toLocaleDateString('pt-BR')}</span>
               </div>
             </div>
           </div>
@@ -153,6 +212,28 @@ const DadosBancariosViewModal = ({ isOpen, onClose, dado }) => {
           padding: 8px 12px;
           border-radius: 6px;
           border: 1px solid #e2e8f0;
+        }
+
+        .status-badge {
+          display: inline-block;
+          padding: 6px 12px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 600;
+          text-transform: uppercase;
+          text-align: center;
+        }
+
+        .status-badge.selecionado {
+          background-color: #dcfce7;
+          color: #166534;
+          border: 1px solid #bbf7d0;
+        }
+
+        .status-badge.nao-selecionado {
+          background-color: #fef2f2;
+          color: #991b1b;
+          border: 1px solid #fecaca;
         }
 
         .modal-actions {

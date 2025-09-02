@@ -1,72 +1,138 @@
-import React, { useEffect, useState } from 'react';
-import { FiPlus, FiEye, FiEdit, FiTrash2, FiCreditCard } from 'react-icons/fi';
+import React, { useContext, useEffect, useState } from 'react';
+import { FiPlus, FiEye, FiEdit, FiTrash2, FiCreditCard, FiFilter } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation } from '../../components';
 import DadosBancariosViewModal from '../../components/Modal/DadosBancariosViewModal';
 import DadosBancariosCreateModal from '../../components/Modal/DadosBancariosCreateModal';
+import DadosBancariosDeleteModal from '../../components/Modal/DadosBancariosDeleteModal';
+import Api from '../../Api';
+import { toast } from 'react-toastify';
 import '../Home/style.css';
 import './style.css';
+import { MainContext } from '../../helpers/MainContext';
+
+// Estilos CSS para elementos selecionados
+const styles = `
+  .dados-bancarios-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .dados-bancarios-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .dados-bancarios-card.card-selecionado {
+    background: rgba(40, 167, 69, 0.1);
+    border: 2px solid var(--primary);
+    box-shadow: 0 4px 16px rgba(40, 167, 69, 0.2);
+  }
+
+  .dados-bancarios-table tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+  }
+
+  .dados-bancarios-table tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+
+  .dados-bancarios-table tbody tr.row-selecionado {
+    background-color: rgba(40, 167, 69, 0.1);
+    border-left: 4px solid var(--primary);
+  }
+
+  .dados-bancarios-table tbody tr.row-selecionado:hover {
+    background-color: rgba(40, 167, 69, 0.15);
+  }
+
+  .status-selecionado {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .status-selecionado.selecionado {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 1px solid #28a745;
+  }
+
+  .status-selecionado.nao-selecionado {
+    background-color: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+    border: 1px solid #6c757d;
+  }
+`;
+
+// Injetar estilos no documento
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = styles;
+  document.head.appendChild(styleElement);
+}
 
 const DadosBancarios = () => {
+  // Aplicar estilos quando o componente for montado
+  useEffect(() => {
+    const styleId = 'dados-bancarios-styles';
+    if (!document.getElementById(styleId)) {
+      const styleElement = document.createElement('style');
+      styleElement.id = styleId;
+      styleElement.textContent = styles;
+      document.head.appendChild(styleElement);
+    }
+  }, []);
+  const { user } = useContext(MainContext);
+
   const [showViewModal, setShowViewModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedDado, setSelectedDado] = useState(null);
-  const [filtroStatus, setFiltroStatus] = useState('');
-  const [filtroBanco, setFiltroBanco] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState('');
+  const [editingDado, setEditingDado] = useState(null);
+  const [deletingDado, setDeletingDado] = useState(null);
+  const [filtroSelecionado, setFiltroSelecionado] = useState('');
+  const [filtroPontoAtendimento, setFiltroPontoAtendimento] = useState('');
+  const [filtroTipoPagamento, setFiltroTipoPagamento] = useState('');
+  const [dadosBancarios, setDadosBancarios] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Dados bancários de exemplo
-  const dadosBancarios = [
-    {
-      id: 1,
-      banco: 'Banco do Brasil',
-      agencia: '1234-5',
-      conta: '12345-6',
-      tipo: 'Conta Corrente',
-      titular: 'João Silva Santos',
-      cpfCnpj: '123.456.789-00',
-      status: 'ATIVO',
-      dataCadastro: '15/01/2024',
-      principal: true
-    },
-    {
-      id: 2,
-      banco: 'Itaú Unibanco',
-      agencia: '5678-9',
-      conta: '67890-1',
-      tipo: 'Conta Poupança',
-      titular: 'Maria Oliveira Costa',
-      cpfCnpj: '987.654.321-00',
-      status: 'ATIVO',
-      dataCadastro: '20/02/2024',
-      principal: false
-    },
-    {
-      id: 3,
-      banco: 'Caixa Econômica Federal',
-      agencia: '9876-5',
-      conta: '54321-0',
-      tipo: 'Conta Corrente',
-      titular: 'Pedro Santos Lima',
-      cpfCnpj: '456.789.123-00',
-      status: 'INATIVO',
-      dataCadastro: '10/03/2024',
-      principal: false
+  // Função para carregar dados bancários da API
+  const loadDadosBancarios = async () => {
+    setLoading(true);
+    try {
+      // Aqui você deve obter o idPontoAtendimento do contexto/localStorage
+      const idPontoAtendimento = user?.IdPontoAtendimento;
+      const response = await Api.getDadosBancarioByPontoAtendimento({ idPontoAtendimento });
+      
+      if (response.status === 200) {
+        setDadosBancarios(response.data.dadosBancarios || []);
+      } else {
+        toast.error('Erro ao carregar dados bancários');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados bancários:', error);
+      toast.error('Erro ao carregar dados bancários');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
+    loadDadosBancarios();
   }, []);
 
-  const getStatusClass = (status) => {
-    switch (status) {
-      case 'ATIVO':
-        return 'status-ativo';
-      case 'INATIVO':
-        return 'status-inativo';
-      default:
-        return '';
-    }
+  const handleNovoDado = () => {
+    setSelectedDado(null);
+    setShowCreateModal(true);
   };
 
   const handleVisualizarDado = (dado) => {
@@ -79,29 +145,66 @@ const DadosBancarios = () => {
     setShowCreateModal(true);
   };
 
-  const handleExcluirDado = (dado) => {
-    if (window.confirm(`Tem certeza que deseja excluir os dados bancários do ${dado.banco}?`)) {
-      console.log('Excluindo dado bancário:', dado.id);
-      // Aqui seria implementada a lógica de exclusão
+  const handleSaveDado = async (dadoData) => {
+    setLoading(true);
+    try {
+      if (selectedDado) {
+        // Editar
+        await Api.editDadosBancariosPontoAtendimento({ idDadoBancario: selectedDado.IdDadoBancario, ...dadoData });
+        toast.success('Dados bancários atualizados com sucesso!');
+      } else {
+        // Criar
+        await Api.addDadosBancariosPontoAtendimento(dadoData);
+        toast.success('Dados bancários criados com sucesso!');
+      }
+      setShowCreateModal(false);
+      setSelectedDado(null);
+      loadDadosBancarios();
+    } catch (error) {
+      console.error('Erro ao salvar dados bancários:', error);
+      toast.error('Erro ao salvar dados bancários');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleNovoDado = () => {
-    setSelectedDado(null);
-    setShowCreateModal(true);
+  const handleDelete = (dado) => {
+    setDeletingDado(dado);
+    setShowDeleteModal(true);
   };
+  
+  const handleConfirmDelete = async () => {
+    if (!deletingDado) return;
 
-  const handleConfirmCreate = (dadoData) => {
-    console.log('Criando/editando dado bancário:', dadoData);
-    setShowCreateModal(false);
-    setSelectedDado(null);
+    setLoading(true);
+    try {
+      await Api.deleteDadosBancariosPontoAtendimento({ IdDadoBancario: deletingDado.IdDadoBancario });
+      toast.success('Dados bancários excluídos com sucesso!');
+      setShowDeleteModal(false);
+      setDeletingDado(null);
+      loadDadosBancarios();
+    } catch (error) {
+      console.error('Erro ao excluir dados bancários:', error);
+      toast.error('Erro ao excluir dados bancários');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeletingDado(null);
   };
 
   const dadosFiltrados = dadosBancarios.filter(dado => {
-    const matchStatus = !filtroStatus || dado.status === filtroStatus;
-    const matchBanco = !filtroBanco || dado.banco.toLowerCase().includes(filtroBanco.toLowerCase());
-    const matchTipo = !filtroTipo || dado.tipo === filtroTipo;
-    return matchStatus && matchBanco && matchTipo;
+    const matchSelecionado = !filtroSelecionado || dado.Selecionado === filtroSelecionado;
+    const matchPontoAtendimento = !filtroPontoAtendimento || true; // Todos são V-CAR
+    
+    // Detectar tipo de pagamento baseado nos dados existentes
+    const tipoPagamento = (dado.ChavePix && dado.TipoChavePix) ? 'PIX' : 'TRANSFERENCIA';
+    const matchTipoPagamento = !filtroTipoPagamento || tipoPagamento === filtroTipoPagamento;
+    
+    return matchSelecionado && matchPontoAtendimento && matchTipoPagamento;
   });
 
   return (
@@ -109,203 +212,211 @@ const DadosBancarios = () => {
       <Sidebar />
       <div className="main-content">
         <Header />
-        <div className="dados-bancarios-container">
-          <div className="dados-bancarios-header">
-            <div className="dados-bancarios-title">
-              <FiCreditCard className="dados-bancarios-icon" />
-              <h1>Dados Bancários</h1>
-            </div>
-            
-            <div className="dados-bancarios-filters">
-              <div className="filter-group">
-                <label>Banco</label>
-                <input
-                  type="text"
-                  placeholder="Filtrar por banco"
-                  value={filtroBanco}
-                  onChange={(e) => setFiltroBanco(e.target.value)}
-                />
+        <center>
+          <div className="dados-bancarios-container">
+            <div className="dados-bancarios-header">
+              <div className="dados-bancarios-title">
+                <FiCreditCard className="dados-bancarios-icon" />
+                <h1>Dados Bancários</h1>
               </div>
               
-              <div className="filter-group">
-                <label>Tipo de Conta</label>
-                <select
-                  value={filtroTipo}
-                  onChange={(e) => setFiltroTipo(e.target.value)}
-                >
-                  <option value="">Todos os tipos</option>
-                  <option value="Conta Corrente">Conta Corrente</option>
-                  <option value="Conta Poupança">Conta Poupança</option>
-                </select>
-              </div>
-              
-              <div className="filter-group">
-                <label>Status</label>
-                <select
-                  value={filtroStatus}
-                  onChange={(e) => setFiltroStatus(e.target.value)}
-                >
-                  <option value="">Todos os status</option>
-                  <option value="ATIVO">Ativo</option>
-                  <option value="INATIVO">Inativo</option>
-                </select>
-              </div>
-              
-              <div className="filter-group">
-                <button 
-                  className="btn-novo-dado"
-                  onClick={handleNovoDado}
-                >
-                  <FiPlus />
-                  <span>Novo Dado</span>
-                </button>
+              <div className="dados-bancarios-filters">
+                <div className="filter-group">
+                  <label>Tipo de Pagamento:</label>
+                  <select 
+                    value={filtroTipoPagamento}
+                    onChange={(e) => setFiltroTipoPagamento(e.target.value)}
+                  >
+                    <option value="">[ TODOS ]</option>
+                    <option value="PIX">PIX</option>
+                    <option value="TRANSFERENCIA">TRANSFERÊNCIA</option>
+                  </select>
+                </div>
+                
+                <div className="filter-group">
+                  <label>Selecionado</label>
+                  <select
+                    value={filtroSelecionado}
+                    onChange={(e) => setFiltroSelecionado(e.target.value)}
+                  >
+                    <option value="">Todos</option>
+                    <option value="S">Sim</option>
+                    <option value="N">Não</option>
+                  </select>
+                </div>
+                
+                <div className="filter-group">
+                  <button 
+                    className="btn-novo-dado"
+                    onClick={handleNovoDado}
+                  >
+                    <FiPlus />
+                    <span>Novo Dado</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Layout Mobile - Cards */}
-          <div className="dados-bancarios-mobile-cards">
-            <div className="cards-header">
-              <span>Dados Bancários ({dadosFiltrados.length})</span>
-            </div>
-            {dadosFiltrados.map((dado) => (
-              <div key={dado.id} className={`dados-bancarios-card ${dado.principal ? 'card-principal' : ''}`}>
+            {/* Layout Mobile - Cards */}
+            <div className="dados-bancarios-mobile-cards">
+              <div className="cards-header">
+                <span>Dados Bancários ({dadosFiltrados.length})</span>
+              </div>
+              {dadosFiltrados.map((dado) => (
+              <div key={dado.IdDadoBancario} className={`dados-bancarios-card ${dado.Selecionado === 'S' ? 'card-selecionado' : ''}`}>
                 <div className="card-content">
                   <div className="card-info">
                     <div className="card-status">
-                      <span className="card-banco">
-                        {dado.banco}
-                        {dado.principal && (
-                          <span className="tag-principal">PRINCIPAL</span>
-                        )}
+                      <span className="card-tipo">
+                        {(dado.ChavePix && dado.TipoChavePix) ? 'PIX' : 'TRANSFERENCIA'}
+                      </span>
+                      <span className={`status-selecionado ${dado.Selecionado === 'S' ? 'selecionado' : 'nao-selecionado'}`}>
+                        {dado.Selecionado === 'S' ? 'SELECIONADO' : 'NÃO SELECIONADO'}
                       </span>
                     </div>
                     <div className="card-details">
                       <div>
-                        <strong>Agência:</strong> {dado.agencia}
+                        <strong>Tipo de Chave:</strong> {dado.TipoChavePix}
                       </div>
                       <div>
-                        <strong>Conta:</strong> {dado.conta}
+                        <strong>Chave PIX:</strong> {dado.ChavePix}
                       </div>
                       <div>
-                        <strong>Tipo:</strong> {dado.tipo}
+                        <strong>Titular:</strong> {dado.NomeTitular}
                       </div>
                       <div>
-                        <strong>Titular:</strong> {dado.titular}
+                        <strong>CPF/CNPJ:</strong> {dado.DocumentoTitular}
                       </div>
                       <div>
-                        <strong>Status:</strong>
-                        <span className={`status-badge ${getStatusClass(dado.status)}`}>
-                          {dado.status}
-                        </span>
+                        <strong>Data Cadastro:</strong> {new Date(dado.DataCadastro).toLocaleDateString('pt-BR')}
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="card-actions">
-                  <button 
-                    className="btn-acao btn-visualizar"
-                    onClick={() => handleVisualizarDado(dado)}
-                    title="Visualizar"
-                  >
-                    <FiEye />
-                    <span>Visualizar</span>
-                  </button>
-                  <button 
-                    className="btn-acao btn-editar"
-                    onClick={() => handleEditarDado(dado)}
-                    title="Editar"
-                  >
-                    <FiEdit />
-                    <span>Editar</span>
-                  </button>
-                  <button 
-                    className="btn-acao btn-excluir"
-                    onClick={() => handleExcluirDado(dado)}
-                    title="Excluir"
-                  >
-                    <FiTrash2 />
-                    <span>Excluir</span>
-                  </button>
+                  <div className="card-actions">
+                    <button 
+                      className="btn-acao btn-visualizar"
+                      onClick={() => handleVisualizarDado(dado)}
+                      title="Visualizar"
+                    >
+                      <FiEye />
+                      <span>Visualizar</span>
+                    </button>
+                    <button 
+                      className="btn-acao btn-editar"
+                      onClick={() => handleEditarDado(dado)}
+                      title="Editar"
+                    >
+                      <FiEdit />
+                      <span>Editar</span>
+                    </button>
+                    <button 
+                      className="btn-acao btn-excluir"
+                      onClick={() => handleDelete(dado)}
+                      title="Excluir"
+                    >
+                      <FiTrash2 />
+                      <span>Excluir</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          {/* Layout Desktop - Tabela */}
-          <div className="dados-bancarios-table-container">
-            <table className="dados-bancarios-table">
-              <thead>
-                <tr>
-                  <th>Banco</th>
-                  <th>Agência</th>
-                  <th>Conta</th>
-                  <th>Tipo</th>
-                  <th>Titular</th>
-                  <th>CPF/CNPJ</th>
-                  <th>Status</th>
-                  <th>Data Cadastro</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dadosFiltrados.map((dado) => (
-                  <tr key={dado.id} className={dado.principal ? 'row-principal' : ''}>
-                    <td className="banco">
-                      {dado.banco}
-                      {dado.principal && (
-                        <span className="tag-principal">PRINCIPAL</span>
-                      )}
-                    </td>
-                    <td className="agencia">{dado.agencia}</td>
-                    <td className="conta">{dado.conta}</td>
-                    <td className="tipo">{dado.tipo}</td>
-                    <td className="titular">
-                      <div className="titular-info">
-                        <div className="nome">{dado.titular}</div>
-                      </div>
-                    </td>
-                    <td className="documento">{dado.cpfCnpj}</td>
-                    <td>
-                      <span className={`status-badge ${getStatusClass(dado.status)}`}>
-                        {dado.status}
-                      </span>
-                    </td>
-                    <td className="data-cadastro">{dado.dataCadastro}</td>
-                    <td className="acoes">
-                      <div className="acoes-container">
-                        <button 
-                          className="btn-acao btn-visualizar"
-                          onClick={() => handleVisualizarDado(dado)}
-                          title="Visualizar"
-                        >
-                          <FiEye />
-                          <span>Visualizar</span>
-                        </button>
-                        <button 
-                          className="btn-acao btn-editar"
-                          onClick={() => handleEditarDado(dado)}
-                          title="Editar"
-                        >
-                          <FiEdit />
-                          <span>Editar</span>
-                        </button>
-                        <button 
-                          className="btn-acao btn-excluir"
-                          onClick={() => handleExcluirDado(dado)}
-                          title="Excluir"
-                        >
-                          <FiTrash2 />
-                          <span>Excluir</span>
-                        </button>
-                      </div>
-                    </td>
+            {/* Layout Desktop - Tabela */}
+            <div className="dados-bancarios-table-container">
+              <table className="dados-bancarios-table">
+                <thead>
+                  <tr>
+                    <th>Selecionado</th>
+                    <th>Tipo</th>
+                    <th>Dados PIX</th>
+                    <th>Dados Bancários</th>
+                    <th>Nome Titular</th>
+                    <th>CPF/CNPJ</th>
+                    <th>Ponto Atendimento</th>
+                    <th>Data Cadastro</th>
+                    <th>Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {dadosFiltrados.map((dado) => (
+                    <tr key={dado.IdDadoBancario} className={dado.Selecionado === 'S' ? 'row-selecionado' : ''}>
+                      <td>
+                        <span className={`status-selecionado ${dado.Selecionado === 'S' ? 'selecionado' : 'nao-selecionado'}`}>
+                          {dado.Selecionado === 'S' ? 'SIM' : 'NÃO'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="tipo-badge">
+                          <FiCreditCard className="tipo-icon" />
+                          {(dado.ChavePix && dado.TipoChavePix) ? 'PIX' : 'TRANSFERENCIA'}
+                        </span>
+                      </td>
+                      <td>
+                        {(dado.ChavePix && dado.TipoChavePix) ? (
+                          <div className="dados-pix">
+                            <div className="pix-tipo">{dado.TipoChavePix}</div>
+                            <div className="pix-chave">{dado.ChavePix}</div>
+                          </div>
+                        ) : (
+                          <div className="dados-pix">
+                            <div className="pix-tipo">-</div>
+                            <div className="pix-chave">-</div>
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        {dado.Banco ? (
+                            <div className="dados-bancarios">
+                              <div className="banco-nome">{dado.Banco}</div>
+                              <div className="conta-info">
+                                Ag: {dado.NumeroAgencia} | Conta: {dado.NumeroConta}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="dados-bancarios">
+                              <div className="banco-nome">-</div>
+                              <div className="conta-info">-</div>
+                            </div>
+                          )}
+                        </td>
+                      <td>{dado.NomeTitular}</td>
+                      <td>{dado.DocumentoTitular}</td>
+                      <td>V-CAR</td>
+                      <td>{new Date(dado.DataCadastro).toLocaleDateString('pt-BR')}</td>
+                      <td>
+                        <div className="acoes-container-dados-bancarios">
+                          <button 
+                            className="btn-acao btn-visualizar"
+                            onClick={() => handleVisualizarDado(dado)}
+                            title="Visualizar"
+                          >
+                            <FiEye />
+                          </button>
+                          <button 
+                            className="btn-acao btn-editar"
+                            onClick={() => handleEditarDado(dado)}
+                            title="Editar"
+                          >
+                            <FiEdit />
+                          </button>
+                          <button 
+                            className="btn-acao btn-excluir"
+                            onClick={() => handleDelete(dado)}
+                            title="Excluir"
+                          >
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </center>  
       </div>
       <BottomNavigation />
       
@@ -319,8 +430,17 @@ const DadosBancarios = () => {
       <DadosBancariosCreateModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onConfirm={handleConfirmCreate}
+        onSave={handleSaveDado}
         dado={selectedDado}
+        loading={loading}
+      />
+      
+      <DadosBancariosDeleteModal
+        isOpen={showDeleteModal}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        dado={deletingDado}
+        loading={loading}
       />
     </div>
   );

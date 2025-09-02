@@ -71,6 +71,13 @@ const Api = {
             return err;
         });
     },
+    agendar: async ({idPontoAtendimento, idSocio, idSocioVeiculo, data, hora, motivo, pecaPorContaDoSocio}) => {
+        return await axios.post(`${API_BASE}/agendamentos/agendar`, {idPontoAtendimento, idSocio, idSocioVeiculo, data, hora, motivo, pecaPorContaDoSocio}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
     reagendar: async ({idSocioVeiculoAgenda, idPontoAtendimento, idSocio, idSocioVeiculo, data, hora, motivo}) => {
         return await axios.post(`${API_BASE}/agendamentos/reagendar`, {idSocioVeiculoAgenda, idPontoAtendimento, idSocio, idSocioVeiculo, data, hora, motivo}, Environment.HEADERS).then(async (response) => {
             return await response;
@@ -262,6 +269,34 @@ const Api = {
     },
     enviarConvite: async ({telefone, placa}) => {
         return await axios.post(`${API_BASE}/scanner/enviar-convite`, {telefone, placa}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    getDadosBancarioByPontoAtendimento: async ({idPontoAtendimento}) => {
+        return await axios.get(`${API_BASE}/ponto-atendimento/get-dados-bancarios/${idPontoAtendimento}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    editDadosBancariosPontoAtendimento: async ({IdDadoBancario, TipoChavePix, ChavePix, Banco, NumeroAgencia, NumeroConta, TipoConta, NomeTitular, DocumentoTitular, IdPontoAtendimento, Selecionado}) => {
+        return await axios.post(`${API_BASE}/ponto-atendimento/edit-dado-bancario`, {IdDadoBancario, TipoChavePix, ChavePix, Banco, NumeroAgencia, NumeroConta, TipoConta, NomeTitular, DocumentoTitular, IdPontoAtendimento, Selecionado}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    addDadosBancariosPontoAtendimento: async ({TipoChavePix, ChavePix, Banco, NumeroAgencia, NumeroConta, TipoConta, NomeTitular, DocumentoTitular, IdPontoAtendimento, Selecionado}) => {
+        return await axios.post(`${API_BASE}/ponto-atendimento/add-dado-bancario`, {TipoChavePix, ChavePix, Banco, NumeroAgencia, NumeroConta, TipoConta, NomeTitular, DocumentoTitular, IdPontoAtendimento, Selecionado}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    deleteDadosBancariosPontoAtendimento: async ({IdDadoBancario}) => {
+        return await axios.post(`${API_BASE}/ponto-atendimento/delete-dado-bancario`, {IdDadoBancario}, Environment.HEADERS).then(async (response) => {
             return await response;
         }).catch(err => {
             return err;
