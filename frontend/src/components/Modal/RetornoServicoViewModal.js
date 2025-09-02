@@ -145,7 +145,7 @@ const RetornoServicoViewModal = ({ isOpen, onClose, retorno }) => {
               <FiFileText className="retorno-view-section-icon" />
               Arquivos
             </h4>
-            <div className="retorno-view-files">
+            <div className="retorno-view-files retorno-view-grid">
               {retorno.Fotos && (
                 <div className="retorno-view-file-group">
                   <span className="retorno-view-file-label">📷 Fotos:</span>
