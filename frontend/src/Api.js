@@ -301,7 +301,56 @@ const Api = {
         }).catch(err => {
             return err;
         });
-    }
+    },
+    listaRetornosServico: async ({idPontoAtendimento}) => {
+        return await axios.get(`${API_BASE}/retorno-servico/lista/${idPontoAtendimento}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    addRetornoServico: async ({data}) => {
+        return await axios.post(`${API_BASE}/retorno-servico/adicionar`, {data}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    updateRetornoServico: async ({data}) => {
+        return await axios.post(`${API_BASE}/retorno-servico/atualizar`, {data}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    deleteRetornoServico: async ({idRetornoServico}) => {
+        return await axios.post(`${API_BASE}/retorno-servico/deletar`, {idRetornoServico}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    getAgendamentosDisponiveis: async ({idPontoAtendimento}) => {
+        return await axios.get(`${API_BASE}/retorno-servico/agendamentos-disponiveis/${idPontoAtendimento}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    getPontosAtendimento: async () => {
+        return await axios.get(`${API_BASE}/retorno-servico/pontos-atendimento`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    concluirAgendamento: async ({idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio}) => {
+        return await axios.post(`${API_BASE}/agendamentos/concluir`, {idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
 }
 
 export default Api;

@@ -55,41 +55,37 @@ const RetornoServicoViewModal = ({ isOpen, onClose, retorno }) => {
           <div className="retorno-view-os">
             <FiFileText className="retorno-view-icon" />
             <div>
-              <span className="retorno-view-label">OS</span>
-              <span className="retorno-view-value">{retorno.os}</span>
+              <span className="retorno-view-label">ID</span>
+              <span className="retorno-view-value">{retorno.IdRetornoServico}</span>
             </div>
           </div>
           
           <div className="retorno-view-status">
             <span 
               className="retorno-view-status-badge"
-              style={{ backgroundColor: getStatusColor(retorno.status) }}
+              style={{ backgroundColor: getStatusColor(retorno.Status) }}
             >
-              {retorno.status}
+              {retorno.Status}
             </span>
             <span 
               className="retorno-view-tipo-badge"
-              style={{ backgroundColor: getTipoColor(retorno.tipo) }}
+              style={{ backgroundColor: getTipoColor(retorno.Tipo) }}
             >
-              {retorno.tipo}
+              {retorno.Tipo}
             </span>
           </div>
         </div>
 
-        {/* Informações do cliente e veículo */}
+        {/* Informações do agendamento */}
         <div className="retorno-view-section">
           <h4 className="retorno-view-section-title">
             <FiUser className="retorno-view-section-icon" />
-            Cliente e Veículo
+            Agendamento
           </h4>
           <div className="retorno-view-grid">
             <div className="retorno-view-field">
-              <span className="retorno-view-field-label">Placa:</span>
-              <span className="retorno-view-field-value">{retorno.placa}</span>
-            </div>
-            <div className="retorno-view-field">
-              <span className="retorno-view-field-label">Parceiro:</span>
-              <span className="retorno-view-field-value">{retorno.parceiro}</span>
+              <span className="retorno-view-field-label">ID Agendamento:</span>
+              <span className="retorno-view-field-value">{retorno.IdSocioVeiculoAgenda}</span>
             </div>
           </div>
         </div>
@@ -100,39 +96,46 @@ const RetornoServicoViewModal = ({ isOpen, onClose, retorno }) => {
             <FiTruck className="retorno-view-section-icon" />
             Serviço
           </h4>
-          <div className="retorno-view-field">
-            <span className="retorno-view-field-label">Descrição:</span>
-            <span className="retorno-view-field-value">{retorno.servico}</span>
-          </div>
-        </div>
-
-        {/* Data e hora */}
-        <div className="retorno-view-section">
-          <h4 className="retorno-view-section-title">
-            <FiCalendar className="retorno-view-section-icon" />
-            Data e Hora
-          </h4>
           <div className="retorno-view-grid">
             <div className="retorno-view-field">
-              <span className="retorno-view-field-label">Data:</span>
-              <span className="retorno-view-field-value">{formatDate(retorno.data)}</span>
+              <span className="retorno-view-field-label">Tipo:</span>
+              <span className="retorno-view-field-value">{retorno.Tipo}</span>
             </div>
             <div className="retorno-view-field">
-              <span className="retorno-view-field-label">Hora:</span>
-              <span className="retorno-view-field-value">{formatTime(retorno.data)}</span>
+              <span className="retorno-view-field-label">Status:</span>
+              <span className="retorno-view-field-value">{retorno.Status}</span>
             </div>
           </div>
+          {retorno.Descricao && (
+            <div className="retorno-view-field">
+              <span className="retorno-view-field-label">Descrição:</span>
+              <span className="retorno-view-field-value">{retorno.Descricao}</span>
+            </div>
+          )}
         </div>
 
-        {/* Observações (se houver) */}
-        {retorno.observacoes && (
+
+
+        {/* Arquivos (se houver) */}
+        {(retorno.Fotos || retorno.Videos) && (
           <div className="retorno-view-section">
             <h4 className="retorno-view-section-title">
               <FiFileText className="retorno-view-section-icon" />
-              Observações
+              Arquivos
             </h4>
-            <div className="retorno-view-observacoes">
-              {retorno.observacoes}
+            <div className="retorno-view-grid">
+              {retorno.Fotos && (
+                <div className="retorno-view-field">
+                  <span className="retorno-view-field-label">Fotos:</span>
+                  <span className="retorno-view-field-value">📷 {retorno.Fotos}</span>
+                </div>
+              )}
+              {retorno.Videos && (
+                <div className="retorno-view-field">
+                  <span className="retorno-view-field-label">Vídeos:</span>
+                  <span className="retorno-view-field-value">🎥 {retorno.Videos}</span>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -81,6 +81,10 @@ const ExecutaOS = () => {
   }, []);
 
   useEffect(() => {
+    console.log(osData);
+  }, [osData])
+
+  useEffect(() => {
     getAgendamento();
     getServicos();
     getServicosVinculados();
@@ -130,6 +134,7 @@ const ExecutaOS = () => {
           id: _agendamento?.agendamento?.IdSocioVeiculoAgenda,
           numero: _agendamento?.agendamento?.NumeroOS,
           cliente: _agendamento?.socio?.Nome,
+          idSocio: _agendamento?.socio?.IdSocio,
           documento: _agendamento?.socio?.Cpf,
           veiculo: `${_agendamento?.socioVeiculo?.MarcaVeiculo} ${_agendamento?.socioVeiculo?.Ano} ${_agendamento?.socioVeiculo?.Litragem}`,
           placa: _agendamento?.socioVeiculo?.Placa?.toUpperCase(),
@@ -592,6 +597,15 @@ const ExecutaOS = () => {
       videoFinal: videoResult?.file
     })
     
+    await Api.concluirAgendamento({
+      idSocioVeiculoAgenda: osData.id,
+      idSocio: osData.idSocio,
+      idPontoAtendimentoUsuario: user.IdPontoAtendimentoUsuario,
+      data: new Date().toISOString()
+    })
+
+    await getAgendamento();
+
     setVideoFinalizacaoUploaded(true);
     setIsVideoFinalizacaoModalOpen(false);
     
@@ -838,7 +852,7 @@ const ExecutaOS = () => {
                   <div className="execucao-os__card-header">
                     <FiTool className="execucao-os__card-icon" />
                     <h3 className="execucao-os__card-title">Serviços</h3>
-                    <button className="execucao-os__add-btn" onClick={handleAddServico}>
+                    <button className="execucao-os__add-btn" style={{display: osData?.status == "CONCLUIDA" ? 'none' : undefined}} onClick={handleAddServico}>
                       <FiPlus size={16} />
                       Adicionar
                     </button>
@@ -848,7 +862,7 @@ const ExecutaOS = () => {
                       <div className="execucao-os__empty-state">
                         <FiTool className="execucao-os__empty-icon" />
                         <p>Nenhum serviço adicionado</p>
-                        <button className="execucao-os__empty-btn" onClick={handleAddServico}>
+                        <button className="execucao-os__empty-btn" style={{display: osData?.status == "CONCLUIDA" ? 'none' : undefined}} onClick={handleAddServico}>
                           Adicionar primeiro serviço
                         </button>
                       </div>
@@ -876,6 +890,7 @@ const ExecutaOS = () => {
                                   className="execucao-os__action-btn-action execucao-os__action-btn--delete"
                                   onClick={() => handleRemoveServico(servico)}
                                   title="Excluir serviço"
+                                  style={{display: osData?.status == "CONCLUIDA" ? 'none' : undefined}}
                                 >
                                   <FiTrash2 size={16} />
                                 </button>
@@ -970,7 +985,7 @@ const ExecutaOS = () => {
                   <div className="execucao-os__card-header">
                     <FiCamera className="execucao-os__card-icon" />
                     <h3 className="execucao-os__card-title">Fotos e Vídeos da Execução (opcional)</h3>
-                    <button className="execucao-os__add-btn" style={{padding: '8px 16px'}} onClick={handleAddMediaClick}>
+                    <button className="execucao-os__add-btn" onClick={handleAddMediaClick}>
                       <FiPlus size={16} />
                       Adicionar
                     </button>
@@ -1143,6 +1158,7 @@ const ExecutaOS = () => {
                   size="large"
                   onClick={handleFinalizarOS}
                   className="execucao-os__action-btn-custom"
+                  style={{display: osData?.status == "CONCLUIDA" ? 'none' : undefined}}
                 >
                   <FiCheck size={20} />
                   Finalizar OS

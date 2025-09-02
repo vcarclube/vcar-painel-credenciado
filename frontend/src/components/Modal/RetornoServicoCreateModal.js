@@ -1,34 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import Modal from './index';
 import { Button, Input, SearchableSelect } from '../index';
-import { FiPlus, FiX, FiCamera, FiVideo, FiUpload } from 'react-icons/fi';
+import { FiPlus, FiX, FiCamera, FiVideo, FiUpload, FiSave } from 'react-icons/fi';
+import { MainContext } from '../../helpers/MainContext';
+import { toast } from 'react-toastify';
+import Api from '../../Api';
 
-const RetornoServicoCreateModal = ({ isOpen, onClose, onCreate }) => {
+const RetornoServicoCreateModal = ({ isOpen, onClose, onSuccess }) => {
+  const { user } = useContext(MainContext);
   const [formData, setFormData] = useState({
-    agendamentoConcluido: '',
-    tipoRetorno: '',
-    status: 'ABERTO',
-    descricaoProblema: '',
-    fotos: [],
-    videos: []
+    IdSocioVeiculoAgenda: '',
+    Tipo: '',
+    Status: 'PENDENTE',
+    Descricao: '',
+    Fotos: '',
+    Videos: ''
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [agendamentos, setAgendamentos] = useState([]);
+  const [loadingAgendamentos, setLoadingAgendamentos] = useState(false);
 
   // Opções para os selects
   const tipoRetornoOptions = [
-    { value: 'SELECIONE...', label: 'SELECIONE...' },
-    { value: 'Garantia', label: 'Garantia' },
-    { value: 'Retrabalho', label: 'Retrabalho' },
-    { value: 'Manutenção', label: 'Manutenção' }
+    { value: 'PEÇA', label: 'PEÇA' },
+    { value: 'MÃO DE OBRA', label: 'MÃO DE OBRA' },
+    { value: 'ATENDIMENTO', label: 'ATENDIMENTO' },
+    { value: 'OUTROS', label: 'OUTROS' }
   ];
 
-  const statusOptions = [
-    { value: 'ABERTO', label: 'ABERTO' },
-    { value: 'EM_ANDAMENTO', label: 'EM ANDAMENTO' },
-    { value: 'CONCLUIDO', label: 'CONCLUÍDO' },
-    { value: 'CANCELADO', label: 'CANCELADO' }
+    const statusOptions = [
+    { value: 'A', label: 'PENDENTE' },
+    { value: 'P', label: 'EM CHAMADO' },
+    { value: 'C', label: 'CONCLUÍDO' }
   ];
+
+  // Carregar agendamentos disponíveis quando o modal abrir
+  useEffect(() => {
+    if (isOpen) {
+      loadAgendamentos();
+    }
+  }, [isOpen]);
+
+  const loadAgendamentos = async () => {
+    setLoadingAgendamentos(true);
+    try {
+      const response = await Api.getAgendamentosDisponiveis({idPontoAtendimento: user.IdPontoAtendimento});
+      if (response?.data?.success) {
+        const agendamentosFormatados = response.data.data.map(agendamento => ({
+          value: agendamento.IdSocioVeiculoAgenda,
+          label: `OS ${agendamento.NumeroOS} - ${agendamento.SocioNome} - ${agendamento.Placa} - ${agendamento.NomeServico.toUpperCase()}`
+        }));
+        setAgendamentos([{ value: '', label: 'SELECIONE...' }, ...agendamentosFormatados]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar agendamentos:', error);
+      toast.error('Erro ao carregar agendamentos disponíveis');
+    } finally {
+      setLoadingAgendamentos(false);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -48,20 +79,20 @@ const RetornoServicoCreateModal = ({ isOpen, onClose, onCreate }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.agendamentoConcluido.trim()) {
-      newErrors.agendamentoConcluido = 'Agendamento Concluído é obrigatório';
+    if (!formData.IdSocioVeiculoAgenda) {
+      newErrors.IdSocioVeiculoAgenda = 'Agendamento é obrigatório';
     }
 
-    if (!formData.tipoRetorno || formData.tipoRetorno === 'SELECIONE...') {
-      newErrors.tipoRetorno = 'Tipo do Retorno é obrigatório';
+    if (!formData.Tipo) {
+      newErrors.Tipo = 'Tipo do Retorno é obrigatório';
     }
 
-    if (!formData.status) {
-      newErrors.status = 'Status é obrigatório';
+    if (!formData.Status) {
+      newErrors.Status = 'Status é obrigatório';
     }
 
-    if (!formData.descricaoProblema.trim()) {
-      newErrors.descricaoProblema = 'Descrição do Problema é obrigatória';
+    if (!formData.Descricao.trim()) {
+      newErrors.Descricao = 'Descrição é obrigatória';
     }
 
     setErrors(newErrors);
@@ -69,36 +100,16 @@ const RetornoServicoCreateModal = ({ isOpen, onClose, onCreate }) => {
   };
 
   // Funções para upload de arquivos
-  const handleFileUpload = (type, files) => {
-    const fileArray = Array.from(files);
-    const maxSize = type === 'fotos' ? 5 * 1024 * 1024 : 50 * 1024 * 1024; // 5MB para fotos, 50MB para vídeos
-    const allowedTypes = type === 'fotos' 
-      ? ['image/jpeg', 'image/png', 'image/gif']
-      : ['video/mp4', 'video/avi', 'video/mov'];
-
-    const validFiles = fileArray.filter(file => {
-      if (file.size > maxSize) {
-        alert(`Arquivo ${file.name} é muito grande. Tamanho máximo: ${type === 'fotos' ? '5MB' : '50MB'}`);
-        return false;
-      }
-      if (!allowedTypes.includes(file.type)) {
-        alert(`Tipo de arquivo ${file.name} não suportado.`);
-        return false;
-      }
-      return true;
-    });
-
-    setFormData(prev => ({
-      ...prev,
-      [type]: [...prev[type], ...validFiles]
-    }));
-  };
-
-  const removeFile = (type, index) => {
-    setFormData(prev => ({
-      ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
-    }));
+  const handleFileUpload = (event, type) => {
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+      // Por enquanto, vamos apenas armazenar o nome do primeiro arquivo
+      // Em uma implementação real, você faria upload para o servidor e armazenaria o caminho
+      setFormData(prev => ({
+        ...prev,
+        [type]: files[0].name
+      }));
+    }
   };
 
   const handleCreate = async () => {
@@ -108,18 +119,20 @@ const RetornoServicoCreateModal = ({ isOpen, onClose, onCreate }) => {
 
     setLoading(true);
     try {
-      const newRetorno = {
-        id: Date.now(), // ID temporário
-        ...formData,
-        dataRetorno: new Date().toLocaleDateString('pt-BR'),
-        horaRetorno: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-      };
+      const response = await Api.addRetornoServico({ data: formData });
       
-      await onCreate(newRetorno);
-      handleClose();
+      if (response?.data?.success) {
+        toast.success('Retorno de serviço criado com sucesso!');
+        handleClose();
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        toast.error('Erro ao criar retorno de serviço');
+      }
     } catch (error) {
       console.error('Erro ao criar retorno:', error);
-      alert('Erro ao criar retorno. Tente novamente.');
+      toast.error('Erro ao criar retorno de serviço');
     } finally {
       setLoading(false);
     }
@@ -129,12 +142,12 @@ const RetornoServicoCreateModal = ({ isOpen, onClose, onCreate }) => {
     if (!loading) {
       // Resetar formulário
       setFormData({
-        agendamentoConcluido: '',
-        tipoRetorno: '',
-        status: 'ABERTO',
-        descricaoProblema: '',
-        fotos: [],
-        videos: []
+        IdSocioVeiculoAgenda: '',
+        Tipo: '',
+        Status: 'PENDENTE',
+        Descricao: '',
+        Fotos: '',
+        Videos: ''
       });
       setErrors({});
       onClose();
@@ -151,17 +164,18 @@ const RetornoServicoCreateModal = ({ isOpen, onClose, onCreate }) => {
     >
       <div className="retorno-create-content">
         <div className="retorno-create-form">
-          {/* Agendamento Concluído */}
+          {/* Agendamento */}
           <div className="retorno-create-row">
             <div className="retorno-create-field">
-              <label className="retorno-create-label">Agendamento Concluído</label>
+              <label className="retorno-create-label">Agendamento</label>
               <SearchableSelect
-                options={[]}
-                value={formData.agendamentoConcluido}
-                onChange={(value) => handleInputChange('agendamentoConcluido', value)}
-                placeholder="Pesquise e selecione um agendamento..."
-                error={errors.agendamentoConcluido}
+                options={agendamentos}
+                value={formData.IdSocioVeiculoAgenda}
+                onChange={(option) => handleInputChange('IdSocioVeiculoAgenda', option?.value || '')}
+                placeholder={loadingAgendamentos ? "Carregando agendamentos..." : "Pesquise e selecione um agendamento..."}
+                error={errors.IdSocioVeiculoAgenda}
                 searchable
+                disabled={loadingAgendamentos}
               />
             </div>
           </div>
@@ -172,112 +186,114 @@ const RetornoServicoCreateModal = ({ isOpen, onClose, onCreate }) => {
               <label className="retorno-create-label">Tipo do Retorno</label>
               <SearchableSelect
                 options={tipoRetornoOptions}
-                value={formData.tipoRetorno}
-                onChange={(value) => handleInputChange('tipoRetorno', value)}
+                value={formData.Tipo}
+                onChange={(option) => handleInputChange('Tipo', option?.value || '')}
                 placeholder="SELECIONE..."
-                error={errors.tipoRetorno}
+                error={errors.Tipo}
               />
             </div>
             <div className="retorno-create-field">
               <label className="retorno-create-label">Status</label>
               <SearchableSelect
                 options={statusOptions}
-                value={formData.status}
-                onChange={(value) => handleInputChange('status', value)}
-                placeholder="ABERTO"
-                error={errors.status}
+                value={formData.Status}
+                onChange={(option) => handleInputChange('Status', option?.value || '')}
+                placeholder="PENDENTE"
+                error={errors.Status}
               />
             </div>
           </div>
 
-          {/* Descrição do Problema */}
+          {/* Descrição */}
           <div className="retorno-create-row">
             <div className="retorno-create-field">
-              <label className="retorno-create-label">Descrição do Problema</label>
+              <label className="retorno-create-label">Descrição</label>
               <textarea
                 className="retorno-create-textarea"
-                value={formData.descricaoProblema}
-                onChange={(e) => handleInputChange('descricaoProblema', e.target.value)}
-                placeholder="Descreva o problema encontrado..."
+                value={formData.Descricao}
+                onChange={(e) => handleInputChange('Descricao', e.target.value)}
+                placeholder="Descreva o retorno..."
                 rows={4}
               />
-              {errors.descricaoProblema && (
-                <span className="retorno-create-error">{errors.descricaoProblema}</span>
+              {errors.Descricao && (
+                <span className="retorno-create-error">{errors.Descricao}</span>
               )}
             </div>
           </div>
 
-          {/* Upload de Fotos e Vídeos */}
-          <div className="retorno-create-row" style={{display: 'flex'}}>
+          {/* Upload de Fotos */}
+          <div className="retorno-create-row">
             <div className="retorno-create-field">
               <label className="retorno-create-label">Fotos</label>
               <div className="upload-area">
+                <div className="upload-icon">📷</div>
+                <p>Clique ou arraste fotos aqui</p>
+                <p className="upload-hint">JPG, PNG até 5MB cada</p>
                 <input
                   type="file"
-                  id="fotos-upload"
                   multiple
                   accept="image/*"
-                  onChange={(e) => handleFileUpload(e, 'fotos')}
+                  onChange={(e) => handleFileUpload(e, 'Fotos')}
                   style={{ display: 'none' }}
+                  id="foto-upload"
                 />
-                <label htmlFor="fotos-upload" className="upload-button">
-                  <FiCamera className="upload-icon" />
-                  <span>Clique ou arraste fotos aqui</span>
-                  <small>JPG, PNG, GIF (máx. 5MB cada)</small>
+                <label htmlFor="foto-upload" className="upload-button">
+                  <FiCamera />
+                  <span>Selecionar Fotos</span>
                 </label>
-                {formData.fotos.length > 0 && (
-                  <div className="uploaded-files">
-                    {formData.fotos.map((file, index) => (
-                      <div key={index} className="uploaded-file">
-                        <span>{file.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeFile('fotos', index)}
-                          className="remove-file"
-                        >
-                          <FiX size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
-              {errors.fotos && <div className="retorno-create-error">{errors.fotos}</div>}
+              {formData.Fotos && (
+                <div className="uploaded-files">
+                  <div className="uploaded-file">
+                    <span>📷 {formData.Fotos}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange('Fotos', '')}
+                      className="remove-file"
+                    >
+                      <FiX />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* Upload de Vídeos */}
+          <div className="retorno-create-row">
             <div className="retorno-create-field">
               <label className="retorno-create-label">Vídeos</label>
               <div className="upload-area">
+                <div className="upload-icon">🎥</div>
+                <p>Clique ou arraste vídeos aqui</p>
+                <p className="upload-hint">MP4, MOV até 50MB cada</p>
                 <input
                   type="file"
-                  id="videos-upload"
                   multiple
                   accept="video/*"
-                  onChange={(e) => handleFileUpload(e, 'videos')}
+                  onChange={(e) => handleFileUpload(e, 'Videos')}
                   style={{ display: 'none' }}
+                  id="video-upload"
                 />
-                <label htmlFor="videos-upload" className="upload-button">
-                  <FiVideo className="upload-icon" />
-                  <span>Clique ou arraste vídeos aqui</span>
-                  <small>MP4, AVI, MOV (máx. 50MB cada)</small>
+                <label htmlFor="video-upload" className="upload-button">
+                  <FiVideo />
+                  <span>Selecionar Vídeos</span>
                 </label>
-                {formData.videos.length > 0 && (
-                  <div className="uploaded-files">
-                    {formData.videos.map((file, index) => (
-                      <div key={index} className="uploaded-file">
-                        <span>{file.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeFile('videos', index)}
-                          className="remove-file"
-                        >
-                          <FiX size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
-              {errors.videos && <div className="retorno-create-error">{errors.videos}</div>}
+              {formData.Videos && (
+                <div className="uploaded-files">
+                  <div className="uploaded-file">
+                    <span>🎥 {formData.Videos}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange('Videos', '')}
+                      className="remove-file"
+                    >
+                      <FiX />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

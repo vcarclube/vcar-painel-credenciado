@@ -4,6 +4,20 @@ const fs = require("fs")
 
 const DEVELOPMENT_MODE = true;
 
+const formatarData = (data, hora) => {
+    const d = new Date(data);
+    let formatted = d.toLocaleDateString("pt-BR");
+    if (hora) {
+        formatted += " " + hora;
+    }
+    return formatted;
+}
+
+const formatarDataHora = (data) => {
+    const d = new Date(data);
+    return d.toLocaleString("pt-BR");
+}
+
 const generateUUID = () => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -24,6 +38,11 @@ const formatHourString = (dateStr) => {
     const seconds = String(dateBrasilia.getUTCSeconds()).padStart(2, '0');
 
     return `${hours}:${minutes}:${seconds}`;
+}
+
+const gerarNumeroAleatorio = () => {
+  const numero = Math.floor(Math.random() * 1_000_000_000);
+  return numero.toString().padStart(9, "0");
 }
 
 async function uploadToFTP(localPath, remotePath, onProgress) {
@@ -68,6 +87,9 @@ module.exports = {
     generateUUID,
     formatHourString,
     uploadToFTP,
+    formatarData,
+    formatarDataHora,
+    gerarNumeroAleatorio,
     getAgendamentoById: async (idSocioVeiculoAgenda) => {
         let result = await db.query(`
             SELECT *
@@ -124,6 +146,30 @@ module.exports = {
             LEFT JOIN PontosAtendimentoUsuarios AS B ON A.IdUsuarioInicio = B.IdPontoAtendimentoUsuario
             LEFT JOIN PontosAtendimentoUsuarios AS C ON A.IdUsuarioFim = C.IdPontoAtendimentoUsuario
             WHERE A.IdSocioVeiculoAgenda = @idSocioVeiculoAgenda`, { idSocioVeiculoAgenda });
+        return result.recordset[0]?.IdSocioVeiculo;
+    },
+    getSocioVeiculoByIdSocioVeiculoAgenda: async (idSocioVeiculoAgenda) => {
+        let result = await db.query(`
+            SELECT IdSocioVeiculo
+            FROM SociosVeiculosAgenda
+            WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda
+        `, { idSocioVeiculoAgenda });
+        return result.recordset[0];
+    },
+    getMotivacaoIdSocioVeiculoAgenda: async (idSocioVeiculoAgenda) => {
+        let result = await db.query(`
+            SELECT IdMotivacao
+            FROM SociosVeiculosAgenda
+            WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda
+        `, { idSocioVeiculoAgenda });
+        return result.recordset[0];
+    },
+    getFinanceiroEspelhoIdSocioVeiculoAgenda: async (idSocioVeiculoAgenda) => {
+        let result = await db.query(`
+            SELECT IdFinanceiroEspelho
+            FROM FinanceiroEspelho
+            WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda
+        `, { idSocioVeiculoAgenda });
         return result.recordset[0];
     },
     notificarPontoAtendimento: async (data) => {
@@ -265,6 +311,101 @@ module.exports = {
             WHERE IdSocioVeiculo = @idSocioVeiculo;
         `, {idSocioVeiculo});
         return result.recordset[0];
+    },
+    criarListaFinanceiroEspelho: async (idSocioVeiculoAgenda) => {
+        let result = await db.query(`
+            SELECT
+                A.IdSocioVeiculoAgenda,
+                A.IdSocioVeiculo,
+                A.IdPontoAtendimento,
+                A.DataAgendamento,
+                A.HoraAgendamento,
+                A.StatusAgendamento,
+                A.ValorServico,
+                A.NumeroOS,
+                
+                -- Dados do Ponto de Atendimento
+                B.RazaoSocial,
+                B.Cnpj,
+                B.NumeroMatricula AS Matricula,
+                
+                -- Dados da Execução dos Serviços
+                C.IdSocioVeiculoAgendaExecucaoServico,
+                C.IdServico,
+                C.PagamentoFeito,
+                C.DataPagamento,
+                
+                -- Dados do Serviço
+                D.Descricao AS NomeServico,
+                D.ValorRepasse,
+                
+                -- Dados do Veículo
+                E.Placa,
+                
+                -- Dados do Sócio
+                F.IdSocio,
+                F.Nome AS SocioNome,
+                F.Cpf AS Cpf,
+                
+                -- Dados da Execução Principal
+                G.IdSocioVeiculoAgendaExecucao,
+                G.DataHoraInicio,
+                G.DataHoraFim,
+                
+                -- Para o ORDER BY
+                C.DataLog
+            FROM SociosVeiculosAgenda A
+            INNER JOIN PontosAtendimento B 
+                ON A.IdPontoAtendimento = B.IdPontoAtendimento
+            INNER JOIN SociosVeiculosAgendaExecucaoServicos C 
+                ON A.IdSocioVeiculoAgenda = C.IdSocioVeiculoAgenda 
+                AND C.StatusAprovacao = 'A'
+            INNER JOIN Servicos D 
+                ON C.IdServico = D.IdServico
+            INNER JOIN SociosVeiculos E 
+                ON A.IdSocioVeiculo = E.IdSocioVeiculo
+            INNER JOIN Socios F 
+                ON E.IdSocio = F.IdSocio
+            LEFT JOIN SociosVeiculosAgendaExecucao G 
+                ON A.IdSocioVeiculoAgenda = G.IdSocioVeiculoAgenda
+            WHERE A.IdSocioVeiculoAgenda = @idSocioVeiculoAgenda
+            AND A.StatusAgendamento = 'C'
+            ORDER BY C.IdServico, C.DataLog
+        `, { idSocioVeiculoAgenda });
+
+        if (!result.recordset || result.recordset.length === 0) {
+            return [];
+        }
+
+        const listaFinanceiroEspelho = result.recordset.map(item => {
+            return {
+                IdFinanceiroEspelho: generateUUID(),
+                IdSocioVeiculoAgenda: item.IdSocioVeiculoAgenda,
+                IdSocioVeiculo: item.IdSocioVeiculo,
+                IdPontoAtendimento: item.IdPontoAtendimento,
+                IdSocioVeiculoAgendaExecucaoServico: item.IdSocioVeiculoAgendaExecucaoServico ?? null,
+                RazaoSocial: item.RazaoSocial || null,
+                Cnpj: item.Cnpj || null,
+                SocioNome: item.SocioNome || null,
+                Matricula: item.Matricula || null,
+                Placa: item.Placa || null,
+                VeiculoPlaca: item.Placa || null,
+                NomeServico: item.NomeServico || null,
+                NumeroOS: item.NumeroOS || null,
+                StatusAgendamento: item.StatusAgendamento || null,
+                ValorRepasse: item.ValorRepasse ?? item.ValorServico ?? null,
+                PagamentoFeito: item.PagamentoFeito ?? "N",
+                DataAgendamento: item.DataAgendamento,
+                DataPagamento: item.DataPagamento,
+                DataExecucaoOS: item.DataHoraFim,
+                CodigoEspelho: gerarNumeroAleatorio(),
+                TipoEspelho: "Mensal",
+                TipoComissao: "Básica",
+                Descricao: "Comissao Basica Serviço - V1"
+            };
+        });
+
+        return listaFinanceiroEspelho;
     },
     getAgendamentosByPontoAtendimento: async (idPontoAtendimento, dataAgendamento) => {
         let result = await db.query(`

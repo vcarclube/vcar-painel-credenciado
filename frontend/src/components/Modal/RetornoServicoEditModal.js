@@ -1,49 +1,84 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Modal from './index';
 import { Button, Input, SearchableSelect } from '../index';
 import { FiSave, FiX, FiCamera, FiVideo } from 'react-icons/fi';
+import { MainContext } from '../../helpers/MainContext';
+import { toast } from 'react-toastify';
+import Api from '../../Api';
 
-const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
+const RetornoServicoEditModal = ({ isOpen, onClose, onSuccess, retorno }) => {
+  const { user } = useContext(MainContext);
   const [formData, setFormData] = useState({
-    agendamentoConcluido: '',
-    tipoRetorno: '',
-    status: '',
-    descricaoProblema: '',
-    fotos: [],
-    videos: []
+    IdSocioVeiculoAgenda: '',
+    Tipo: '',
+    Status: '',
+    Descricao: '',
+    Fotos: '',
+    Videos: ''
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [agendamentos, setAgendamentos] = useState([]);
+  const [loadingAgendamentos, setLoadingAgendamentos] = useState(false);
 
   // Opções para os selects
-  const tipoRetornoOptions = [
-    { value: 'SELECIONE...', label: 'SELECIONE...' },
-    { value: 'Garantia', label: 'Garantia' },
-    { value: 'Retrabalho', label: 'Retrabalho' },
-    { value: 'Manutenção', label: 'Manutenção' }
+    const tipoRetornoOptions = [
+    { value: 'PEÇA', label: 'PEÇA' },
+    { value: 'MÃO DE OBRA', label: 'MÃO DE OBRA' },
+    { value: 'ATENDIMENTO', label: 'ATENDIMENTO' },
+    { value: 'OUTROS', label: 'OUTROS' }
   ];
 
   const statusOptions = [
-    { value: 'ABERTO', label: 'ABERTO' },
-    { value: 'EM_ANDAMENTO', label: 'EM ANDAMENTO' },
-    { value: 'CONCLUIDO', label: 'CONCLUÍDO' },
-    { value: 'CANCELADO', label: 'CANCELADO' }
+    { value: 'A', label: 'PENDENTE' },
+    { value: 'P', label: 'EM CHAMADO' },
+    { value: 'C', label: 'CONCLUÍDO' }
   ];
 
-  // Preencher formulário quando retorno mudar
+  // Carregar dados do retorno quando o modal abrir
   useEffect(() => {
-    if (retorno) {
+    if (isOpen && retorno) {
       setFormData({
-        agendamentoConcluido: retorno.agendamentoConcluido || '',
-        tipoRetorno: retorno.tipoRetorno || '',
-        status: retorno.status || '',
-        descricaoProblema: retorno.descricaoProblema || '',
-        fotos: retorno.fotos || [],
-        videos: retorno.videos || []
+        IdSocioVeiculoAgenda: retorno.IdSocioVeiculoAgenda || '',
+        Tipo: retorno.Tipo || '',
+        Status: retorno.Status || '',
+        Descricao: retorno.Descricao || '',
+        Fotos: retorno.Fotos || '',
+        Videos: retorno.Videos || ''
       });
       setErrors({});
+      loadAgendamentos();
     }
-  }, [retorno]);
+  }, [isOpen, retorno]);
+
+  const loadAgendamentos = async () => {
+    setLoadingAgendamentos(true);
+    try {
+      const response = await Api.getAgendamentosDisponiveis({idPontoAtendimento: user?.idPontoAtendimento});
+      if (response?.data?.success) {
+        const agendamentosFormatados = response.data.data.map(agendamento => ({
+          value: agendamento.IdSocioVeiculoAgenda,
+          label: `OS ${agendamento.NumeroOS} - ${agendamento.SocioNome} - ${agendamento.Placa} - ${agendamento.NomeServico.toUpperCase()}`
+        }));
+        // Adicionar o agendamento atual se não estiver na lista (caso já tenha retorno)
+        if (retorno?.IdSocioVeiculoAgenda) {
+          const agendamentoAtual = agendamentosFormatados.find(a => a.value === retorno.IdSocioVeiculoAgenda);
+          if (!agendamentoAtual) {
+            agendamentosFormatados.unshift({
+              value: retorno.IdSocioVeiculoAgenda,
+              label: `Agendamento ${retorno.IdSocioVeiculoAgenda} (Atual)`
+            });
+          }
+        }
+        setAgendamentos([{ value: '', label: 'SELECIONE...' }, ...agendamentosFormatados]);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar agendamentos:', error);
+      toast.error('Erro ao carregar agendamentos disponíveis');
+    } finally {
+      setLoadingAgendamentos(false);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -63,20 +98,20 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.agendamentoConcluido.trim()) {
-      newErrors.agendamentoConcluido = 'Agendamento Concluído é obrigatório';
+    if (!formData.IdSocioVeiculoAgenda) {
+      newErrors.IdSocioVeiculoAgenda = 'Agendamento é obrigatório';
     }
 
-    if (!formData.tipoRetorno || formData.tipoRetorno === 'SELECIONE...') {
-      newErrors.tipoRetorno = 'Tipo do Retorno é obrigatório';
+    if (!formData.Tipo) {
+      newErrors.Tipo = 'Tipo do Retorno é obrigatório';
     }
 
-    if (!formData.status) {
-      newErrors.status = 'Status é obrigatório';
+    if (!formData.Status) {
+      newErrors.Status = 'Status é obrigatório';
     }
 
-    if (!formData.descricaoProblema.trim()) {
-      newErrors.descricaoProblema = 'Descrição do Problema é obrigatória';
+    if (!formData.Descricao.trim()) {
+      newErrors.Descricao = 'Descrição é obrigatória';
     }
 
     setErrors(newErrors);
@@ -84,36 +119,16 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
   };
 
   // Funções para upload de arquivos
-  const handleFileUpload = (type, files) => {
-    const fileArray = Array.from(files);
-    const maxSize = type === 'fotos' ? 5 * 1024 * 1024 : 50 * 1024 * 1024; // 5MB para fotos, 50MB para vídeos
-    const allowedTypes = type === 'fotos' 
-      ? ['image/jpeg', 'image/png', 'image/gif']
-      : ['video/mp4', 'video/avi', 'video/mov'];
-
-    const validFiles = fileArray.filter(file => {
-      if (file.size > maxSize) {
-        alert(`Arquivo ${file.name} é muito grande. Tamanho máximo: ${type === 'fotos' ? '5MB' : '50MB'}`);
-        return false;
-      }
-      if (!allowedTypes.includes(file.type)) {
-        alert(`Tipo de arquivo ${file.name} não suportado.`);
-        return false;
-      }
-      return true;
-    });
-
-    setFormData(prev => ({
-      ...prev,
-      [type]: [...prev[type], ...validFiles]
-    }));
-  };
-
-  const removeFile = (type, index) => {
-    setFormData(prev => ({
-      ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
-    }));
+  const handleFileUpload = (event, type) => {
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+      // Por enquanto, vamos apenas armazenar o nome do primeiro arquivo
+      // Em uma implementação real, você faria upload para o servidor e armazenaria o caminho
+      setFormData(prev => ({
+        ...prev,
+        [type]: files[0].name
+      }));
+    }
   };
 
   const handleSave = async () => {
@@ -123,16 +138,23 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
 
     setLoading(true);
     try {
-      const updatedRetorno = {
-        ...retorno,
-        ...formData
-      };
+      const response = await Api.updateRetornoServico({ 
+        idRetornoServico: retorno.IdRetornoServico,
+        data: formData 
+      });
       
-      await onSave(updatedRetorno);
-      handleClose();
+      if (response?.data?.success) {
+        toast.success('Retorno de serviço atualizado com sucesso!');
+        handleClose();
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        toast.error('Erro ao atualizar retorno de serviço');
+      }
     } catch (error) {
       console.error('Erro ao salvar retorno:', error);
-      alert('Erro ao salvar retorno. Tente novamente.');
+      toast.error('Erro ao atualizar retorno de serviço');
     } finally {
       setLoading(false);
     }
@@ -155,17 +177,18 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
     >
       <div className="retorno-edit-content">
         <div className="retorno-edit-form">
-          {/* Agendamento Concluído */}
+          {/* Agendamento */}
           <div className="retorno-edit-row">
             <div className="retorno-edit-field">
-              <label className="retorno-edit-label">Agendamento Concluído</label>
+              <label className="retorno-edit-label">Agendamento</label>
               <SearchableSelect
-                options={[]}
-                value={formData.agendamentoConcluido}
-                onChange={(value) => handleInputChange('agendamentoConcluido', value)}
-                placeholder="Pesquise e selecione um agendamento..."
-                error={errors.agendamentoConcluido}
+                options={agendamentos}
+                value={formData.IdSocioVeiculoAgenda}
+                onChange={(option) => handleInputChange('IdSocioVeiculoAgenda', option?.value || '')}
+                placeholder={loadingAgendamentos ? "Carregando agendamentos..." : "Pesquise e selecione um agendamento..."}
+                error={errors.IdSocioVeiculoAgenda}
                 searchable
+                disabled={loadingAgendamentos}
               />
             </div>
           </div>
@@ -176,37 +199,37 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
               <label className="retorno-edit-label">Tipo do Retorno</label>
               <SearchableSelect
                 options={tipoRetornoOptions}
-                value={formData.tipoRetorno}
-                onChange={(value) => handleInputChange('tipoRetorno', value)}
+                value={formData.Tipo}
+                onChange={(option) => handleInputChange('Tipo', option?.value || '')}
                 placeholder="SELECIONE..."
-                error={errors.tipoRetorno}
+                error={errors.Tipo}
               />
             </div>
             <div className="retorno-edit-field">
               <label className="retorno-edit-label">Status</label>
               <SearchableSelect
                 options={statusOptions}
-                value={formData.status}
-                onChange={(value) => handleInputChange('status', value)}
-                placeholder="ABERTO"
-                error={errors.status}
+                value={formData.Status}
+                onChange={(option) => handleInputChange('Status', option?.value || '')}
+                placeholder="PENDENTE"
+                error={errors.Status}
               />
             </div>
           </div>
 
-          {/* Descrição do Problema */}
+          {/* Descrição */}
           <div className="retorno-edit-row">
             <div className="retorno-edit-field">
-              <label className="retorno-edit-label">Descrição do Problema</label>
+              <label className="retorno-edit-label">Descrição</label>
               <textarea
                 className="retorno-edit-textarea"
-                value={formData.descricaoProblema}
-                onChange={(e) => handleInputChange('descricaoProblema', e.target.value)}
-                placeholder="Descreva o problema encontrado..."
+                value={formData.Descricao}
+                onChange={(e) => handleInputChange('Descricao', e.target.value)}
+                placeholder="Descreva o retorno..."
                 rows={4}
               />
-              {errors.descricaoProblema && (
-                <span className="retorno-edit-error">{errors.descricaoProblema}</span>
+              {errors.Descricao && (
+                <span className="retorno-edit-error">{errors.Descricao}</span>
               )}
             </div>
           </div>
@@ -222,7 +245,7 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
                   id="fotos-upload-edit"
                   multiple
                   accept="image/jpeg,image/png,image/gif"
-                  onChange={(e) => handleFileUpload('fotos', e.target.files)}
+                  onChange={(e) => handleFileUpload(e, 'Fotos')}
                   style={{ display: 'none' }}
                 />
                 <label htmlFor="fotos-upload-edit" className="upload-button">
@@ -230,20 +253,18 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
                   <span>Clique ou arraste fotos aqui</span>
                   <small>JPG, PNG, GIF (máx. 5MB cada)</small>
                 </label>
-                {formData.fotos.length > 0 && (
+                {formData.Fotos && (
                   <div className="uploaded-files">
-                    {formData.fotos.map((file, index) => (
-                      <div key={index} className="uploaded-file">
-                        <span>{file.name || `Foto ${index + 1}`}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeFile('fotos', index)}
-                          className="remove-file"
-                        >
-                          <FiX />
-                        </button>
-                      </div>
-                    ))}
+                    <div className="uploaded-file">
+                      <span>📷 {formData.Fotos}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleInputChange('Fotos', '')}
+                        className="remove-file"
+                      >
+                        <FiX />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -258,7 +279,7 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
                   id="videos-upload-edit"
                   multiple
                   accept="video/mp4,video/avi,video/mov"
-                  onChange={(e) => handleFileUpload('videos', e.target.files)}
+                  onChange={(e) => handleFileUpload(e, 'Videos')}
                   style={{ display: 'none' }}
                 />
                 <label htmlFor="videos-upload-edit" className="upload-button">
@@ -266,20 +287,18 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
                   <span>Clique ou arraste vídeos aqui</span>
                   <small>MP4, AVI, MOV (máx. 50MB cada)</small>
                 </label>
-                {formData.videos.length > 0 && (
+                {formData.Videos && (
                   <div className="uploaded-files">
-                    {formData.videos.map((file, index) => (
-                      <div key={index} className="uploaded-file">
-                        <span>{file.name || `Vídeo ${index + 1}`}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeFile('videos', index)}
-                          className="remove-file"
-                        >
-                          <FiX />
-                        </button>
-                      </div>
-                    ))}
+                    <div className="uploaded-file">
+                      <span>🎥 {formData.Videos}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleInputChange('Videos', '')}
+                        className="remove-file"
+                      >
+                        <FiX />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -382,7 +401,7 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
 
       <style jsx>{`
         .retorno-edit-content {
-          padding: 20px;
+       
         }
 
         .retorno-edit-form {
@@ -519,7 +538,7 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
 
         @media (max-width: 768px) {
           .retorno-edit-content {
-            padding: 12px;
+     
           }
 
           .retorno-edit-form {
@@ -602,7 +621,7 @@ const RetornoServicoEditModal = ({ isOpen, onClose, onSave, retorno }) => {
 
         @media (max-width: 480px) {
           .retorno-edit-content {
-            padding: 8px;
+           
           }
 
           .retorno-edit-form {

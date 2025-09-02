@@ -63,6 +63,216 @@ const buildWhereClause = (filters) => {
   };
 };
 
+const inserirFinanceiroEspelho = async (idSocioVeiculoAgenda) => {
+    // 1. Criar lista
+    const listaFinanceiroEspelho = await Utils.criarListaFinanceiroEspelho(idSocioVeiculoAgenda);
+
+    if (!listaFinanceiroEspelho || listaFinanceiroEspelho.length === 0) {
+        return true; // não há nada para inserir
+    }
+
+    // 2. Verificar se já existem registros
+    const idsExistentesQuery = `
+        SELECT IdSocioVeiculoAgenda
+        FROM FinanceiroEspelho
+        WHERE IdSocioVeiculoAgenda IN (${listaFinanceiroEspelho.map((_, i) => `@id${i}`).join(",")})
+    `;
+
+    const paramsIds = {};
+    listaFinanceiroEspelho.forEach((x, i) => {
+        paramsIds[`id${i}`] = x.IdSocioVeiculoAgenda;
+    });
+
+    const registrosExistentes = await db.query(idsExistentesQuery, paramsIds);
+    const idsExistentes = registrosExistentes.recordset.map(r => r.IdSocioVeiculoAgenda);
+
+    // 3. Filtrar os que ainda não existem
+    const registrosParaInserir = listaFinanceiroEspelho.filter(x => !idsExistentes.includes(x.IdSocioVeiculoAgenda));
+
+    if (registrosParaInserir.length === 0) {
+        return true; // todos já existem
+    }
+
+    // 4. Montar SQL de insert em batch
+    let sqlInsert = `
+        INSERT INTO FinanceiroEspelho (
+            IdFinanceiroEspelho,
+            IdSocioVeiculoAgenda,
+            IdSocioVeiculo,
+            IdPontoAtendimento,
+            IdSocioVeiculoAgendaExecucaoServico,
+            RazaoSocial,
+            Cnpj,
+            Matricula,
+            DataAgendamento,
+            DataPagamento,
+            ValorRepasse,
+            PagamentoFeito,
+            Placa,
+            SocioNome,
+            NomeServico,
+            StatusAgendamento,
+            NumeroOS,
+            VeiculoPlaca,
+            DataExecucaoOS,
+            CodigoEspelho,
+            TipoEspelho,
+            TipoComissao,
+            Descricao
+        ) VALUES
+    `;
+
+    const valores = registrosParaInserir.map((item, i) => {
+        return `(
+            @IdFinanceiroEspelho${i},
+            @IdSocioVeiculoAgenda${i},
+            @IdSocioVeiculo${i},
+            @IdPontoAtendimento${i},
+            @IdSocioVeiculoAgendaExecucaoServico${i},
+            @RazaoSocial${i},
+            @Cnpj${i},
+            @Matricula${i},
+            @DataAgendamento${i},
+            @DataPagamento${i},
+            @ValorRepasse${i},
+            @PagamentoFeito${i},
+            @Placa${i},
+            @SocioNome${i},
+            @NomeServico${i},
+            @StatusAgendamento${i},
+            @NumeroOS${i},
+            @VeiculoPlaca${i},
+            @DataExecucaoOS${i},
+            @CodigoEspelho${i},
+            @TipoEspelho${i},
+            @TipoComissao${i},
+            @Descricao${i}
+        )`;
+    }).join(",");
+
+    sqlInsert += valores;
+
+    const paramsInsert = {};
+    registrosParaInserir.forEach((item, i) => {
+        paramsInsert[`IdFinanceiroEspelho${i}`] = item.IdFinanceiroEspelho;
+        paramsInsert[`IdSocioVeiculoAgenda${i}`] = item.IdSocioVeiculoAgenda;
+        paramsInsert[`IdSocioVeiculo${i}`] = item.IdSocioVeiculo;
+        paramsInsert[`IdPontoAtendimento${i}`] = item.IdPontoAtendimento;
+        paramsInsert[`IdSocioVeiculoAgendaExecucaoServico${i}`] = item.IdSocioVeiculoAgendaExecucaoServico || null;
+        paramsInsert[`RazaoSocial${i}`] = item.RazaoSocial || null;
+        paramsInsert[`Cnpj${i}`] = item.Cnpj || null;
+        paramsInsert[`Matricula${i}`] = item.Matricula || null;
+        paramsInsert[`DataAgendamento${i}`] = item.DataAgendamento || null;
+        paramsInsert[`DataPagamento${i}`] = item.DataPagamento || null;
+        paramsInsert[`ValorRepasse${i}`] = item.ValorRepasse || null;
+        paramsInsert[`PagamentoFeito${i}`] = item.PagamentoFeito || null;
+        paramsInsert[`Placa${i}`] = item.Placa || null;
+        paramsInsert[`SocioNome${i}`] = item.SocioNome || null;
+        paramsInsert[`NomeServico${i}`] = item.NomeServico || null;
+        paramsInsert[`StatusAgendamento${i}`] = item.StatusAgendamento || null;
+        paramsInsert[`NumeroOS${i}`] = item.NumeroOS || null;
+        paramsInsert[`VeiculoPlaca${i}`] = item.VeiculoPlaca || null;
+        paramsInsert[`DataExecucaoOS${i}`] = item.DataExecucaoOS || null;
+        paramsInsert[`CodigoEspelho${i}`] = item.CodigoEspelho || null;
+        paramsInsert[`TipoEspelho${i}`] = item.TipoEspelho || null;
+        paramsInsert[`TipoComissao${i}`] = item.TipoComissao || null;
+        paramsInsert[`Descricao${i}`] = item.Descricao || null;
+    });
+
+    await db.query(sqlInsert, paramsInsert);
+
+    return true;
+};
+
+const finalizarExecucao = async (idSocioVeiculoAgenda, usuarioId) => {
+    const agora = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    // 1) Atualizar execução
+    await db.query(`
+        UPDATE SociosVeiculosAgendaExecucao
+        SET IdUsuarioFim = @usuarioId,
+            DataHoraFim  = @agora
+        WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda
+        AND DataHoraFim IS NULL;
+    `, { usuarioId, agora, idSocioVeiculoAgenda });
+
+    // 2) Atualizar agendamento (status + valor do serviço)
+    await db.query(`
+        UPDATE SociosVeiculosAgenda
+        SET StatusAgendamento = 'C',
+            ValorServico = (
+                SELECT ValorServico
+                FROM Servicos
+                WHERE IdServico = (
+                    SELECT IdServico
+                    FROM SociosVeiculosAgenda
+                    WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda
+                )
+            )
+        WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda
+        AND StatusAgendamento <> 'C';
+    `, { idSocioVeiculoAgenda });
+
+    // 3) Buscar vendas efetivadas
+    const vendasEfetivadasResult = await db.query(`
+        SELECT C.IdSocioVeiculoComissao
+        FROM SociosVeiculosAgenda A
+        JOIN SociosVeiculos A1 ON A.IdSocioVeiculo = A1.IdSocioVeiculo
+        JOIN SociosVeiculosComissoes C ON A.IdSocioVeiculo = C.IdSocioVeiculo
+        WHERE A.IdSocioVeiculoAgenda = @idSocioVeiculoAgenda
+        AND A1.Status <> 'I'
+        AND C.DataPagamento IS NULL
+        AND C.IdSocioComissao1 IS NOT NULL
+    `, { idSocioVeiculoAgenda });
+
+    vendasEfetivadas = vendasEfetivadasResult?.recordset;
+
+    // 4) Se tiver vendas, gerar inserts no extrato
+    for (const venda of vendasEfetivadas) {
+        const params = { idSocioVeiculoComissao: venda.IdSocioVeiculoComissao, agora };
+
+        await db.query(`
+            INSERT INTO SociosParceirosExtrato(IdSocioParceiro, Valor, IdSocioVeiculoComissao, TipoMovimento, DataLog)
+            SELECT (SELECT IdSocioParceiro FROM SociosParceiros WHERE IdSocio = A.IdSocioComissao1),
+                   A.ValorComissao1,
+                   A.IdSocioVeiculoComissao,
+                   'E',
+                   @agora
+            FROM SociosVeiculosComissoes A
+            WHERE A.IdSocioVeiculoComissao = @idSocioVeiculoComissao
+            AND A.ValorComissao1 IS NOT NULL;
+
+            INSERT INTO SociosParceirosExtrato(IdSocioParceiro, Valor, IdSocioVeiculoComissao, TipoMovimento, DataLog)
+            SELECT (SELECT IdSocioParceiro FROM SociosParceiros WHERE IdSocio = A.IdSocioComissao2),
+                   A.ValorComissao2,
+                   A.IdSocioVeiculoComissao,
+                   'E',
+                   @agora
+            FROM SociosVeiculosComissoes A
+            WHERE A.IdSocioVeiculoComissao = @idSocioVeiculoComissao
+            AND A.ValorComissao2 IS NOT NULL;
+
+            INSERT INTO SociosParceirosExtrato(IdSocioParceiro, Valor, IdSocioVeiculoComissao, TipoMovimento, DataLog)
+            SELECT (SELECT IdSocioParceiro FROM SociosParceiros WHERE IdSocio = A.IdSocioComissao3),
+                   A.ValorComissao3,
+                   A.IdSocioVeiculoComissao,
+                   'E',
+                   @agora
+            FROM SociosVeiculosComissoes A
+            WHERE A.IdSocioVeiculoComissao = @idSocioVeiculoComissao
+            AND A.ValorComissao3 IS NOT NULL;
+
+            UPDATE SociosVeiculosComissoes
+            SET DataPagamento = GETDATE()
+            WHERE IdSocioVeiculoComissao = @idSocioVeiculoComissao;
+        `, params);
+    }
+
+    await inserirFinanceiroEspelho(idSocioVeiculoAgenda);
+
+    return true;
+};
+
 router.get('/lista/:idPontoAtendimento', validateToken, async (req, res) => {
   try {
     // Validações de entrada
@@ -750,6 +960,47 @@ router.post('/iniciar', validateToken, async (req, res) => {
     });
   }
 });
+
+router.post('/concluir', validateToken, async (req, res) => {
+    try {
+        const { idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio } = req.body;
+        
+        if (!idSocioVeiculoAgenda || !idPontoAtendimentoUsuario || !idSocio ) {
+            return res.status(400).json({ 
+                message: 'Dados incompletos: idSocioVeiculoAgenda, idPontoAtendimentoUsuario e data são obrigatórios' 
+            });
+        }
+
+        await finalizarExecucao(idSocioVeiculoAgenda, idPontoAtendimentoUsuario);
+
+        let agendamento = await Utils.getAgendamentoById(idSocioVeiculoAgenda);
+        let socio = await Utils.getSocioById(idSocio);
+        let motivacao = await Utils.getMotivacaoById(agendamento?.IdMotivacao);
+
+        await Utils.notificarWhatsapp({
+          phone: socio.Telefone,
+          message: `
+    📆 Olá, ${socio.Nome}👋, Informamos que seu agendamento de *${motivacao?.Descricao }* foi concluído.
+          `
+        });
+
+        await Utils.notificarFirebaseCloudMessaging({
+          idSocio: socio.IdSocio,
+          title: 'Serviço iniciado',
+          body: `📆 Olá, ${socio.Nome}👋, Informamos que seu agendamento de *${motivacao?.Descricao }* foi concluído.`
+        });
+
+        return res.status(200).json({
+          message: 'Execução finalizada com sucesso'
+        });
+
+    } catch (error) {
+        console.error('Erro ao concluir agendamento:', error);
+        return res.status(500).json({ 
+            message: 'Erro interno do servidor' 
+        });
+    }
+})
 
 router.post('/atualizar-video-inicial', validateToken, async (req, res) => {
   try {

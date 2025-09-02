@@ -27,8 +27,21 @@ const Agenda = () => {
   const [loading, setLoading] = useState(true);
   
   // Estados dos filtros
-  const [filtroDataInicio, setFiltroDataInicio] = useState('2025-08-01');
-  const [filtroDataFinal, setFiltroDataFinal] = useState('2025-08-31');
+  const hoje = new Date();
+
+  // Primeiro dia do mês
+  const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+    .toISOString()
+    .split("T")[0];
+
+  // Último dia do mês
+  const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+    .toISOString()
+    .split("T")[0];
+
+  const [filtroDataInicio, setFiltroDataInicio] = useState(primeiroDia);
+  const [filtroDataFinal, setFiltroDataFinal] = useState(ultimoDia);
+  
   const [filtroStatus, setFiltroStatus] = useState('TODOS');
 
   useEffect(() => {
