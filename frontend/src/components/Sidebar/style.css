@@ -20,6 +20,7 @@
   align-items: center;
   justify-content: center;
   background: var(--gray-50);
+  cursor: pointer;
 }
 
 .logo-image {
