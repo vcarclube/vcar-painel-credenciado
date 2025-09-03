@@ -90,6 +90,60 @@ const EspelhoFinanceiro = () => {
       documento: 'CPF 987.654.321-XX'
     },
     {
+      id: 1,
+      matricula: 'TECHNO001',
+      razaoSocial: 'TECHNO DEVICES LTDA',
+      cnpj: '31.950.540/0001-06',
+      placa: 'RCI-9FT1',
+      dataAgendamento: '15/08/2025',
+      dataExecucao: '15/08/2025',
+      servico: 'DIAGNÓSTICO ELETRÔNICO (SCANNER)',
+      numeroOS: '1421',
+      valorRepasse: 'R$ 150,00',
+      statusPagamento: 'PAGO',
+      codigoEspelho: '20-05',
+      tipoComissao: 'Básica',
+      descricao: 'Comissão Básica Serviço - VY',
+      cliente: 'DYLLAN NICOLAU DA SILVA',
+      documento: 'CPF 699.930.507-XX'
+    },
+    {
+      id: 2,
+      matricula: 'LUCAS001',
+      razaoSocial: 'LUCAS CALHAMBEQUE AUTO CENTER',
+      cnpj: '31.950.540/0001-06',
+      placa: 'ABC-1234',
+      dataAgendamento: '14/08/2025',
+      dataExecucao: '15/08/2025',
+      servico: 'TROCA DE BIELETAS (PAR)',
+      numeroOS: '1410',
+      valorRepasse: 'R$ 250,00',
+      statusPagamento: 'PENDENTE',
+      codigoEspelho: '20-06',
+      tipoComissao: 'Básica',
+      descricao: 'Comissão Básica Serviço - VY',
+      cliente: 'MARIA SILVA SANTOS',
+      documento: 'CPF 123.456.789-XX'
+    },
+    {
+      id: 3,
+      matricula: 'AUTO002',
+      razaoSocial: 'AUTO PEÇAS E SERVIÇOS LTDA',
+      cnpj: '12.345.678/0001-90',
+      placa: 'XYZ-5678',
+      dataAgendamento: '13/08/2025',
+      dataExecucao: '14/08/2025',
+      servico: 'MANUTENÇÃO DO SISTEMA DE FREIO',
+      numeroOS: '1409',
+      valorRepasse: 'R$ 320,00',
+      statusPagamento: 'PAGO',
+      codigoEspelho: '20-07',
+      tipoComissao: 'Premium',
+      descricao: 'Comissão Premium Serviço - VY',
+      cliente: 'JOÃO CARLOS OLIVEIRA',
+      documento: 'CPF 987.654.321-XX'
+    },
+    {
       id: 4,
       matricula: 'MOTO003',
       razaoSocial: 'MOTO CENTER ESPECIALIZADA',
@@ -209,7 +263,7 @@ const EspelhoFinanceiro = () => {
   return (
     <div className="home-container">
       <Sidebar />
-      <div className="main-content">
+      <div className="main-content" style={{paddingBottom: '0px', marginBottom: '0px'}}>
         <Header />
         <center>
           <div className="espelho-container">

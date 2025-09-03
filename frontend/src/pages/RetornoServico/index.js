@@ -176,7 +176,7 @@ const RetornoServico = () => {
   return (
     <div className="home-container">
       <Sidebar />
-      <div className="main-content">
+      <div className="main-content" style={{paddingBottom: '0px', marginBottom: '0px'}}>
         <Header />
         <center>
           <div className="retorno-servico-container">

@@ -794,7 +794,7 @@
 
 @media (max-width: 480px) {
   .espelho-container {
-    padding: var(--spacing-sm);
+    padding: var(--spacing-md);
   }
   
   .espelho-header {

@@ -651,7 +651,7 @@
 /* Media Queries para Mobile */
 @media (max-width: 480px) {
   .retorno-servico-container {
-    padding: var(--spacing-xs);
+    padding: var(--spacing-md);
   }
   
   .retorno-servico-title h1 {
