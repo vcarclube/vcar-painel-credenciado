@@ -9,8 +9,8 @@ app.use(cors({
     origin: '*'
 }));
  
-app.use(bodyParser.json({limit: '50mb'}));
-app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
+app.use(bodyParser.json({limit: '700mb'}));
+app.use(bodyParser.urlencoded({limit: '700mb', extended: true}));
 
 const credenciadoRoute = require('./routes/credenciadoRoute');
 const agendamentosRoute = require('./routes/agendamentosRoute');

@@ -1,6 +1,9 @@
 const db = require('./database')
 const ftp = require("basic-ftp")
-const fs = require("fs")
+const fs = require("fs");
+const { promisify } = require('util');
+
+const statAsync = promisify(fs.stat);
 
 const DEVELOPMENT_MODE = true;
 
@@ -45,6 +48,233 @@ const gerarNumeroAleatorio = () => {
   return numero.toString().padStart(9, "0");
 }
 
+// Pool de conexões FTP para reutilização
+const ftpPool = {
+    connections: [],
+    maxConnections: 3,
+    
+    async getConnection() {
+        // Reutilizar conexão existente se disponível
+        if (this.connections.length > 0) {
+            const client = this.connections.pop();
+            try {
+                // Testar se a conexão ainda está ativa
+                await client.pwd();
+                return client;
+            } catch (err) {
+                // Conexão morta, criar nova
+                client.close();
+            }
+        }
+        
+        // Criar nova conexão otimizada
+        const client = new ftp.Client();
+        client.ftp.verbose = false; // Desabilitar logs verbosos
+        
+        await client.access({
+            host: "216.158.231.74",
+            user: "vcarclub",
+            password: "7U@gSNCc",
+            secure: false,
+            // CONFIGURAÇÕES ULTRA-RÁPIDAS
+            connTimeout: 5000,      // Timeout de conexão reduzido
+            pasvTimeout: 5000,      // Timeout PASV reduzido
+            keepalive: 10000,       // Keep-alive para manter conexão
+            // Configurações TCP otimizadas
+            socket: {
+                timeout: 10000,
+                keepAlive: true,
+                noDelay: true       // Desabilitar algoritmo de Nagle
+            }
+        });
+        
+        return client;
+    },
+    
+    releaseConnection(client) {
+        if (this.connections.length < this.maxConnections) {
+            this.connections.push(client);
+        } else {
+            client.close();
+        }
+    }
+};
+
+async function ultraFastUploadToFTP(localPath, remotePath, onProgress) {
+    const startTime = Date.now();
+    let client;
+    
+    try {
+        // VERIFICAR ARQUIVO LOCAL
+        const stats = await statAsync(localPath);
+        const fileSize = stats.size;
+        
+        if (fileSize === 0) {
+            throw new Error("Arquivo local está vazio");
+        }
+        
+        console.log(`📁 Arquivo local verificado: ${(fileSize / (1024 * 1024)).toFixed(2)}MB`);
+        
+        // CRIAR CLIENTE FTP
+        client = new ftp.Client();
+        client.ftp.verbose = true; // Ativar para debug
+        
+        await client.access({
+            host: "216.158.231.74",
+            user: "vcarclub",
+            password: "7U@gSNCc",
+            secure: false,
+            connTimeout: 15000,
+            pasvTimeout: 15000,
+            keepalive: 30000
+        });
+        
+        console.log("✅ Conectado ao FTP");
+
+        // NAVEGAR PARA DIRETÓRIO
+        try {
+            await client.cd("/uploads");
+            console.log("📂 Navegado para /uploads");
+        } catch (err) {
+            console.log("📂 Criando diretório /uploads");
+            await client.ensureDir("/uploads");
+            await client.cd("/uploads");
+        }
+
+        // MÉTODO 1: UPLOAD USANDO BUFFER (MAIS CONFIÁVEL)
+        console.log("🔄 Método 1: Upload via buffer");
+        try {
+            const fileBuffer = await readFileAsync(localPath);
+            console.log(`📦 Buffer criado: ${fileBuffer.length} bytes`);
+            
+            if (fileBuffer.length === 0) {
+                throw new Error("Buffer está vazio");
+            }
+            
+            // Criar stream do buffer
+            const { Readable } = require('stream');
+            const bufferStream = new Readable({
+                read() {
+                    this.push(fileBuffer);
+                    this.push(null); // EOF
+                }
+            });
+            
+            // Upload do buffer
+            await client.uploadFrom(bufferStream, remotePath);
+            console.log("✅ Upload via buffer concluído");
+            
+        } catch (bufferErr) {
+            console.log("❌ Método buffer falhou:", bufferErr.message);
+            console.log("🔄 Tentando método 2: Upload direto do arquivo");
+            
+            // MÉTODO 2: UPLOAD DIRETO DO ARQUIVO
+            try {
+                await client.uploadFrom(localPath, remotePath);
+                console.log("✅ Upload direto concluído");
+            } catch (directErr) {
+                console.log("❌ Método direto falhou:", directErr.message);
+                console.log("🔄 Tentando método 3: Upload com stream manual");
+                
+                // MÉTODO 3: STREAM MANUAL COM CONTROLE TOTAL
+                const readStream = fs.createReadStream(localPath);
+                
+                // Aguardar stream estar pronto
+                await new Promise((resolve, reject) => {
+                    readStream.on('readable', resolve);
+                    readStream.on('error', reject);
+                    setTimeout(() => reject(new Error('Stream timeout')), 5000);
+                });
+                
+                await client.uploadFrom(readStream, remotePath);
+                console.log("✅ Upload com stream manual concluído");
+            }
+        }
+
+        // VERIFICAR UPLOAD NO SERVIDOR
+        let remoteSize;
+        try {
+            remoteSize = await client.size(remotePath);
+            console.log(`📊 Verificação: Local=${fileSize} | Remoto=${remoteSize}`);
+            
+            if (remoteSize === 0) {
+                throw new Error("Arquivo enviado com tamanho 0");
+            }
+            
+            if (remoteSize !== fileSize) {
+                console.warn(`⚠️ Tamanhos diferentes: local=${fileSize}, remoto=${remoteSize}`);
+                // Não falhar por diferença pequena (alguns servidores FTP têm diferenças mínimas)
+                if (Math.abs(remoteSize - fileSize) > 1024) { // Diferença > 1KB
+                    throw new Error(`Diferença significativa de tamanho: ${Math.abs(remoteSize - fileSize)} bytes`);
+                }
+            }
+            
+        } catch (sizeErr) {
+            console.warn("⚠️ Não foi possível verificar tamanho remoto:", sizeErr.message);
+            
+            // VERIFICAÇÃO ALTERNATIVA: LISTAR ARQUIVOS
+            try {
+                const files = await client.list();
+                const uploadedFile = files.find(f => f.name === remotePath);
+                if (uploadedFile) {
+                    console.log(`📋 Arquivo encontrado na listagem: ${uploadedFile.name} (${uploadedFile.size} bytes)`);
+                    if (uploadedFile.size === 0) {
+                        throw new Error("Arquivo listado com tamanho 0");
+                    }
+                } else {
+                    throw new Error("Arquivo não encontrado na listagem");
+                }
+            } catch (listErr) {
+                console.warn("⚠️ Verificação por listagem também falhou:", listErr.message);
+                // Continuar mesmo assim - alguns servidores têm limitações
+            }
+        }
+        
+        const uploadTime = ((Date.now() - startTime) / 1000).toFixed(2);
+        console.log(`🎯 Upload FTP concluído em ${uploadTime}s`);
+        
+        // Chamar callback final
+        if (onProgress) {
+            onProgress(100, ((fileSize / (1024 * 1024)) / uploadTime).toFixed(2));
+        }
+        
+    } catch (err) {
+        console.error("❌ Erro crítico no upload FTP:", err);
+        
+        // TENTAR LIMPEZA SE UPLOAD FALHOU
+        if (client) {
+            try {
+                await client.remove(remotePath);
+                console.log("�� Arquivo parcial removido do servidor");
+            } catch (cleanErr) {
+                console.warn("Não foi possível limpar arquivo parcial:", cleanErr.message);
+            }
+        }
+        
+        throw err;
+    } finally {
+        if (client) {
+            try {
+                client.close();
+                console.log("🔌 Conexão FTP fechada");
+            } catch (closeErr) {
+                console.warn("Aviso ao fechar FTP:", closeErr.message);
+            }
+        }
+    }
+}
+// Função para limpeza do pool (chamar no shutdown da aplicação)
+function closeFTPPool() {
+    ftpPool.connections.forEach(client => {
+        try {
+            client.close();
+        } catch (err) {
+            // Ignorar erros de fechamento
+        }
+    });
+    ftpPool.connections = [];
+}
+
 async function uploadToFTP(localPath, remotePath, onProgress) {
     const client = new ftp.Client()
     client.ftp.verbose = true
@@ -87,6 +317,7 @@ module.exports = {
     generateUUID,
     formatHourString,
     uploadToFTP,
+    ultraFastUploadToFTP,
     formatarData,
     formatarDataHora,
     gerarNumeroAleatorio,

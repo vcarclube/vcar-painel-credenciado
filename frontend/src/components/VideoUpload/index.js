@@ -507,11 +507,11 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
               </div>
               <div className="video-upload__progress-info">
                 <span className="video-upload__progress-text">
-                  🚀 COMPRESSÃO ULTRA-RÁPIDA... {compressionProgress}%
+                  Comprimindo... {compressionProgress}%
                 </span>
                 {compressionSpeed > 0 && (
                   <span className="video-upload__speed">
-                    ⚡ {compressionSpeed}%/s
+                    {compressionSpeed}%/s
                   </span>
                 )}
               </div>
