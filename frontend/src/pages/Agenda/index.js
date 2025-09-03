@@ -259,7 +259,7 @@ const Agenda = () => {
                   >
                     <option value="TODOS">TODOS</option>
                     <option value="EM ANDAMENTO">EM ANDAMENTO</option>
-                    <option value="PENDENTES">PENDENTES</option>
+                    <option selected value="PENDENTES">PENDENTES</option>
                     <option value="CONCLUÍDO">CONCLUÍDO</option>
                   </select>
                 </div>
