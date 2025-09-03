@@ -102,6 +102,7 @@ const DadosBancariosDeleteModal = ({ isOpen, onClose, onConfirm, dado, loading =
           font-size: 16px;
           font-weight: 500;
           color: #495057;
+          text-align: left;
         }
         
         .account-details {
@@ -110,6 +111,7 @@ const DadosBancariosDeleteModal = ({ isOpen, onClose, onConfirm, dado, loading =
           padding: 16px;
           margin: 16px 0;
           border-left: 4px solid #dc3545;
+          text-align: left;
         }
         
         .detail-item {

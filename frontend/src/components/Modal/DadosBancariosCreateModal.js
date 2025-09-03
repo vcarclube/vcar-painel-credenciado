@@ -151,7 +151,7 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
     }
     
     if (!formData.DocumentoTitular.trim()) {
-      newErrors.DocumentoTitular = 'CPF/CNPJ do titular é obrigatório';
+      newErrors.DocumentoTitular = 'CPF do titular é obrigatório';
     }
     
     setErrors(newErrors);
@@ -223,7 +223,6 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
       <div className="create-modal-content">
         <form onSubmit={handleSubmit} className="create-form">
           <div className="form-section">
-            <h4 className="section-title">Tipo de Pagamento</h4>
             <div className="form-row">
               <div className="form-group full-width">
                 <label className="form-label">Tipo de Pagamento *</label>
@@ -240,12 +239,11 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
               </div>
             </div>
           </div>
-          
+
           {formData.tipoPagamento === 'PIX' && (
             <div className="form-section">
               <h4 className="section-title">Dados PIX</h4>
-              <p className="section-subtitle">Configure os dados para recebimento via PIX</p>
-              
+
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Tipo de Chave PIX *</label>
@@ -308,7 +306,6 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
           {formData.tipoPagamento === 'TRANSFERENCIA' && (
             <div className="form-section">
               <h4 className="section-title">Dados Bancários</h4>
-              <p className="section-subtitle">Configure os dados para recebimento via transferência</p>
               
               <div className="form-row">
                 <div className="form-group">
@@ -395,7 +392,7 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
               </div>
               
               <div className="form-group">
-                <label className="form-label">CPF/CNPJ do Titular *</label>
+                <label className="form-label">CPF do Titular *</label>
                 <Input
                   ref={formData.DocumentoTitular?.length <= 14 ? cpfTitularMask : cnpjTitularMask}
                   type="text"
@@ -425,16 +422,6 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
                 </select>
               </div>
               
-              <div className="form-group">
-                <label className="form-label">Ponto de Atendimento *</label>
-                <select
-                  value="V-CAR"
-                  className="form-select"
-                  disabled
-                >
-                  <option value="V-CAR">V-CAR</option>
-                </select>
-              </div>
             </div>
           </div>
           
@@ -473,7 +460,7 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
         }
 
         .section-title {
-          margin: 0 0 20px 0;
+          margin: 20px 0 20px 0;
           font-size: 16px;
           font-weight: 600;
           color: #495057;
@@ -553,10 +540,6 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
           .form-row {
             flex-direction: column;
             gap: 16px;
-          }
-
-          .form-section {
-            padding: 20px;
           }
 
           .modal-actions {
