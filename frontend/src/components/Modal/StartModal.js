@@ -39,7 +39,7 @@ const StartModal = ({ isOpen, onClose, onConfirm, agendamento, idPontoAtendiment
       isOpen={isOpen}
       onClose={handleClose}
       title="Iniciar Ordem de Serviço"
-      size="small"
+      size="medium"
     >
       <div className="start-modal-content">
         <div className="start-icon">
@@ -157,7 +157,7 @@ const StartModal = ({ isOpen, onClose, onConfirm, agendamento, idPontoAtendiment
         .modal-actions {
           display: flex;
           gap: 12px;
-          justify-content: center;
+          justify-content: flex-end;
           width: 100%;
           padding-top: 16px;
           border-top: 1px solid #e5e7eb;

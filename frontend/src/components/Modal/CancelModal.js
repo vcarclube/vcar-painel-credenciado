@@ -74,7 +74,7 @@ const CancelModal = ({ isOpen, onClose, onConfirm, agendamento }) => {
             Voltar
           </Button>
           <Button
-            variant="danger"
+            variant="primary"
             onClick={handleConfirm}
             loading={loading}
           >
