@@ -120,6 +120,13 @@
   margin-bottom: 8px;
 }
 
+.video-upload__progress-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
 .video-upload__progress-bar {
   flex: 1;
   height: 6px;
@@ -141,6 +148,21 @@
   color: #3b82f6;
   min-width: 35px;
   text-align: right;
+}
+
+.video-upload__progress-subtitle {
+  font-size: 10px;
+  font-weight: 400;
+  color: #6b7280;
+  text-align: right;
+  margin-top: 2px;
+}
+
+.video-upload__progress-details {
+  font-size: 0.7rem;
+  color: #888;
+  margin-top: 1px;
+  font-style: italic;
 }
 
 .video-upload__success {

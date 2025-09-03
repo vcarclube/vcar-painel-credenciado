@@ -8,6 +8,7 @@ const { validateToken } = require("../middlewares/AuthMiddleware");
 const stream = require('stream');
 const { promisify } = require('util');
 const pipeline = promisify(stream.pipeline);
+const { PassThrough } = require('stream');
 const zlib = require('react-zlib-js');
 const path = require("path");
 
@@ -23,72 +24,113 @@ const ftpViewPool = {
     connections: new Map(),
     maxConnections: 5,
     
+    // Limpeza periódica de conexões inválidas
+    startCleanupTimer() {
+        setInterval(async () => {
+            console.log('🧹 Verificando conexões inválidas...');
+            const toRemove = [];
+            
+            for (const [id, connection] of this.connections) {
+                if (!connection.inUse) {
+                    try {
+                        await connection.client.pwd();
+                    } catch (error) {
+                        console.log(`🗑️ Removendo conexão inválida: ${id}`);
+                        toRemove.push(id);
+                        try {
+                            connection.client.close();
+                        } catch (closeError) {
+                            // Ignorar erro ao fechar conexão já morta
+                        }
+                    }
+                }
+            }
+            
+            toRemove.forEach(id => this.connections.delete(id));
+            
+            if (toRemove.length > 0) {
+                console.log(`🧹 Removidas ${toRemove.length} conexões inválidas`);
+            }
+        }, 30000); // Verificar a cada 30 segundos
+    },
+    
     async getConnection() {
-        const connectionKey = `${Date.now()}_${Math.random()}`;
-        
-        // Limpar conexões antigas (mais de 30s)
-        const now = Date.now();
-        for (const [key, conn] of this.connections.entries()) {
-            if (now - conn.created > 30000) {
+        // Procurar conexão disponível e válida
+        for (const [id, connection] of this.connections) {
+            if (!connection.inUse) {
+                // Verificar se a conexão ainda está válida
                 try {
-                    conn.client.close();
-                } catch (e) {}
-                this.connections.delete(key);
+                    await connection.client.pwd(); // Teste simples de conectividade
+                    connection.inUse = true;
+                    connection.lastUsed = Date.now();
+                    console.log(`♻️ Reutilizando conexão ${id}`);
+                    return connection;
+                } catch (testError) {
+                    console.log(`🔄 Conexão ${id} inválida, removendo...`);
+                    this.connections.delete(id);
+                    try {
+                        connection.client.close();
+                    } catch (closeError) {
+                        // Ignorar erro ao fechar conexão já morta
+                    }
+                }
             }
         }
         
-        // Criar nova conexão otimizada
-        const client = new ftp.Client();
-        client.ftp.verbose = false;
-        
-        await client.access({
-            host: "216.158.231.74",
-            user: "vcarclub",
-            password: "7U@gSNCc",
-            secure: false,
-            connTimeout: 5000,      // Timeout reduzido
-            pasvTimeout: 5000,
-            keepalive: 60000,       // Keep-alive longo
-            // Configurações TCP otimizadas
-            socket: {
-                timeout: 30000,
-                keepAlive: true,
-                noDelay: true
+        // Criar nova conexão se não atingiu o limite
+        if (this.connections.size < this.maxConnections) {
+            const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const client = new ftp.Client();
+            client.ftp.verbose = false;
+            
+            // Configurar timeout mais baixo para detectar problemas rapidamente
+            client.ftp.timeout = 10000; // 10 segundos
+            
+            try {
+                await client.access({
+                    host: process.env.FTP_HOST,
+                    user: process.env.FTP_USER,
+                    password: process.env.FTP_PASSWORD,
+                    secure: false
+                });
+                
+                const connection = {
+                    id: connectionId,
+                    client,
+                    inUse: true,
+                    created: Date.now(),
+                    lastUsed: Date.now()
+                };
+                
+                this.connections.set(connectionId, connection);
+                console.log(`🆕 Nova conexão criada: ${connectionId}`);
+                return connection;
+                
+            } catch (err) {
+                console.error('Erro ao criar conexão FTP:', err);
+                throw err;
             }
-        });
+        }
         
-        await client.cd("/uploads");
-        
-        const connection = {
-            client,
-            created: now,
-            key: connectionKey
-        };
-        
-        this.connections.set(connectionKey, connection);
-        return connection;
+        throw new Error('Pool de conexões esgotado');
     },
     
     releaseConnection(connection) {
-        // Manter conexão viva por um tempo
-        setTimeout(() => {
-            if (this.connections.has(connection.key)) {
-                try {
-                    connection.client.close();
-                } catch (e) {}
-                this.connections.delete(connection.key);
-            }
-        }, 30000); // 30 segundos
+        if (connection && this.connections.has(connection.id)) {
+            connection.inUse = false;
+            connection.lastUsed = Date.now();
+            console.log(`🔓 Conexão liberada: ${connection.id}`);
+        }
     }
 };
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, uploadDir);
+        cb(null, uploadDir)
     },
     filename: function (req, file, cb) {
-        const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
-        cb(null, uniqueName);
+        const sanitized = sanitizeFileName(file.originalname);
+        cb(null, sanitized)
     }
 });
 
@@ -101,141 +143,191 @@ const upload = multer({
         fields: 10
     },
     fileFilter: (req, file, cb) => {
-        console.log(`📤 Recebendo arquivo: ${file.originalname} (${file.mimetype})`);
+        console.log('📁 Upload iniciado:', file.originalname);
         cb(null, true);
     }
 });
 
 const verifyUpload = (req, res, next) => {
-    if (req.file) {
-        console.log(`✅ Arquivo salvo: ${req.file.path} (${req.file.size} bytes)`);
-        
-        // Verificação adicional
-        if (req.file.size === 0) {
-            fs.unlinkSync(req.file.path); // Remover arquivo vazio
-            return res.status(400).json({ error: "Arquivo vazio recebido" });
-        }
+    if (!req.file) {
+        return res.status(400).json({
+            success: false,
+            message: "Nenhum arquivo foi enviado"
+        });
     }
     next();
 };
 
 const sanitizeFileName = (filename) => {
-  return filename
-    .normalize("NFD") // remove acentos
-    .replace(/[\u0300-\u036f]/g, "") // remove diacríticos
-    .replace(/\s+/g, "_") // troca espaços por "_"
-    .replace(/[^a-zA-Z0-9._-]/g, ""); // mantém apenas letras, números, ., _, -
+    return filename
+        .replace(/[^a-zA-Z0-9._-]/g, '_')
+        .replace(/_{2,}/g, '_')
+        .substring(0, 255);
 };
 
 router.post("/upload", validateToken, upload.single("file"), async (req, res) => {
     const startTime = Date.now();
+    let connection;
     
     try {
+        console.log('🚀 Iniciando upload para FTP...');
+        
         if (!req.file) {
-            return res.status(400).json({ error: "Nenhum arquivo enviado" });
+            return res.status(400).json({
+                success: false,
+                message: "Nenhum arquivo foi enviado"
+            });
         }
 
-        const localPath = req.file.path;
+        const localFilePath = req.file.path;
+        const fileName = req.file.filename;
+        const originalName = req.file.originalname;
+        const fileSize = req.file.size;
         
-        // MÚLTIPLAS VERIFICAÇÕES DO ARQUIVO LOCAL
-        console.log(`📋 Arquivo recebido: ${req.file.originalname}`);
-        console.log(`📍 Caminho: ${localPath}`);
-        console.log(`📊 Tamanho reportado pelo multer: ${req.file.size} bytes`);
+        console.log(`📄 Arquivo: ${originalName} (${(fileSize / (1024 * 1024)).toFixed(2)}MB)`);
         
-        // Verificação 1: Stats do arquivo
-        const stats = await statAsync(localPath);
-        console.log(`📊 Tamanho real no disco: ${stats.size} bytes`);
+        // Obter conexão do pool
+        connection = await ftpViewPool.getConnection();
+        const { client } = connection;
         
-        if (stats.size === 0) {
-            await fs.unlinkSync(localPath);
-            return res.status(400).json({ error: "Arquivo salvo está vazio" });
-        }
+        console.log(`⚡ Conexão FTP obtida em ${Date.now() - startTime}ms`);
         
-        if (stats.size !== req.file.size) {
-            console.warn(`⚠️ Diferença de tamanho: multer=${req.file.size}, disco=${stats.size}`);
-        }
-        
-        // Verificação 2: Tentar ler primeiros bytes
+        // Navegar para o diretório uploads
         try {
-            const fd = fs.openSync(localPath, 'r');
-            const buffer = Buffer.alloc(1024);
-            const bytesRead = fs.readSync(fd, buffer, 0, 1024, 0);
-            fs.closeSync(fd);
-            
-            console.log(`📖 Primeiros ${bytesRead} bytes lidos com sucesso`);
-            
-            if (bytesRead === 0) {
-                throw new Error("Não foi possível ler dados do arquivo");
-            }
-        } catch (readErr) {
-            console.error("❌ Erro ao ler arquivo:", readErr);
-            await fs.unlinkSync(localPath);
-            return res.status(400).json({ error: "Arquivo corrompido ou ilegível" });
+            await client.ensureDir('/uploads');
+            console.log('📁 Navegado para diretório /uploads');
+        } catch (dirError) {
+            console.log('📁 Criando diretório /uploads...');
+            await client.ensureDir('/uploads');
         }
-
-        const remotePath = Utils.generateUUID() + sanitizeFileName(req.file.originalname);
         
-        console.log(`🚀 Iniciando upload para: ${remotePath}`);
-
-        // Upload com retry automático
-        let uploadSuccess = false;
-        let lastError;
+        // Upload para FTP
+        const uploadStartTime = Date.now();
+        await client.uploadFrom(localFilePath, fileName);
+        const uploadTime = Date.now() - uploadStartTime;
         
-        for (let attempt = 1; attempt <= 3; attempt++) {
+        console.log(`📤 Upload concluído em ${uploadTime}ms`);
+        
+        // Limpar arquivo local
+        try {
+            fs.unlinkSync(localFilePath);
+            console.log('🗑️ Arquivo local removido');
+        } catch (cleanupErr) {
+            console.warn('⚠️ Erro ao remover arquivo local:', cleanupErr.message);
+        }
+        
+        // Liberar conexão
+        ftpViewPool.releaseConnection(connection);
+        
+        const totalTime = Date.now() - startTime;
+        console.log(`🎯 Upload total concluído em ${totalTime}ms`);
+        
+        res.json({
+            success: true,
+            message: "Arquivo enviado com sucesso",
+            filename: fileName,
+            file: fileName,
+            originalName: originalName,
+            size: fileSize,
+            uploadTime: totalTime
+        });
+        
+    } catch (error) {
+        console.error('❌ Erro no upload:', error);
+        
+        // Marcar conexão como inválida e removê-la do pool se for erro de conexão
+        if (connection && (error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT')) {
+            console.log('🔄 Removendo conexão inválida do pool...');
+            ftpViewPool.connections.delete(connection.id);
             try {
-                console.log(`🔄 Tentativa ${attempt}/3`);
-                
-                await Utils.ultraFastUploadToFTP(localPath, remotePath, (progress, speed) => {
-                    console.log(`⚡ Progresso: ${progress}% | Velocidade: ${speed} MB/s`);
-                });
-                
-                uploadSuccess = true;
-                break;
-                
-            } catch (uploadErr) {
-                lastError = uploadErr;
-                console.error(`❌ Tentativa ${attempt} falhou:`, uploadErr.message);
-                
-                if (attempt < 3) {
-                    console.log(`⏳ Aguardando 2s antes da próxima tentativa...`);
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }
+                connection.client.close();
+            } catch (closeError) {
+                // Ignorar erro ao fechar conexão já morta
+            }
+        } else if (connection) {
+            ftpViewPool.releaseConnection(connection);
+        }
+        
+        // Limpar arquivo local em caso de erro
+        if (req.file && req.file.path) {
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch (cleanupErr) {
+                console.warn('⚠️ Erro ao limpar arquivo local:', cleanupErr.message);
             }
         }
         
-        if (!uploadSuccess) {
-            await fs.unlinkSync(localPath);
-            throw lastError || new Error("Upload falhou após 3 tentativas");
+        // Retry automático para erros de conexão (apenas uma tentativa)
+        if ((error.code === 'ECONNRESET' || error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') && !req.retryAttempt) {
+            console.log('🔄 Tentando novamente após erro de conexão...');
+            req.retryAttempt = true;
+            
+            try {
+                // Aguardar um pouco e tentar obter nova conexão
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                // Tentar upload novamente com nova conexão
+                const retryConnection = await ftpViewPool.getConnection();
+                const { client: retryClient } = retryConnection;
+                
+                console.log('🔄 Tentativa de retry iniciada...');
+                
+                // Navegar para o diretório uploads no retry
+                try {
+                    await retryClient.ensureDir('/uploads');
+                    console.log('📁 Navegado para diretório /uploads (retry)');
+                } catch (dirError) {
+                    console.log('📁 Criando diretório /uploads (retry)...');
+                    await retryClient.ensureDir('/uploads');
+                }
+                
+                await retryClient.uploadFrom(localFilePath, fileName);
+                
+                // Limpar arquivo local
+                try {
+                    fs.unlinkSync(localFilePath);
+                    console.log('🗑️ Arquivo local removido (retry)');
+                } catch (cleanupErr) {
+                    console.warn('⚠️ Erro ao remover arquivo local (retry):', cleanupErr.message);
+                }
+                
+                // Liberar conexão
+                ftpViewPool.releaseConnection(retryConnection);
+                
+                console.log('✅ Upload concluído com sucesso no retry');
+                
+                res.json({
+                    success: true,
+                    message: "Arquivo enviado com sucesso (após retry)",
+                    filename: fileName,
+                    originalName: originalName,
+                    size: fileSize
+                });
+                return;
+                
+            } catch (retryError) {
+                console.error('❌ Erro no retry:', retryError);
+                // Continuar para o tratamento de erro normal
+            }
         }
         
-        const uploadTime = ((Date.now() - startTime) / 1000).toFixed(2);
-        console.log(`🎯 UPLOAD TOTAL CONCLUÍDO EM ${uploadTime}s`);
-
-        // Resposta de sucesso
-        res.json({ 
-            success: true, 
-            file: remotePath,
-            originalSize: stats.size,
-            uploadTime: uploadTime
-        });
-
-        // Cleanup em background
-        fs.unlinkSync(localPath).catch(err => {
-            console.warn("Aviso: Erro ao deletar arquivo temporário:", err.message);
-        });
-
-    } catch (err) {
-        console.error("❌ Erro na rota /upload:", err);
-        
-        // Cleanup de emergência
-        if (req.file?.path) {
-            fs.unlinkSync(req.file.path).catch(() => {});
+        if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
+            res.status(503).json({
+                success: false,
+                message: "Servidor FTP temporariamente indisponível. Tente novamente em alguns instantes."
+            });
+        } else if (error.code === 'ENOTFOUND') {
+            res.status(503).json({
+                success: false,
+                message: "Servidor FTP não encontrado"
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: "Erro interno do servidor",
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
         }
-        
-        return res.status(500).json({ 
-            error: "Erro no upload",
-            details: process.env.NODE_ENV === 'development' ? err.message : undefined
-        });
     }
 });
 
@@ -254,16 +346,23 @@ router.get("/files/:filename", async (req, res) => {
         
         console.log(`⚡ Conexão obtida em ${Date.now() - startTime}ms`);
 
+        // Navegar para o diretório uploads
+        await client.ensureDir('/uploads');
+        await client.cd('/uploads');
+        console.log(`📂 Navegado para /uploads`);
+
         // Verificar arquivo
         let fileInfo;
         try {
             const fileSize = await client.size(filename);
             fileInfo = { size: fileSize, name: filename };
-            console.log(`�� Arquivo: ${(fileSize / (1024 * 1024)).toFixed(2)}MB`);
+            console.log(`📁 Arquivo: ${(fileSize / (1024 * 1024)).toFixed(2)}MB`);
         } catch (sizeErr) {
             const fileList = await client.list();
             fileInfo = fileList.find(file => file.name === filename);
             
+            console.log(sizeErr)
+
             if (!fileInfo) {
                 ftpViewPool.releaseConnection(connection);
                 return res.status(404).json({ error: "Arquivo não encontrado" });
@@ -285,247 +384,111 @@ router.get("/files/:filename", async (req, res) => {
             contentType = `audio/${fileExtension}`;
         }
 
-        // Headers básicos
+        // Headers básicos para vídeos
         res.setHeader("Content-Type", contentType);
         res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
         res.setHeader("Accept-Ranges", "bytes");
         res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Access-Control-Allow-Headers", "Range");
+        res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
         res.setHeader("X-Content-Type-Options", "nosniff");
         
-        // LÓGICA ESPECIAL PARA VÍDEOS GRANDES
-        if (isVideo && fileInfo.size > 100 * 1024 * 1024) { // > 100MB
-            console.log(`🎬 Vídeo grande detectado: ${(fileInfo.size / (1024 * 1024)).toFixed(2)}MB`);
+        // Cleanup function
+        const cleanup = () => {
+            if (connection) {
+                ftpViewPool.releaseConnection(connection);
+                connection = null;
+            }
+        };
+        
+        res.on('close', cleanup);
+        res.on('error', cleanup);
+        res.on('finish', cleanup);
+        
+        // LÓGICA PARA VÍDEOS COM RANGE SUPPORT
+        if (isVideo && range) {
+            console.log(`🎬 Vídeo com range request: ${(fileInfo.size / (1024 * 1024)).toFixed(2)}MB`);
             
-            // Cache mais agressivo para vídeos grandes
-            res.setHeader("Cache-Control", "public, max-age=604800, immutable"); // 7 dias
+            const parts = range.replace(/bytes=/, "").split("-");
+            let start = parseInt(parts[0], 10) || 0;
+            let end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + (2 * 1024 * 1024) - 1, fileInfo.size - 1); // 2MB chunks
             
-            if (range) {
-                // RANGE REQUEST OTIMIZADO PARA VÍDEOS GRANDES
-                console.log(`📹 Range request: ${range}`);
-                
-                const parts = range.replace(/bytes=/, "").split("-");
-                let start = parseInt(parts[0], 10) || 0;
-                let end = parts[1] ? parseInt(parts[1], 10) : fileInfo.size - 1;
-                
-                // Chunk size adaptativo baseado no tamanho do arquivo
-                let chunkSize;
-                if (fileInfo.size > 1000 * 1024 * 1024) { // > 1GB
-                    chunkSize = 50 * 1024 * 1024; // 50MB chunks
-                } else if (fileInfo.size > 500 * 1024 * 1024) { // > 500MB
-                    chunkSize = 25 * 1024 * 1024; // 25MB chunks
-                } else {
-                    chunkSize = 10 * 1024 * 1024; // 10MB chunks
-                }
-                
-                // Ajustar end se necessário
-                if (end - start + 1 > chunkSize) {
-                    end = start + chunkSize - 1;
-                }
-                
-                // Garantir que não exceda o arquivo
-                if (end >= fileInfo.size) {
-                    end = fileInfo.size - 1;
-                }
-                
-                const contentLength = end - start + 1;
-                
-                res.status(206);
-                res.setHeader("Content-Range", `bytes ${start}-${end}/${fileInfo.size}`);
-                res.setHeader("Content-Length", contentLength);
-                
-                console.log(`�� Chunk: ${start}-${end} (${(contentLength / (1024 * 1024)).toFixed(2)}MB)`);
-                
-                // STREAMING OTIMIZADO COM CONTROLE PRECISO
-                try {
-                    // Posicionar no arquivo usando REST
-                    if (start > 0) {
-                        await client.send(`REST ${start}`);
-                        console.log(`📍 Posicionado em: ${start} bytes`);
-                    }
-                    
-                    // Criar stream controlado
-                    const controlledStream = new PassThrough({
-                        highWaterMark: 256 * 1024 // 256KB buffer
-                    });
-                    
-                    let bytesStreamed = 0;
-                    let streamEnded = false;
-                    
-                    // Cleanup function
-                    const cleanup = () => {
-                        if (!streamEnded) {
-                            streamEnded = true;
-                            controlledStream.destroy();
-                        }
-                        if (connection) {
-                            ftpViewPool.releaseConnection(connection);
-                            connection = null;
-                        }
-                    };
-                    
-                    // Event listeners para cleanup
-                    res.on('close', cleanup);
-                    res.on('error', cleanup);
-                    res.on('finish', cleanup);
-                    
-                    // Iniciar download FTP
-                    const ftpDownload = client.downloadToWritableStream(filename);
-                    
-                    ftpDownload.on('data', (chunk) => {
-                        if (streamEnded) return;
-                        
-                        const remainingBytes = contentLength - bytesStreamed;
-                        
-                        if (remainingBytes <= 0) {
-                            if (!streamEnded) {
-                                streamEnded = true;
-                                controlledStream.end();
-                            }
-                            return;
-                        }
-                        
-                        if (chunk.length <= remainingBytes) {
-                            bytesStreamed += chunk.length;
-                            controlledStream.write(chunk);
-                        } else {
-                            const partialChunk = chunk.slice(0, remainingBytes);
-                            bytesStreamed += partialChunk.length;
-                            controlledStream.write(partialChunk);
-                            
-                            if (!streamEnded) {
-                                streamEnded = true;
-                                controlledStream.end();
-                            }
-                        }
-                        
-                        // Verificar se completou
-                        if (bytesStreamed >= contentLength && !streamEnded) {
-                            streamEnded = true;
-                            controlledStream.end();
-                        }
-                    });
-                    
-                    ftpDownload.on('end', () => {
-                        if (!streamEnded) {
-                            streamEnded = true;
-                            controlledStream.end();
-                        }
-                    });
-                    
-                    ftpDownload.on('error', (err) => {
-                        console.error('❌ Erro no download FTP:', err);
-                        if (!streamEnded) {
-                            streamEnded = true;
-                            controlledStream.destroy(err);
-                        }
-                    });
-                    
-                    // Pipe para resposta
-                    controlledStream.pipe(res);
-                    
-                    console.log(`🎯 Streaming iniciado: ${start}-${end}`);
-                    
-                } catch (streamErr) {
-                    console.error('❌ Erro no streaming:', streamErr);
-                    throw streamErr;
-                }
-                
-            } else {
-                // DOWNLOAD COMPLETO PARA VÍDEOS GRANDES (NÃO RECOMENDADO)
-                console.log(`⚠️ Download completo solicitado para vídeo grande`);
-                
-                res.setHeader("Content-Length", fileInfo.size);
-                res.setHeader("Cache-Control", "public, max-age=3600"); // Cache menor para downloads completos
-                
-                const cleanup = () => {
-                    if (connection) {
-                        ftpViewPool.releaseConnection(connection);
-                        connection = null;
-                    }
-                };
-                
-                res.on('close', cleanup);
-                res.on('error', cleanup);
-                res.on('finish', cleanup);
-                
-                await client.downloadTo(res, filename);
+            // Garantir que não exceda o arquivo
+            if (end >= fileInfo.size) {
+                end = fileInfo.size - 1;
             }
             
-        } else {
-            // ARQUIVOS MENORES OU NÃO-VÍDEOS (LÓGICA ORIGINAL)
-            console.log(`📄 Arquivo padrão: ${(fileInfo.size / (1024 * 1024)).toFixed(2)}MB`);
+            const contentLength = end - start + 1;
             
-            res.setHeader("Cache-Control", "public, max-age=86400");
+            res.status(206);
+            res.setHeader("Content-Range", `bytes ${start}-${end}/${fileInfo.size}`);
+            res.setHeader("Content-Length", contentLength);
+            res.setHeader("Cache-Control", "public, max-age=3600");
             
-            if (range && (isVideo || isAudio)) {
-                // Range request para arquivos menores
-                const parts = range.replace(/bytes=/, "").split("-");
-                const start = parseInt(parts[0], 10) || 0;
-                let end = parts[1] ? parseInt(parts[1], 10) : fileInfo.size - 1;
+            console.log(`📦 Chunk: ${start}-${end} (${(contentLength / (1024 * 1024)).toFixed(2)}MB)`);
+            
+            try {
+                // Criar um stream personalizado para controlar o range
+                const passThrough = new PassThrough();
                 
-                const maxChunkSize = 5 * 1024 * 1024; // 5MB para arquivos menores
-                if (end - start + 1 > maxChunkSize) {
-                    end = start + maxChunkSize - 1;
-                }
-                
-                const contentLength = end - start + 1;
-                
-                res.status(206);
-                res.setHeader("Content-Range", `bytes ${start}-${end}/${fileInfo.size}`);
-                res.setHeader("Content-Length", contentLength);
-                
+                // Configurar o comando FTP para range
                 if (start > 0) {
                     await client.send(`REST ${start}`);
                 }
                 
-                // Stream simples para arquivos menores
-                const ftpStream = await client.downloadToWritableStream(filename);
-                let bytesRead = 0;
+                // Pipe para resposta
+                passThrough.pipe(res);
                 
-                ftpStream.on('data', (chunk) => {
-                    const remaining = contentLength - bytesRead;
-                    if (remaining <= 0) return;
-                    
-                    if (chunk.length <= remaining) {
-                        bytesRead += chunk.length;
-                        res.write(chunk);
-                    } else {
-                        const partial = chunk.slice(0, remaining);
-                        bytesRead += partial.length;
-                        res.write(partial);
-                    }
-                    
-                    if (bytesRead >= contentLength) {
-                        res.end();
-                        ftpStream.destroy();
-                    }
-                });
+                // Iniciar o download
+                await client.downloadTo(passThrough, filename);
                 
-                ftpStream.on('end', () => res.end());
-                ftpStream.on('error', (err) => {
-                    console.error('Erro no stream:', err);
-                    if (!res.headersSent) {
-                        res.status(500).end();
-                    }
-                });
+                console.log(`🎯 Streaming iniciado: ${start}-${end}`);
                 
-            } else {
-                // Download completo para arquivos pequenos
-                res.setHeader("Content-Length", fileInfo.size);
-                
-                const cleanup = () => {
-                    if (connection) {
-                        ftpViewPool.releaseConnection(connection);
-                        connection = null;
-                    }
-                };
-                
-                res.on('close', cleanup);
-                res.on('error', cleanup);
-                res.on('finish', cleanup);
-                
-                await client.downloadTo(res, filename);
+            } catch (streamErr) {
+                console.error('❌ Erro no streaming:', streamErr);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: "Erro no streaming do vídeo" });
+                }
             }
+            
+        } else if (isVideo) {
+            // Vídeo sem range - forçar range inicial para melhor compatibilidade
+            console.log(`🎬 Vídeo sem range, enviando chunk inicial`);
+            
+            const chunkSize = 2 * 1024 * 1024; // 2MB inicial
+            const end = Math.min(chunkSize - 1, fileInfo.size - 1);
+            
+            res.status(206);
+            res.setHeader("Content-Range", `bytes 0-${end}/${fileInfo.size}`);
+            res.setHeader("Content-Length", end + 1);
+            res.setHeader("Cache-Control", "public, max-age=3600");
+            
+            try {
+                const passThrough = new PassThrough();
+                
+                // Pipe para resposta
+                passThrough.pipe(res);
+                
+                // Download do arquivo
+                await client.downloadTo(passThrough, filename);
+                
+                console.log(`🎯 Streaming concluído`);
+                
+            } catch (streamErr) {
+                console.error('❌ Erro no streaming:', streamErr);
+                if (!res.headersSent) {
+                    res.status(500).json({ error: "Erro no streaming do vídeo" });
+                }
+            }
+            
+        } else {
+            // ARQUIVOS NÃO-VÍDEOS (LÓGICA ORIGINAL)
+            console.log(`📄 Arquivo não-vídeo: ${(fileInfo.size / (1024 * 1024)).toFixed(2)}MB`);
+            
+            res.setHeader("Cache-Control", "public, max-age=86400");
+            res.setHeader("Content-Length", fileInfo.size);
+            
+            await client.downloadTo(res, filename);
         }
         
         const totalTime = Date.now() - startTime;
@@ -536,8 +499,10 @@ router.get("/files/:filename", async (req, res) => {
         
         if (connection) {
             try {
-                connection.client.close();
-            } catch (e) {}
+                ftpViewPool.releaseConnection(connection);
+            } catch (e) {
+                console.error('Erro ao liberar conexão:', e);
+            }
         }
         
         if (!res.headersSent) {
@@ -552,14 +517,38 @@ router.get("/files/:filename", async (req, res) => {
     }
 });
 
-process.on('SIGTERM', () => {
-    console.log('🧹 Limpando pool de conexões FTP...');
-    for (const [key, conn] of ftpViewPool.connections.entries()) {
-        try {
-            conn.client.close();
-        } catch (e) {}
+// Limpeza periódica de conexões inativas
+setInterval(() => {
+    const now = Date.now();
+    const maxIdleTime = 5 * 60 * 1000; // 5 minutos
+    
+    for (const [id, connection] of ftpViewPool.connections) {
+        if (!connection.inUse && (now - connection.lastUsed) > maxIdleTime) {
+            try {
+                connection.client.close();
+                ftpViewPool.connections.delete(id);
+                console.log(`🧹 Conexão inativa removida: ${id}`);
+            } catch (err) {
+                console.error('Erro ao fechar conexão inativa:', err);
+            }
+        }
     }
-    ftpViewPool.connections.clear();
+}, 60000); // Verificar a cada minuto
+
+// Cleanup ao encerrar processo
+process.on('SIGTERM', () => {
+    console.log('🛑 Encerrando servidor...');
+    for (const [id, connection] of ftpViewPool.connections) {
+        try {
+            connection.client.close();
+            console.log(`🔌 Conexão fechada: ${id}`);
+        } catch (err) {
+            console.error('Erro ao fechar conexão:', err);
+        }
+    }
 });
+
+// Inicializar limpeza periódica de conexões
+ftpViewPool.startCleanupTimer();
 
 module.exports = router;

@@ -32,8 +32,12 @@ app.use('/espelho', espelhoRoute);
 
 if(process.env.DEVELOPMENT_MODE == "true"){
     var httpServer = http.createServer(app);
-    httpServer.listen(process.env.PORT);
+    httpServer.listen(process.env.PORT, () => {
+        console.log(`🚀 Servidor rodando na porta ${process.env.PORT} (modo desenvolvimento)`);
+    });
 }else{
     var httpServer = http.createServer(app);
-    httpServer.listen(process.env.PORT);
+    httpServer.listen(process.env.PORT, () => {
+        console.log(`🚀 Servidor rodando na porta ${process.env.PORT} (modo produção)`);
+    });
 }

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Modal from './index';
 import { Button } from '../index';
-import { FiFileText, FiTrash2, FiUpload, FiDownload } from 'react-icons/fi';
+import { FiFileText, FiTrash2, FiUpload, FiDownload, FiX } from 'react-icons/fi';
 import Api from '../../Api';
 import { toast } from 'react-toastify';
+import mediaBunnyCompression from '../../utils/MediaBunnyCompression';
 
 const LaudosModal = ({ isOpen, onClose, laudos, onRemoveLaudo, onAddLaudo }) => {
   const [loading, setLoading] = useState(false);
@@ -32,9 +33,29 @@ const LaudosModal = ({ isOpen, onClose, laudos, onRemoveLaudo, onAddLaudo }) => 
 
     setLoading(true);
     try {
+      let fileToUpload = file;
+      
+      // Verificar se precisa de compressão
+      if (mediaBunnyCompression.needsCompression(file)) {
+        try {
+          const mediaType = file.type.startsWith('video/') ? 'vídeo' : 'imagem';
+          toast.info(`Comprimindo ${mediaType}, aguarde...`);
+          
+          fileToUpload = await mediaBunnyCompression.compressFile(file, (progress) => {
+            console.log(`Progresso da compressão: ${progress}%`);
+          });
+          
+          toast.success(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} comprimido com sucesso!`);
+        } catch (error) {
+          console.error('Erro na compressão, usando arquivo original:', error);
+          toast.warning('Erro na compressão, usando arquivo original');
+          fileToUpload = file;
+        }
+      }
+      
       // Fazer upload do arquivo
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
       
       const uploadResponse = await Api.upload(formData);
       

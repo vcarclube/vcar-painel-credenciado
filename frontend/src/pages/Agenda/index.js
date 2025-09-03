@@ -42,7 +42,7 @@ const Agenda = () => {
   const [filtroDataInicio, setFiltroDataInicio] = useState(primeiroDia);
   const [filtroDataFinal, setFiltroDataFinal] = useState(ultimoDia);
   
-  const [filtroStatus, setFiltroStatus] = useState('TODOS');
+  const [filtroStatus, setFiltroStatus] = useState('PENDENTES');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -259,7 +259,7 @@ const Agenda = () => {
                   >
                     <option value="TODOS">TODOS</option>
                     <option value="EM ANDAMENTO">EM ANDAMENTO</option>
-                    <option selected value="PENDENTES">PENDENTES</option>
+                    <option value="PENDENTES">PENDENTES</option>
                     <option value="CONCLUÍDO">CONCLUÍDO</option>
                   </select>
                 </div>

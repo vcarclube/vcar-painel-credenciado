@@ -1,5 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { FiCamera, FiVideo, FiUpload, FiX, FiPlay, FiPause, FiSquare } from 'react-icons/fi';
+import mediaBunnyCompression from '../../utils/MediaBunnyCompression';
+import { toast } from 'react-toastify';
 import './style.css';
 
 const MediaUpload = ({ 
@@ -32,19 +34,42 @@ const MediaUpload = ({
   }), []);
 
   // Função para lidar com upload de arquivos
-  const handleFileUpload = useCallback((event) => {
+  const handleFileUpload = useCallback(async (event) => {
     const files = Array.from(event.target.files);
-    files.forEach(file => {
+    
+    for (const file of files) {
+      let processedFile = file;
+      
+      // Verificar se precisa de compressão
+      if (mediaBunnyCompression.needsCompression(file)) {
+        try {
+          const mediaType = file.type.startsWith('video/') ? 'vídeo' : 'imagem';
+          toast.info(`Comprimindo ${mediaType}, aguarde...`);
+          
+          processedFile = await mediaBunnyCompression.compressFile(file, (progress) => {
+            // Callback de progresso pode ser usado aqui se necessário
+            console.log(`Progresso da compressão: ${progress}%`);
+          });
+          
+          toast.success(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} comprimido com sucesso!`);
+        } catch (error) {
+          console.error('Erro na compressão, usando arquivo original:', error);
+          toast.warning('Erro na compressão, usando arquivo original');
+          processedFile = file;
+        }
+      }
+      
       const mediaItem = {
         id: Date.now() + Math.random(),
-        file,
-        url: URL.createObjectURL(file),
-        name: file.name,
-        type: file.type.startsWith('image/') ? 'image' : 'video',
-        size: file.size
+        file: processedFile,
+        url: URL.createObjectURL(processedFile),
+        name: processedFile.name,
+        type: processedFile.type.startsWith('image/') ? 'image' : 'video',
+        size: processedFile.size
       };
       onMediaAdd(mediaItem);
-    });
+    }
+    
     // Reset input
     event.target.value = '';
   }, [onMediaAdd]);

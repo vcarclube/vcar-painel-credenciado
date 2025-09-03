@@ -20,8 +20,7 @@ import {
 } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation, Modal, SearchableSelect, Button, MediaUpload, LaudosModal, RecibosModal } from '../../components';
 import { VideoInicialModal, VideoFinalizacaoModal } from '../../components/Modal';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import mediaBunnyCompression from '../../utils/MediaBunnyCompression';
 import './style.css';
 import Api from '../../Api';
 import { toast } from 'react-toastify';
@@ -45,7 +44,6 @@ const ExecutaOS = () => {
   // Estados para compressão de vídeos
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionProgress, setCompressionProgress] = useState(0);
-  const [ffmpeg, setFfmpeg] = useState(null);
   
   // Estados para modal de anotações
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
@@ -94,32 +92,9 @@ const ExecutaOS = () => {
     getLaudosAgendamento();
   }, [idSocioVeiculoAgenda, videoInicialUploaded]);
 
-  // Inicializar FFmpeg para compressão
+  // Verificar se há suporte ao MediaBunny
   useEffect(() => {
-    const loadFFmpeg = async () => {
-      const ffmpegInstance = new FFmpeg();
-      
-      ffmpegInstance.on('log', ({ message }) => {
-        console.log(message);
-      });
-      
-      ffmpegInstance.on('progress', ({ progress }) => {
-        setCompressionProgress(Math.round(progress * 100));
-      });
-
-      try {
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-        await ffmpegInstance.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        });
-        setFfmpeg(ffmpegInstance);
-      } catch (error) {
-        console.error('Erro ao carregar FFmpeg:', error);
-      }
-    };
-
-    loadFFmpeg();
+    console.log('🎬 MediaBunny carregado para compressão de mídia');
   }, []);
 
   const getAgendamento = async () => {
@@ -193,67 +168,26 @@ const ExecutaOS = () => {
   // Serviços disponíveis filtrados
   const servicosDisponiveis = getServicosDisponiveis();
 
-  // Função para compactar vídeo
-  const compressVideo = async (file) => {
-    if (!ffmpeg) {
-      throw new Error('FFmpeg não está carregado');
-    }
-
+  // Função para compactar mídia usando MediaBunny
+  const compressMedia = async (file) => {
     setIsCompressing(true);
     setCompressionProgress(0);
 
     try {
-      const inputName = 'input.mp4';
-      const outputName = 'output.mp4';
-
-      // Escrever arquivo de entrada
-      await ffmpeg.writeFile(inputName, await fetchFile(file));
-
-      // Configurações otimizadas para compressão rápida e eficiente
-      const ffmpegArgs = [
-        '-i', inputName,
-        '-c:v', 'libx264',           // Codec de vídeo H.264
-        '-preset', 'fast',           // Preset rápido
-        '-crf', '23',                // Qualidade balanceada (18-28)
-        '-c:a', 'aac',               // Codec de áudio AAC
-        '-b:a', '128k',              // Bitrate de áudio
-        '-movflags', '+faststart',   // Otimização para web
-        '-profile:v', 'baseline',    // Perfil compatível
-        '-level', '3.0',             // Nível de compatibilidade
-        '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', // Garantir dimensões pares
-        outputName
-      ];
-
-      // Executar compressão
-      await ffmpeg.exec(ffmpegArgs);
-
-      // Ler arquivo comprimido
-      const data = await ffmpeg.readFile(outputName);
-      const compressedBlob = new Blob([data.buffer], { type: 'video/mp4' });
+      const compressedFile = await mediaBunnyCompression.compressFile(file, (progress) => {
+        setCompressionProgress(progress);
+      });
       
-      // Criar novo arquivo comprimido
-      const compressedFile = new File(
-        [compressedBlob], 
-        `compressed_${file.name.replace(/\.[^/.]+$/, '')}.mp4`, 
-        { type: 'video/mp4' }
-      );
-
-      // Limpar arquivos temporários
-      await ffmpeg.deleteFile(inputName);
-      await ffmpeg.deleteFile(outputName);
-
-      console.log(`Compressão concluída: ${file.size} → ${compressedFile.size} bytes`);
-      console.log(`Redução: ${((1 - compressedFile.size / file.size) * 100).toFixed(1)}%`);
-
       return compressedFile;
     } catch (error) {
-      console.error('Erro na compressão:', error);
+      console.error('❌ Erro na compressão:', error);
       throw error;
     } finally {
       setIsCompressing(false);
-      setCompressionProgress(0);
     }
   };
+
+
 
   // Função para carregar fotos do agendamento
   const getFotosAgendamento = async () => {
@@ -286,12 +220,13 @@ const ExecutaOS = () => {
     try {
       let fileToUpload = file;
       
-      // Verificar se é vídeo e se precisa de compressão (maior que 25MB)
-      if (file.type.startsWith('video/') && file.size > 25 * 1024 * 1024 && ffmpeg) {
+      // Verificar se precisa de compressão (vídeo ou imagem)
+      if (mediaBunnyCompression.needsCompression(file)) {
         try {
-          toast.info('Comprimindo vídeo, aguarde...');
-          fileToUpload = await compressVideo(file);
-          toast.success('Vídeo comprimido com sucesso!');
+          const mediaType = file.type.startsWith('video/') ? 'vídeo' : 'imagem';
+          toast.info(`Comprimindo ${mediaType}, aguarde...`);
+          fileToUpload = await compressMedia(file);
+          toast.success(`${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} comprimido com sucesso!`);
         } catch (error) {
           console.error('Erro na compressão, enviando arquivo original:', error);
           toast.warning('Erro na compressão, enviando arquivo original');

@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FiUpload, FiVideo, FiX, FiCheck, FiCamera, FiZap } from 'react-icons/fi';
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import './style.css';
 import Api from '../../Api';
+import mediaBunnyCompression from '../../utils/MediaBunnyCompression';
 
 const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "Upload de Vídeo" }) => {
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -14,217 +13,60 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [recordedChunks, setRecordedChunks] = useState([]);
   
-  // Estados para compressão ULTRA RÁPIDA
+  // Estados para compressão usando WebCodecs
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionProgress, setCompressionProgress] = useState(0);
-  const [ffmpeg, setFfmpeg] = useState(null);
-  const [compressionSpeed, setCompressionSpeed] = useState(0);
+  const [compressionStartTime, setCompressionStartTime] = useState(null);
+  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(null);
   
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
-  const compressionStartTime = useRef(null);
-  const lastProgressTime = useRef(null);
 
-  // Inicializar FFmpeg com configurações EXTREMAS de velocidade
+  // Verificar se há suporte ao MediaBunny
   useEffect(() => {
-    const loadFFmpeg = async () => {
-      const ffmpegInstance = new FFmpeg();
-      
-      ffmpegInstance.on('log', ({ message }) => {
-        // Só logs críticos para não atrasar
-        if (message.includes('error') || message.includes('warning')) {
-          console.log(message);
-        }
-      });
-      
-      ffmpegInstance.on('progress', ({ progress }) => {
-        const currentProgress = Math.round(progress * 100);
-        setCompressionProgress(currentProgress);
-        
-        // Calcular velocidade de compressão
-        const now = Date.now();
-        if (lastProgressTime.current && compressionStartTime.current) {
-          const timeElapsed = (now - compressionStartTime.current) / 1000;
-          const speed = currentProgress / timeElapsed;
-          setCompressionSpeed(speed.toFixed(1));
-        }
-        lastProgressTime.current = now;
-      });
-
-      try {
-        const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-        await ffmpegInstance.load({
-          coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-          wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-        });
-        setFfmpeg(ffmpegInstance);
-        console.log('🚀 COMPRESSOR ULTRA-RÁPIDO CARREGADO!');
-      } catch (error) {
-        console.error('Erro ao carregar FFmpeg:', error);
-      }
-    };
-
-    loadFFmpeg();
+    if (typeof window !== 'undefined') {
+      console.log('🎬 MediaBunny carregado para compressão de vídeo');
+    }
   }, []);
 
-  // CONFIGURAÇÕES EXTREMAS DE VELOCIDADE
-  const getUltraFastSettings = (fileSize) => {
-    const sizeMB = fileSize / (1024 * 1024);
-    
-    if (sizeMB > 500) {
-      // MODO DESTRUIÇÃO TOTAL - VELOCIDADE MÁXIMA
-      return {
-        preset: 'ultrafast',
-        crf: '35', // Qualidade baixa, mas RÁPIDO
-        scale: 'scale=854:480', // 480p para velocidade extrema
-        audioBitrate: '64k', // Áudio mínimo
-        videoCodec: 'libx264',
-        extraParams: [
-          '-tune', 'zerolatency',
-          '-x264opts', 'no-cabac:no-deblock:no-weightb:weightp=0:me=dia:subme=1:ref=1:analyse=none:trellis=0:8x8dct=0',
-          '-threads', '0',
-          '-slices', '4'
-        ]
-      };
-    } else if (sizeMB > 200) {
-      // MODO SPEED DEMON
-      return {
-        preset: 'ultrafast',
-        crf: '32',
-        scale: 'scale=1280:720', // 720p
-        audioBitrate: '80k',
-        videoCodec: 'libx264',
-        extraParams: [
-          '-tune', 'zerolatency',
-          '-x264opts', 'no-cabac:no-deblock:weightp=0:me=dia:subme=2:ref=1:analyse=none',
-          '-threads', '0'
-        ]
-      };
-    } else if (sizeMB > 100) {
-      // MODO LIGHTNING
-      return {
-        preset: 'ultrafast',
-        crf: '30',
-        scale: 'scale=1280:720',
-        audioBitrate: '96k',
-        videoCodec: 'libx264',
-        extraParams: [
-          '-tune', 'zerolatency',
-          '-threads', '0'
-        ]
-      };
-    } else {
-      // MODO ROCKET
-      return {
-        preset: 'veryfast',
-        crf: '28',
-        scale: 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
-        audioBitrate: '128k',
-        videoCodec: 'libx264',
-        extraParams: ['-threads', '0']
-      };
-    }
-  };
 
-  // COMPRESSOR ULTRA-RÁPIDO - O MAIS RÁPIDO DO MUNDO! 🚀
-  const ultraFastCompress = async (file) => {
-    if (!ffmpeg) {
-      throw new Error('FFmpeg não está carregado');
-    }
 
+  // Função para compactar vídeo usando MediaBunny
+  const compressVideo = async (file) => {
     setIsCompressing(true);
     setCompressionProgress(0);
-    setCompressionSpeed(0);
-    compressionStartTime.current = Date.now();
-    lastProgressTime.current = Date.now();
+    setCompressionStartTime(Date.now());
+    setEstimatedTimeRemaining(null);
 
     try {
-      const inputName = 'input.mp4';
-      const outputName = 'output.mp4';
+      const startTime = Date.now();
+      const compressedFile = await mediaBunnyCompression.compressVideo(file, (progress) => {
+        setCompressionProgress(progress);
+        
+        // Calcular tempo estimado restante
+        if (progress > 0) {
+          const elapsed = Date.now() - startTime;
+          const estimated = elapsed / (progress / 100);
+          const remaining = Math.max(0, estimated - elapsed);
+          setEstimatedTimeRemaining(Math.round(remaining / 1000));
+        }
+      });
       
-      const settings = getUltraFastSettings(file.size);
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-
-      console.log(`🔥 INICIANDO COMPRESSÃO ULTRA-RÁPIDA: ${sizeMB}MB`);
-      console.log(`⚡ MODO: ${settings.preset.toUpperCase()}`);
-
-      // Escrever arquivo
-      await ffmpeg.writeFile(inputName, await fetchFile(file));
-
-      // ARGUMENTOS EXTREMOS DE VELOCIDADE
-      const ffmpegArgs = [
-        '-i', inputName,
-        '-c:v', settings.videoCodec,
-        '-preset', settings.preset,
-        '-crf', settings.crf,
-        '-c:a', 'aac',
-        '-b:a', settings.audioBitrate,
-        '-vf', settings.scale,
-        '-movflags', '+faststart',
-        '-profile:v', 'baseline', // Perfil mais simples
-        '-level', '3.0',
-        '-r', '24', // FPS reduzido para velocidade
-        '-g', '48', // GOP menor
-        '-sc_threshold', '0', // Desabilitar scene cut
-        '-bf', '0', // Sem B-frames
-        '-refs', '1', // Apenas 1 referência
-        '-me_method', 'dia', // Algoritmo mais rápido
-        '-subq', '1', // Subpixel mais rápido
-        '-trellis', '0', // Sem trellis
-        '-aq-mode', '0', // Sem adaptive quantization
-        '-fast-pskip', '1',
-        '-dct-decimate', '1',
-        ...settings.extraParams,
-        outputName
-      ];
-
-      console.log('�� EXECUTANDO COMPRESSÃO EXTREMA...');
-      
-      // EXECUÇÃO ULTRA-RÁPIDA
-      await ffmpeg.exec(ffmpegArgs);
-
-      // Ler resultado
-      const data = await ffmpeg.readFile(outputName);
-      const compressedBlob = new Blob([data.buffer], { type: 'video/mp4' });
-      
-      const compressedFile = new File(
-        [compressedBlob], 
-        `turbo_${file.name.replace(/\.[^/.]+$/, '')}.mp4`, 
-        { type: 'video/mp4' }
-      );
-
-      // Limpar
-      await ffmpeg.deleteFile(inputName);
-      await ffmpeg.deleteFile(outputName);
-
-      const compressionTime = ((Date.now() - compressionStartTime.current) / 1000).toFixed(1);
-      const originalSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-      const compressedSizeMB = (compressedFile.size / (1024 * 1024)).toFixed(2);
-      const reductionPercent = ((1 - compressedFile.size / file.size) * 100).toFixed(1);
-      const speedMBps = (originalSizeMB / compressionTime).toFixed(1);
-
-      console.log(`🎯 COMPRESSÃO CONCLUÍDA EM ${compressionTime}s!`);
-      console.log(`📊 ${originalSizeMB}MB → ${compressedSizeMB}MB (${reductionPercent}% redução)`);
-      console.log(`⚡ VELOCIDADE: ${speedMBps} MB/s`);
-
       return compressedFile;
     } catch (error) {
-      console.error('❌ Erro na compressão ultra-rápida:', error);
+      console.error('❌ Erro na compressão:', error);
       throw error;
     } finally {
       setIsCompressing(false);
       setCompressionProgress(0);
-      setCompressionSpeed(0);
-      compressionStartTime.current = null;
-      lastProgressTime.current = null;
+      setEstimatedTimeRemaining(null);
     }
   };
 
-  // Compressão agressiva - sempre comprimir vídeos >30MB
   const shouldCompress = (file) => {
-    return file.size > 30 * 1024 * 1024; // 30MB
+    return mediaBunnyCompression.needsCompression(file);
   };
 
   const handleFileSelect = async (event) => {
@@ -232,15 +74,20 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
     if (file && file.type.startsWith('video/')) {
       setSelectedVideo(file);
       
-      if (shouldCompress(file) && ffmpeg) {
+      console.log(`📁 Arquivo selecionado: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+      
+      if (shouldCompress(file)) {
         try {
-          const compressedFile = await ultraFastCompress(file);
+          console.log('🚀 Iniciando compressão...');
+          const compressedFile = await compressVideo(file);
+          console.log(`✅ Compressão concluída: ${(compressedFile.size / (1024 * 1024)).toFixed(2)}MB`);
           handleUpload(compressedFile);
         } catch (error) {
-          console.error('Erro na compressão, enviando original:', error);
+          console.error('❌ Erro na compressão, enviando arquivo original:', error);
           handleUpload(file);
         }
       } else {
+        console.log('⏭️ Enviando arquivo original');
         handleUpload(file);
       }
     } else {
@@ -256,16 +103,16 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
       const formData = new FormData();
       formData.append("file", file);
 
-      // Progresso simulado mais rápido
+      // Progresso simulado
       const uploadInterval = setInterval(() => {
         setUploadProgress(prev => {
           if (prev >= 90) {
             clearInterval(uploadInterval);
             return prev;
           }
-          return prev + 15; // Incremento maior
+          return prev + 15;
         });
-      }, 150); // Intervalo menor
+      }, 150);
 
       const result = await Api.upload(formData);
       
@@ -294,7 +141,6 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
     setUploadProgress(0);
     setCompressionProgress(0);
     setIsCompressing(false);
-    setCompressionSpeed(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -314,15 +160,20 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
       if (file.type.startsWith('video/')) {
         setSelectedVideo(file);
         
-        if (shouldCompress(file) && ffmpeg) {
+        console.log(`📁 Arquivo arrastado: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)}MB)`);
+        
+        if (shouldCompress(file)) {
           try {
-            const compressedFile = await ultraFastCompress(file);
+            console.log('🚀 Iniciando compressão...');
+            const compressedFile = await compressVideo(file);
+            console.log(`✅ Compressão concluída: ${(compressedFile.size / (1024 * 1024)).toFixed(2)}MB`);
             handleUpload(compressedFile);
           } catch (error) {
-            console.error('Erro na compressão, enviando original:', error);
+            console.error('❌ Erro na compressão, enviando arquivo original:', error);
             handleUpload(file);
           }
         } else {
+          console.log('⏭️ Enviando arquivo original');
           handleUpload(file);
         }
       } else {
@@ -349,7 +200,7 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
       
       const recorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 1000000 // 1 Mbps para gravação mais leve
+        videoBitsPerSecond: 1000000 // 1 Mbps
       });
       
       setMediaRecorder(recorder);
@@ -365,53 +216,48 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
       
       recorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: 'video/webm' });
-        const file = new File([blob], `turbo_record_${Date.now()}.webm`, { type: 'video/webm' });
+        const file = new File([blob], `recording_${Date.now()}.webm`, { type: 'video/webm' });
         setSelectedVideo(file);
         
-        if (ffmpeg && shouldCompress(file)) {
+        if (shouldCompress(file)) {
           try {
-            const compressedFile = await ultraFastCompress(file);
+            console.log('🚀 Comprimindo gravação...');
+            const compressedFile = await compressVideo(file);
             handleUpload(compressedFile);
           } catch (error) {
-            console.error('Erro na compressão, enviando original:', error);
+            console.error('❌ Erro na compressão da gravação:', error);
             handleUpload(file);
           }
         } else {
           handleUpload(file);
         }
         
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
-        }
-        setIsRecording(false);
-        setRecordedChunks([]);
-        chunksRef.current = [];
+        stopCamera();
       };
       
-      recorder.start();
       setIsRecording(true);
+      recorder.start();
     } catch (error) {
       console.error('Erro ao acessar câmera:', error);
-      alert('Não foi possível acessar a câmera. Verifique as permissões.');
+      alert('Erro ao acessar a câmera. Verifique as permissões.');
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
       mediaRecorder.stop();
+      setIsRecording(false);
     }
   };
 
-  const cancelRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-    }
+  const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
-    setIsRecording(false);
-    setRecordedChunks([]);
-    chunksRef.current = [];
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
   };
 
   return (
@@ -421,51 +267,22 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
         {required && <span className="video-upload__required">*</span>}
       </label>
       
-      {isRecording ? (
-        <div className="video-upload__recording">
-          <video 
-            ref={videoRef}
-            autoPlay 
-            muted 
-            className="video-upload__camera-preview"
-          />
-          <div className="video-upload__recording-controls">
-            <button 
-              className="video-upload__record-btn video-upload__record-btn--stop"
-              onClick={stopRecording}
-              type="button"
-            >
-              <FiCheck /> Finalizar Gravação
-            </button>
-            <button 
-              className="video-upload__record-btn video-upload__record-btn--cancel"
-              onClick={cancelRecording}
-              type="button"
-            >
-              <FiX /> Cancelar
-            </button>
+      {!selectedVideo ? (
+        <div 
+          className="video-upload__dropzone"
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <div className="video-upload__icon">
+            <FiUpload size={48} />
           </div>
-        </div>
-      ) : !selectedVideo ? (
-        <div className="video-upload__options">
-          <div 
-            className="video-upload__dropzone"
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <FiZap className="video-upload__icon video-upload__icon--turbo" />
-            <p className="video-upload__text">
-              <strong>(Selecionar vídeo)</strong>
-            </p>
-            <p className="video-upload__hint">
-              Clique ou arraste um vídeo
-              <br />
-              <small>Formatos: MP4, AVI, MOV</small>
-            </p>
+          <div className="video-upload__text">
+            <span className="video-upload__main-text">Clique ou arraste um vídeo aqui</span>
+            <span className="video-upload__sub-text">MP4, AVI, MOV, WebM (máx. 500MB)</span>
           </div>
           
-          <button
+          <button 
             style={{display: 'none'}} 
             className="video-upload__record-btn"
             onClick={startRecording}
@@ -507,13 +324,16 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
               </div>
               <div className="video-upload__progress-info">
                 <span className="video-upload__progress-text">
-                  Comprimindo... {compressionProgress}%
+                  ⚡ Compressão ultra-rápida... {compressionProgress}%
                 </span>
-                {compressionSpeed > 0 && (
-                  <span className="video-upload__speed">
-                    {compressionSpeed}%/s
-                  </span>
-                )}
+                <span className="video-upload__progress-subtitle">
+                  {estimatedTimeRemaining !== null && estimatedTimeRemaining > 0 
+                    ? `⏱️ Tempo restante: ${estimatedTimeRemaining}s` 
+                    : 'Calculando tempo restante...'}
+                </span>
+                <span className="video-upload__progress-details">
+                  🚀 Otimizado para velocidade máxima
+                </span>
               </div>
             </div>
           )}
@@ -538,6 +358,26 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
               <span>🎯 Vídeo enviado com sucesso!</span>
             </div>
           )}
+        </div>
+      )}
+      
+      {isRecording && (
+        <div className="video-upload__recording">
+          <video 
+            ref={videoRef}
+            autoPlay 
+            muted 
+            className="video-upload__preview-video"
+          />
+          <div className="video-upload__recording-controls">
+            <button 
+              className="video-upload__stop-btn"
+              onClick={stopRecording}
+              type="button"
+            >
+              <FiX /> Parar Gravação
+            </button>
+          </div>
         </div>
       )}
       
