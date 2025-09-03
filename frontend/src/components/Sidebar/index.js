@@ -21,7 +21,7 @@ function Sidebar() {
   return (
     <div className="sidebar">
       {/* Logo */}
-      <div className="sidebar-logo">
+      <div className="sidebar-logo" onClick={() => {navigate('/')}}>
         <img src="/logo_black.png" alt="Logo" className="logo-image" />
       </div>
 
