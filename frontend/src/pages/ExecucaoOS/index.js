@@ -1191,6 +1191,7 @@ const ExecutaOS = () => {
                         Adicionar Recibos
                       </button>
                       <button 
+                        style={{display: osData?.status == "CONCLUIDA" ? 'none' : undefined}}
                         className="execucao-os__dropdown-item"
                         onClick={handleFinalizarOS}
                       >

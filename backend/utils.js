@@ -146,7 +146,7 @@ module.exports = {
             LEFT JOIN PontosAtendimentoUsuarios AS B ON A.IdUsuarioInicio = B.IdPontoAtendimentoUsuario
             LEFT JOIN PontosAtendimentoUsuarios AS C ON A.IdUsuarioFim = C.IdPontoAtendimentoUsuario
             WHERE A.IdSocioVeiculoAgenda = @idSocioVeiculoAgenda`, { idSocioVeiculoAgenda });
-        return result.recordset[0]?.IdSocioVeiculo;
+        return result.recordset[0];
     },
     getSocioVeiculoByIdSocioVeiculoAgenda: async (idSocioVeiculoAgenda) => {
         let result = await db.query(`

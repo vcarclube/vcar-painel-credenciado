@@ -131,7 +131,7 @@ const Avaliacoes = () => {
     <div className="avaliacoes">
       <Header />
       <Sidebar />
-      
+  
       <div className="avaliacoes__content">
         <div className="avaliacoes__container">
           <div className="avaliacoes__header">

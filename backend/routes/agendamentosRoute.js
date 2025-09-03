@@ -1067,6 +1067,9 @@ router.get('/get/:idSocioVeiculoAgenda', validateToken, async (req, res) => {
     let motivo = await Utils.getMotivacaoById(agendamento?.IdMotivacao);
     let execucao = await Utils.getAgendamentoExecucao(idSocioVeiculoAgenda);
 
+    console.log("execucao======================")
+    console.log(execucao)
+
     return res.status(200).json({
       agendamento,
       socio,
