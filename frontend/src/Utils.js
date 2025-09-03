@@ -8,6 +8,12 @@ const Utils = {
     stringIsNullOrEmpty: (str) => {
         return !str || str?.trim() === "" || str == null || str == undefined;
     },
+    formatCurrency: (value) => {
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(value);
+    },
     notify: (type, message) => {
         switch (type) {
             case "success":

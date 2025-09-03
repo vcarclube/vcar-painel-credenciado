@@ -357,6 +357,13 @@ const Api = {
         }).catch(err => {
             return err;
         });
+    },
+    getEspelhoFinanceiroByPontoAtendimento: async (data) => {
+        return await axios.post(`${API_BASE}/espelho/lista`, data, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
     }
 }
 

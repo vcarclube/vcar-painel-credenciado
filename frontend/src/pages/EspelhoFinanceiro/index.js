@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
   FiEye,
   FiDollarSign,
@@ -19,22 +19,31 @@ import {
 import { Header, Sidebar, BottomNavigation, EspelhoFinanceiroViewModal } from '../../components';
 import '../Home/style.css';
 import './style.css';
+import Api from '../../Api';
+import Utils from '../../Utils';
+import { MainContext } from '../../helpers/MainContext';
 
 const EspelhoFinanceiro = () => {
+  const { user } = useContext(MainContext);
+
+  const [totalRecebido, setTotalRecebido] = useState(0);
+  const [totalPendente, setTotalPendente] = useState(0);
+  const [ticketMedio, setTicketMedio] = useState(0);
+
   // Estados para controlar os modais
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedTransacao, setSelectedTransacao] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Estados para filtros
   const [filtros, setFiltros] = useState({
     dataInicio: '2025-08-01',
     dataFim: '2025-08-31',
     status: 'TODOS'
   });
-  
+
   // Estados para controlar os dados financeiros
-  const [transacoes] = useState([
+  const [transacoes, setTransacoes] = useState([
     {
       id: 1,
       matricula: 'TECHNO001',
@@ -167,6 +176,34 @@ const EspelhoFinanceiro = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  useEffect(() => {
+    getTransacoes();
+  }, [])
+
+  const getTransacoes = async () => {
+    try {
+      const response = await Api.getEspelhoFinanceiroByPontoAtendimento({
+        idPontoAtendimento: user.IdPontoAtendimento,
+      });
+
+      let _totalRecebido = response?.data?.filter(item => { return item.PagamentoFeito == 'S' }).reduce((acc, item) => {
+          return acc + Number(item.ValorRepasse);
+      }, 0);
+
+      let _totalPendente = response?.data?.filter(item => { return item.PagamentoFeito == 'N' }).reduce((acc, item) => {
+          return acc + Number(item.ValorRepasse);
+      }, 0);
+
+      let _ticketMedio = response?.data?.length > 0 ? _totalRecebido / response?.data?.length : 0;
+
+      setTotalRecebido(_totalRecebido)
+      setTotalPendente(_totalPendente)
+      setTicketMedio(_ticketMedio)
+    } catch (error) {
+      console.error('Erro ao obter agendamento:', error);
+    }
+  }
+
   // Filtrar transações baseado nos filtros
   const transacoesFiltradas = transacoes.filter(transacao => {
     if (filtros.status !== 'TODOS' && transacao.statusPagamento !== filtros.status) {
@@ -174,36 +211,6 @@ const EspelhoFinanceiro = () => {
     }
     return true;
   });
-
-  // Cálculo dos indicadores financeiros
-  const calcularIndicadores = () => {
-    const totalPago = transacoesFiltradas
-      .filter(t => t.statusPagamento === 'PAGO')
-      .reduce((acc, t) => acc + parseFloat(t.valorRepasse.replace('R$ ', '').replace('.', '').replace(',', '.')), 0);
-    
-    const totalPendente = transacoesFiltradas
-      .filter(t => t.statusPagamento === 'PENDENTE')
-      .reduce((acc, t) => acc + parseFloat(t.valorRepasse.replace('R$ ', '').replace('.', '').replace(',', '.')), 0);
-    
-    const totalProcessando = transacoesFiltradas
-      .filter(t => t.statusPagamento === 'PROCESSANDO')
-      .reduce((acc, t) => acc + parseFloat(t.valorRepasse.replace('R$ ', '').replace('.', '').replace(',', '.')), 0);
-    
-    const totalTransacoes = transacoesFiltradas.length;
-    const totalGeral = totalPago + totalPendente + totalProcessando;
-    const ticketMedio = totalTransacoes > 0 ? totalGeral / totalTransacoes : 0;
-
-    return {
-      totalPago,
-      totalPendente,
-      totalProcessando,
-      ticketMedio,
-      totalGeral,
-      totalTransacoes
-    };
-  };
-
-  const indicadores = calcularIndicadores();
 
   const getStatusClass = (status) => {
     switch (status) {
@@ -245,25 +252,14 @@ const EspelhoFinanceiro = () => {
 
   const handleAtualizarDados = async () => {
     setIsLoading(true);
-    // Simular carregamento
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+    await getTransacoes();
+    setIsLoading(false);
   };
-
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  };
-
-
 
   return (
     <div className="home-container">
       <Sidebar />
-      <div className="main-content" style={{paddingBottom: '0px', marginBottom: '0px'}}>
+      <div className="main-content" style={{ paddingBottom: '0px', marginBottom: '0px' }}>
         <Header />
         <center>
           <div className="espelho-container">
@@ -275,7 +271,7 @@ const EspelhoFinanceiro = () => {
                   <h1>Espelho Financeiro</h1>
                 </div>
                 <div className="espelho-actions">
-                  <button 
+                  <button
                     className="espelho-btn-action espelho-btn-refresh"
                     onClick={handleAtualizarDados}
                     disabled={isLoading}
@@ -289,7 +285,7 @@ const EspelhoFinanceiro = () => {
                   </button>
                 </div>
               </div>
-              
+
               {/* Indicadores Financeiros */}
               <div className="espelho-indicadores-grid">
                 <div className="espelho-indicador-card espelho-total-pago">
@@ -297,36 +293,36 @@ const EspelhoFinanceiro = () => {
                     <FiTrendingUp />
                   </div>
                   <div className="espelho-indicador-content">
-                    <span className="espelho-indicador-label">Total Pago</span>
-                    <span className="espelho-indicador-valor">{formatCurrency(indicadores.totalPago)}</span>
+                    <span className="espelho-indicador-label">Total Recebido</span>
+                    <span className="espelho-indicador-valor">{Utils.formatCurrency(totalRecebido)}</span>
                     <span className="espelho-indicador-meta">Valores já recebidos</span>
                   </div>
                 </div>
-                
+
                 <div className="espelho-indicador-card espelho-total-pendente">
                   <div className="espelho-indicador-icon">
                     <FiTrendingDown />
                   </div>
                   <div className="espelho-indicador-content">
                     <span className="espelho-indicador-label">Total Pendente</span>
-                    <span className="espelho-indicador-valor">{formatCurrency(indicadores.totalPendente)}</span>
+                    <span className="espelho-indicador-valor">{Utils.formatCurrency(totalPendente)}</span>
                     <span className="espelho-indicador-meta">Aguardando pagamento</span>
                   </div>
                 </div>
-                
+
                 <div className="espelho-indicador-card espelho-ticket-medio">
                   <div className="espelho-indicador-icon">
                     <FiBarChart />
                   </div>
                   <div className="espelho-indicador-content">
                     <span className="espelho-indicador-label">Ticket Médio</span>
-                    <span className="espelho-indicador-valor">{formatCurrency(indicadores.ticketMedio)}</span>
+                    <span className="espelho-indicador-valor">{Utils.formatCurrency(ticketMedio)}</span>
                     <span className="espelho-indicador-meta">Valor médio por OS</span>
                   </div>
                 </div>
-              
+
               </div>
-              
+
               {/* Filtros */}
               <div className="espelho-filters">
                 <div className="espelho-filters-title">
@@ -336,23 +332,23 @@ const EspelhoFinanceiro = () => {
                 <div className="espelho-filters-grid">
                   <div className="espelho-filter-group">
                     <label>Data Início:</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={filtros.dataInicio}
                       onChange={(e) => handleFiltroChange('dataInicio', e.target.value)}
                     />
                   </div>
                   <div className="espelho-filter-group">
                     <label>Data Final:</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={filtros.dataFim}
                       onChange={(e) => handleFiltroChange('dataFim', e.target.value)}
                     />
                   </div>
                   <div className="espelho-filter-group">
                     <label>Status:</label>
-                    <select 
+                    <select
                       value={filtros.status}
                       onChange={(e) => handleFiltroChange('status', e.target.value)}
                     >
@@ -407,7 +403,7 @@ const EspelhoFinanceiro = () => {
                     </div>
                   </div>
                   <div className="espelho-card-actions">
-                    <button 
+                    <button
                       className="btn-acao btn-ver-detalhes"
                       onClick={() => handleVerDetalhes(transacao)}
                       title="Ver Detalhes"
@@ -457,7 +453,7 @@ const EspelhoFinanceiro = () => {
                       <td className="espelho-valor-repasse">{transacao.valorRepasse}</td>
                       <td className="espelho-acoes">
                         <div className="espelho-acoes-container">
-                          <button 
+                          <button
                             className="espelho-btn-acao espelho-btn-ver-detalhes"
                             onClick={() => handleVerDetalhes(transacao)}
                             title="Ver Detalhes"
@@ -476,7 +472,7 @@ const EspelhoFinanceiro = () => {
         </center>
       </div>
       <BottomNavigation />
-      
+
       {/* Modal de Visualização */}
       <EspelhoFinanceiroViewModal
         isOpen={showViewModal}
