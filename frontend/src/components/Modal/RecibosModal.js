@@ -9,10 +9,6 @@ import mediaBunnyCompression from '../../utils/MediaBunnyCompression';
 const RecibosModal = ({ isOpen, onClose, recibos, onRemoveRecibo, onAddRecibo }) => {
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    console.log(recibos)
-  }, [])
-
   const handleClose = () => {
     onClose();
   };

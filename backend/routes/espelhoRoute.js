@@ -60,10 +60,30 @@ router.post('/lista', validateToken, async (req, res) => {
 
         if (dataInicio && dataFim) {
             sql += `
-                AND CAST(SUBSTRING(FE.DataAgendamento, 7, 4) + '-' +
-                         SUBSTRING(FE.DataAgendamento, 4, 2) + '-' +
-                         SUBSTRING(FE.DataAgendamento, 1, 2) AS DATE)
-                BETWEEN @dataInicio AND @dataFim
+                AND (
+                    CASE 
+                        -- Formato dd/MM/yyyy HH:mm:ss
+                        WHEN FE.DataAgendamento LIKE '__/__/____ __:__:__' THEN
+                            TRY_CAST(SUBSTRING(FE.DataAgendamento, 7, 4) + '-' +
+                                    SUBSTRING(FE.DataAgendamento, 4, 2) + '-' +
+                                    SUBSTRING(FE.DataAgendamento, 1, 2) AS DATE)
+                        -- Formato MMM dd yyyy HH:mmAM/PM
+                        WHEN FE.DataAgendamento LIKE '% % % %:%AM' OR FE.DataAgendamento LIKE '% % % %:%PM' THEN
+                            TRY_CAST(FE.DataAgendamento AS DATE)
+                        -- Formato dd/MM/yyyy (sem hora)
+                        WHEN FE.DataAgendamento LIKE '__/__/____' AND LEN(FE.DataAgendamento) = 10 THEN
+                            TRY_CAST(SUBSTRING(FE.DataAgendamento, 7, 4) + '-' +
+                                    SUBSTRING(FE.DataAgendamento, 4, 2) + '-' +
+                                    SUBSTRING(FE.DataAgendamento, 1, 2) AS DATE)
+                        ELSE NULL
+                    END
+                ) BETWEEN TRY_CAST(@dataInicio AS DATE) AND TRY_CAST(@dataFim AS DATE)
+                AND (
+                    FE.DataAgendamento LIKE '__/__/____ __:__:__' OR
+                    FE.DataAgendamento LIKE '% % % %:%AM' OR
+                    FE.DataAgendamento LIKE '% % % %:%PM' OR
+                    (FE.DataAgendamento LIKE '__/__/____' AND LEN(FE.DataAgendamento) = 10)
+                )
             `;
             params.dataInicio = dataInicio;
             params.dataFim = dataFim;
@@ -74,7 +94,7 @@ router.post('/lista', validateToken, async (req, res) => {
             params.pagamentoFeito = pagamentoFeito;
         }
 
-        sql += " ORDER BY FE.RazaoSocial, FE.DataAgendamento, FE.Placa;";
+        sql += " ORDER BY FE.NumeroOS DESC;";
 
         const result = await db.query(sql, params);
 

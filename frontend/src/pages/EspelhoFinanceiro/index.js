@@ -35,142 +35,28 @@ const EspelhoFinanceiro = () => {
   const [selectedTransacao, setSelectedTransacao] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Estados dos filtros
+  const hoje = new Date();
+
+  // Primeiro dia do mês
+  const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+    .toISOString()
+    .split("T")[0];
+
+  // Último dia do mês
+  const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+    .toISOString()
+    .split("T")[0];
+
   // Estados para filtros
   const [filtros, setFiltros] = useState({
-    dataInicio: '2025-08-01',
-    dataFim: '2025-08-31',
-    status: 'TODOS'
+    dataInicio: primeiroDia,
+    dataFim: ultimoDia,
+    status: 'PENDENTE'
   });
 
   // Estados para controlar os dados financeiros
-  const [transacoes, setTransacoes] = useState([
-    {
-      id: 1,
-      matricula: 'TECHNO001',
-      razaoSocial: 'TECHNO DEVICES LTDA',
-      cnpj: '31.950.540/0001-06',
-      placa: 'RCI-9FT1',
-      dataAgendamento: '15/08/2025',
-      dataExecucao: '15/08/2025',
-      servico: 'DIAGNÓSTICO ELETRÔNICO (SCANNER)',
-      numeroOS: '1421',
-      valorRepasse: 'R$ 150,00',
-      statusPagamento: 'PAGO',
-      codigoEspelho: '20-05',
-      tipoComissao: 'Básica',
-      descricao: 'Comissão Básica Serviço - VY',
-      cliente: 'DYLLAN NICOLAU DA SILVA',
-      documento: 'CPF 699.930.507-XX'
-    },
-    {
-      id: 2,
-      matricula: 'LUCAS001',
-      razaoSocial: 'LUCAS CALHAMBEQUE AUTO CENTER',
-      cnpj: '31.950.540/0001-06',
-      placa: 'ABC-1234',
-      dataAgendamento: '14/08/2025',
-      dataExecucao: '15/08/2025',
-      servico: 'TROCA DE BIELETAS (PAR)',
-      numeroOS: '1410',
-      valorRepasse: 'R$ 250,00',
-      statusPagamento: 'PENDENTE',
-      codigoEspelho: '20-06',
-      tipoComissao: 'Básica',
-      descricao: 'Comissão Básica Serviço - VY',
-      cliente: 'MARIA SILVA SANTOS',
-      documento: 'CPF 123.456.789-XX'
-    },
-    {
-      id: 3,
-      matricula: 'AUTO002',
-      razaoSocial: 'AUTO PEÇAS E SERVIÇOS LTDA',
-      cnpj: '12.345.678/0001-90',
-      placa: 'XYZ-5678',
-      dataAgendamento: '13/08/2025',
-      dataExecucao: '14/08/2025',
-      servico: 'MANUTENÇÃO DO SISTEMA DE FREIO',
-      numeroOS: '1409',
-      valorRepasse: 'R$ 320,00',
-      statusPagamento: 'PAGO',
-      codigoEspelho: '20-07',
-      tipoComissao: 'Premium',
-      descricao: 'Comissão Premium Serviço - VY',
-      cliente: 'JOÃO CARLOS OLIVEIRA',
-      documento: 'CPF 987.654.321-XX'
-    },
-    {
-      id: 1,
-      matricula: 'TECHNO001',
-      razaoSocial: 'TECHNO DEVICES LTDA',
-      cnpj: '31.950.540/0001-06',
-      placa: 'RCI-9FT1',
-      dataAgendamento: '15/08/2025',
-      dataExecucao: '15/08/2025',
-      servico: 'DIAGNÓSTICO ELETRÔNICO (SCANNER)',
-      numeroOS: '1421',
-      valorRepasse: 'R$ 150,00',
-      statusPagamento: 'PAGO',
-      codigoEspelho: '20-05',
-      tipoComissao: 'Básica',
-      descricao: 'Comissão Básica Serviço - VY',
-      cliente: 'DYLLAN NICOLAU DA SILVA',
-      documento: 'CPF 699.930.507-XX'
-    },
-    {
-      id: 2,
-      matricula: 'LUCAS001',
-      razaoSocial: 'LUCAS CALHAMBEQUE AUTO CENTER',
-      cnpj: '31.950.540/0001-06',
-      placa: 'ABC-1234',
-      dataAgendamento: '14/08/2025',
-      dataExecucao: '15/08/2025',
-      servico: 'TROCA DE BIELETAS (PAR)',
-      numeroOS: '1410',
-      valorRepasse: 'R$ 250,00',
-      statusPagamento: 'PENDENTE',
-      codigoEspelho: '20-06',
-      tipoComissao: 'Básica',
-      descricao: 'Comissão Básica Serviço - VY',
-      cliente: 'MARIA SILVA SANTOS',
-      documento: 'CPF 123.456.789-XX'
-    },
-    {
-      id: 3,
-      matricula: 'AUTO002',
-      razaoSocial: 'AUTO PEÇAS E SERVIÇOS LTDA',
-      cnpj: '12.345.678/0001-90',
-      placa: 'XYZ-5678',
-      dataAgendamento: '13/08/2025',
-      dataExecucao: '14/08/2025',
-      servico: 'MANUTENÇÃO DO SISTEMA DE FREIO',
-      numeroOS: '1409',
-      valorRepasse: 'R$ 320,00',
-      statusPagamento: 'PAGO',
-      codigoEspelho: '20-07',
-      tipoComissao: 'Premium',
-      descricao: 'Comissão Premium Serviço - VY',
-      cliente: 'JOÃO CARLOS OLIVEIRA',
-      documento: 'CPF 987.654.321-XX'
-    },
-    {
-      id: 4,
-      matricula: 'MOTO003',
-      razaoSocial: 'MOTO CENTER ESPECIALIZADA',
-      cnpj: '98.765.432/0001-10',
-      placa: 'MOT-9876',
-      dataAgendamento: '12/08/2025',
-      dataExecucao: '13/08/2025',
-      servico: 'TROCA DE ÓLEO E FILTROS',
-      numeroOS: '1408',
-      valorRepasse: 'R$ 85,00',
-      statusPagamento: 'PROCESSANDO',
-      codigoEspelho: '20-08',
-      tipoComissao: 'Básica',
-      descricao: 'Comissão Básica Serviço - VY',
-      cliente: 'ANA PAULA FERREIRA',
-      documento: 'CPF 456.789.123-XX'
-    }
-  ]);
+  const [transacoes, setTransacoes] = useState([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -180,12 +66,50 @@ const EspelhoFinanceiro = () => {
     getTransacoes();
   }, [])
 
-  const getTransacoes = async () => {
+  const getTransacoes = async (filtrosParam = null) => {
     try {
-      const response = await Api.getEspelhoFinanceiroByPontoAtendimento({
-        idPontoAtendimento: user.IdPontoAtendimento,
-      });
+      const filtrosAtivos = filtrosParam || filtros;
+      const requestBody = {
+        idPontoAtendimento: user.IdPontoAtendimento
+      };
 
+      // Adicionar filtros de data se estiverem definidos
+      if (filtrosAtivos.dataInicio) {
+        requestBody.dataInicio = filtrosAtivos.dataInicio;
+      }
+      if (filtrosAtivos.dataFim) {
+        requestBody.dataFim = filtrosAtivos.dataFim;
+      }
+      if (filtrosAtivos.status && filtrosAtivos.status !== 'TODOS') {
+        requestBody.pagamentoFeito = filtrosAtivos.status === 'PAGO' ? 'S' : 'N';
+      }
+
+      const response = await Api.getEspelhoFinanceiroByPontoAtendimento(requestBody);
+
+      // Mapear os dados da API para o formato esperado pela tabela
+      const transacoesMapeadas = response?.data?.map(item => ({
+        id: item.IdFinanceiroEspelho,
+        matricula: item.Matricula,
+        razaoSocial: item.RazaoSocial,
+        cnpj: item.Cnpj,
+        placa: item.VeiculoPlaca || item.Placa,
+        dataAgendamento: item.DataAgendamento,
+        dataExecucao: item.DataExecucaoOS,
+        servico: item.NomeServico,
+        numeroOS: item.NumeroOS,
+        valorRepasse: Utils.formatCurrency(Number(item.ValorRepasse)),
+        statusPagamento: item.PagamentoFeito === 'S' ? 'PAGO' : 'PENDENTE',
+        codigoEspelho: item.CodigoEspelho,
+        tipoComissao: item.TipoComissao,
+        descricao: item.Descricao,
+        cliente: item.SocioNome,
+        documento: `CPF/CNPJ ${item.Cnpj}`,
+        comprovantePagamento: item.ComprovantePagamento
+      })) || [];
+
+      setTransacoes(transacoesMapeadas);
+
+      // Calcular totais com base nos dados originais da API (já filtrados pelo backend)
       let _totalRecebido = response?.data?.filter(item => { return item.PagamentoFeito == 'S' }).reduce((acc, item) => {
           return acc + Number(item.ValorRepasse);
       }, 0);
@@ -194,7 +118,7 @@ const EspelhoFinanceiro = () => {
           return acc + Number(item.ValorRepasse);
       }, 0);
 
-      let _ticketMedio = response?.data?.length > 0 ? _totalRecebido / response?.data?.length : 0;
+      let _ticketMedio = response?.data?.length > 0 ? (_totalRecebido + _totalPendente) / response?.data?.length : 0;
 
       setTotalRecebido(_totalRecebido)
       setTotalPendente(_totalPendente)
@@ -204,13 +128,8 @@ const EspelhoFinanceiro = () => {
     }
   }
 
-  // Filtrar transações baseado nos filtros
-  const transacoesFiltradas = transacoes.filter(transacao => {
-    if (filtros.status !== 'TODOS' && transacao.statusPagamento !== filtros.status) {
-      return false;
-    }
-    return true;
-  });
+  // Como os filtros são aplicados no backend, usamos as transações diretamente
+  const transacoesFiltradas = transacoes;
 
   const getStatusClass = (status) => {
     switch (status) {
@@ -243,17 +162,80 @@ const EspelhoFinanceiro = () => {
     setShowViewModal(true);
   };
 
-  const handleFiltroChange = (campo, valor) => {
-    setFiltros(prev => ({
-      ...prev,
+  const handleFiltroChange = async (campo, valor) => {
+    const novosFiltros = {
+      ...filtros,
       [campo]: valor
-    }));
+    };
+    setFiltros(novosFiltros);
+    
+    // Fazer nova requisição com os filtros atualizados
+    setIsLoading(true);
+    await getTransacoes(novosFiltros);
+    setIsLoading(false);
   };
 
   const handleAtualizarDados = async () => {
     setIsLoading(true);
     await getTransacoes();
     setIsLoading(false);
+  };
+
+  const handleExportarDados = () => {
+    if (transacoesFiltradas.length === 0) {
+      alert('Não há dados para exportar.');
+      return;
+    }
+
+    // Cabeçalhos do CSV
+    const headers = [
+      'Número OS',
+      'Status Pagamento',
+      'Cliente',
+      'CNPJ',
+      'Placa',
+      'Data Agendamento',
+      'Data Execução',
+      'Serviço',
+      'Valor Repasse',
+      'Código Espelho',
+      'Tipo Comissão',
+      'Descrição',
+      'Matrícula',
+      'Razão Social'
+    ];
+
+    // Converter dados para CSV
+    const csvContent = [
+      headers.join(','),
+      ...transacoesFiltradas.map(transacao => [
+        transacao.numeroOS,
+        transacao.statusPagamento,
+        `"${transacao.cliente}"`,
+        transacao.cnpj,
+        transacao.placa,
+        transacao.dataAgendamento,
+        transacao.dataExecucao,
+        `"${transacao.servico}"`,
+        transacao.valorRepasse,
+        transacao.codigoEspelho,
+        transacao.tipoComissao,
+        `"${transacao.descricao}"`,
+        transacao.matricula,
+        `"${transacao.razaoSocial}"`
+      ].join(','))
+    ].join('\n');
+
+    // Criar e baixar arquivo
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `espelho_financeiro_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -277,9 +259,12 @@ const EspelhoFinanceiro = () => {
                     disabled={isLoading}
                   >
                     <FiRefreshCw className={isLoading ? 'spinning' : ''} />
-                    <span>Atualizar</span>
+                    <span>{isLoading ? 'Atualizando...' : 'Atualizar'}</span>
                   </button>
-                  <button className="espelho-btn-action espelho-btn-export">
+                  <button 
+                    className="espelho-btn-action espelho-btn-export"
+                    onClick={handleExportarDados}
+                  >
                     <FiDownload />
                     <span>Exportar</span>
                   </button>
@@ -355,7 +340,6 @@ const EspelhoFinanceiro = () => {
                       <option value="TODOS">TODOS</option>
                       <option value="PAGO">PAGO</option>
                       <option value="PENDENTE">PENDENTE</option>
-                      <option value="PROCESSANDO">PROCESSANDO</option>
                     </select>
                   </div>
                 </div>
@@ -369,8 +353,8 @@ const EspelhoFinanceiro = () => {
                 <span className="espelho-actions-label">Ações</span>
               </div>
               {transacoesFiltradas.map((transacao) => (
-                <div key={transacao.id} className={`espelho-card ${transacao.statusPagamento === 'PENDENTE' ? 'espelho-card-pendente' : transacao.statusPagamento === 'PROCESSANDO' ? 'espelho-card-processando' : ''}`}>
-                  <div className="espelho-card-content">
+                <div key={transacao.id} style={{background: '#fff'}} className={`espelho-card ${transacao.statusPagamento === 'PENDENTE' ? 'espelho-card-pendente' : transacao.statusPagamento === 'PROCESSANDO' ? 'espelho-card-processando' : ''}`}>
+                  <div className="espelho-card-content" style={{padding: '0px'}}>
                     <div className="espelho-card-info">
                       <div className="espelho-card-status">
                         <span className={`espelho-status-badge ${getStatusClass(transacao.statusPagamento)}`}>

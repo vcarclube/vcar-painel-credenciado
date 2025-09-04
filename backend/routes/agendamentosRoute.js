@@ -865,7 +865,7 @@ router.post('/cancelar', validateToken, async (req, res) => {
     await Utils.notificarWhatsapp({
       phone: socio.Telefone,
       message: `
-📆 Olá, ${socio.Nome}👋, Informamos que seu serviço foi cancelado pela oficina.
+📆 Olá, ${socio.Nome}👋, Informamos que seu agendamennto foi cancelado pela oficina.
 
 🗺 *Local*: ${pontoAtendimento.Descricao}
 🚗 *Carro*: ${socioVeiculo.Placa}
@@ -880,7 +880,7 @@ router.post('/cancelar', validateToken, async (req, res) => {
     await Utils.notificarFirebaseCloudMessaging({
       idSocio: socio.IdSocio,
       title: 'Cancelamento',
-      body: `Olá ${socio.Nome}👋, Informamos que seu serviço foi cancelado pela ${pontoAtendimento.Descricao}, ${motivo}`
+      body: `Olá ${socio.Nome}👋, Informamos que seu agendnamento foi cancelado pela ${pontoAtendimento.Descricao}, ${motivo}`
     });
 
     await db.query(`
@@ -1067,9 +1067,6 @@ router.get('/get/:idSocioVeiculoAgenda', validateToken, async (req, res) => {
     let motivo = await Utils.getMotivacaoById(agendamento?.IdMotivacao);
     let execucao = await Utils.getAgendamentoExecucao(idSocioVeiculoAgenda);
 
-    console.log("execucao======================")
-    console.log(execucao)
-
     return res.status(200).json({
       agendamento,
       socio,
@@ -1097,7 +1094,8 @@ router.get('/servicos-vinculados/:idSocioVeiculoAgenda', validateToken, async (r
               A.IdSocioVeiculoAgendaExecucaoServico AS id,
               B.IdServico AS value,
               B.Descricao + ' - ' + B.TipoVeiculo AS label, 
-              B.Observacoes AS description
+              B.Observacoes AS description,
+              B.FornecidoPelaVcar AS FornecidoPelaVcar
             FROM SociosVeiculosAgendaExecucaoServicos AS A
             INNER JOIN Servicos AS B ON A.IdServico=B.IdServico
             WHERE A.idSocioVeiculoAgenda=@idSocioVeiculoAgenda;

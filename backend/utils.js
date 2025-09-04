@@ -340,7 +340,7 @@ module.exports = {
     getSocioVeiculoById: async (idSocioVeiculo) => {
         let result = await db.query(`
             SELECT 
-                A.IdSocioVeiculo, A.IdSocio, A.IdMarca, A.IdVeiculo, A.Ano, A.Placa, A.Litragem,
+                A.IdSocioVeiculo, A.IdSocio, A.IdMarca, A.IdVeiculo, A.Ano, A.Placa, A.Litragem, A.TipoVeiculo,
                 B.Descricao AS MarcaVeiculo,
                 C.Descricao AS VeiculoModelo
             FROM SociosVeiculos AS A

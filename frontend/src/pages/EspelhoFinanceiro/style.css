@@ -335,7 +335,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #f8fafc;
+  background: #fff;
   border-radius: 8px 8px 0 0;
   border-bottom: 1px solid #e2e8f0;
   font-weight: 600;
@@ -344,7 +344,7 @@
 }
 
 .espelho-card {
-  background: var(--white);
+  background: #000;
   border-radius: var(--radius-md);
   padding: 0;
   margin-bottom: var(--spacing-sm);

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { useParams } from 'react-router-dom';
-import { 
-  FiCamera, 
-  FiFileText, 
-  FiPackage, 
-  FiTool, 
-  FiUser, 
-  FiTruck, 
-  FiCheck, 
-  FiDollarSign, 
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  FiCamera,
+  FiFileText,
+  FiPackage,
+  FiTool,
+  FiUser,
+  FiTruck,
+  FiCheck,
+  FiDollarSign,
   FiMoreVertical,
   FiClock,
   FiCalendar,
@@ -16,7 +16,8 @@ import {
   FiX,
   FiEye,
   FiTrash2,
-  FiVideo
+  FiVideo,
+  FiTrash
 } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation, Modal, SearchableSelect, Button, MediaUpload, LaudosModal, RecibosModal } from '../../components';
 import { VideoInicialModal, VideoFinalizacaoModal } from '../../components/Modal';
@@ -27,71 +28,73 @@ import { toast } from 'react-toastify';
 import { MainContext } from '../../helpers/MainContext';
 
 const ExecutaOS = () => {
+  const navigate = useNavigate();
+
   const { user } = useContext(MainContext);
 
   const { idSocioVeiculoAgenda } = useParams();
   const [osData, setOsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [agendamento, setAgendamento] = useState(null);
-  
+
   // Estados para funcionalidades
   const [fotos, setFotos] = useState([]);
   const [anotacoes, setAnotacoes] = useState([]);
   const [produtos, setProdutos] = useState([]);
   const [servicos, setServicos] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  
+
   // Estados para compressão de vídeos
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionProgress, setCompressionProgress] = useState(0);
-  
+
   // Estados para modal de anotações
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [newNote, setNewNote] = useState('');
-  
+
   // Estados para modal de serviços
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [modalDropdownSetter, setModalDropdownSetter] = useState(null);
-  
+
   // Estados para modais de vídeo
   const [isVideoInicialModalOpen, setIsVideoInicialModalOpen] = useState(false);
   const [isVideoFinalizacaoModalOpen, setIsVideoFinalizacaoModalOpen] = useState(false);
   const [videoInicialUploaded, setVideoInicialUploaded] = useState(false);
   const [videoFinalizacaoUploaded, setVideoFinalizacaoUploaded] = useState(false);
-  
+
   // Estados para modais de laudos e recibos
   const [isLaudosModalOpen, setIsLaudosModalOpen] = useState(false);
   const [isRecibosModalOpen, setIsRecibosModalOpen] = useState(false);
-  
+
   // Estados para modal de confirmação de exclusão
   const [isConfirmDeleteModalOpen, setIsConfirmDeleteModalOpen] = useState(false);
   const [servicoToDelete, setServicoToDelete] = useState(null);
   const [laudos, setLaudos] = useState([]);
   const [recibos, setRecibos] = useState([]);
-  
+
   const [todosServicos, setTodosServicos] = useState([]);
 
   const [btnLoading, setBtnLoading] = useState(false);
 
   const [limiteAnuaisServicos, setLimiteAnuaisServicos] = useState([]);
 
+  const [isConfirmCancelModalOpen, setIsConfirmCancelModalOpen] = useState(false);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
-    getLimiteAnuaisServicos();
-  }, [osData])
-
-  useEffect(() => {
-    getAgendamento();
-    getServicos();
-    getServicosVinculados();
-    getFotosAgendamento();
-    getAnotacoesAgendamento();
-    getNotasFiscaisAgendamento();
-    getLaudosAgendamento();
+    getAgendamento((refOsData) => {
+      getServicos(refOsData);
+      getLimiteAnuaisServicos(refOsData);
+      getServicosVinculados();
+      getFotosAgendamento();
+      getAnotacoesAgendamento();
+      getNotasFiscaisAgendamento();
+      getLaudosAgendamento();
+    });
   }, [idSocioVeiculoAgenda, videoInicialUploaded]);
 
   // Verificar se há suporte ao MediaBunny
@@ -99,7 +102,7 @@ const ExecutaOS = () => {
     console.log('🎬 MediaBunny carregado para compressão de mídia');
   }, []);
 
-  const getAgendamento = async () => {
+  const getAgendamento = async (callback) => {
     try {
       const response = await Api.getAgendamentoDetails({ idSocioVeiculoAgenda });
       if (response.status === 200) {
@@ -116,6 +119,7 @@ const ExecutaOS = () => {
           idSocioVeiculo: _agendamento?.socioVeiculo?.IdSocioVeiculo,
           idMotivacao: _agendamento?.motivo?.IdMotivacao,
           veiculo: `${_agendamento?.socioVeiculo?.MarcaVeiculo} ${_agendamento?.socioVeiculo?.Ano} ${_agendamento?.socioVeiculo?.Litragem}`,
+          tipoVeiculo: _agendamento?.socioVeiculo?.TipoVeiculo,
           placa: _agendamento?.socioVeiculo?.Placa?.toUpperCase(),
           motivacao: _agendamento?.motivo?.Descricao?.toUpperCase(),
           status: _agendamento?.agendamento?.StatusAgendamento == 'A' ? 'EM EXECUÇÃO' : 'CONCLUIDA',
@@ -127,31 +131,36 @@ const ExecutaOS = () => {
           videoFinal: _agendamento?.agendamento?.VideoFinal
         });
         setLoading(false);
-        
+
         if (!videoInicialUploaded) {
           setIsVideoInicialModalOpen(true);
         }
 
+        if (callback) {
+          callback(_agendamento);
+        }
       }
     } catch (error) {
       console.error('Erro ao obter agendamento:', error);
     }
   };
 
-  const getServicos = async () => {
+  const getServicos = async (refOsData) => {
     try {
       const response = await Api.getPontoAtendimentoServicos({ idPontoAtendimento: user?.IdPontoAtendimento });
-      if (response.status === 200) {
-        setTodosServicos(response?.data?.servicos);
+      if (response) {
+        let _servicos = response?.data?.servicos;
+        let _filteredServico = _servicos.filter(s => { return s.TipoVeiculo == refOsData?.socioVeiculo?.TipoVeiculo && s.FornecidoPelaVcar != "S" });
+        setTodosServicos(_filteredServico);
       }
     } catch (error) {
       console.error('Erro ao obter serviços:', error);
     }
   }
 
-  const getLimiteAnuaisServicos = async () => {
+  const getLimiteAnuaisServicos = async (refOsData) => {
     try {
-      const response = await Api.getLimiteAnualServicos({ idSocioVeiculo: osData?.idSocioVeiculo });
+      const response = await Api.getLimiteAnualServicos({ idSocioVeiculo: refOsData?.socioVeiculo?.IdSocioVeiculo });
       if (response) {
         setLimiteAnuaisServicos(response?.data);
       }
@@ -175,12 +184,8 @@ const ExecutaOS = () => {
   const getServicosDisponiveis = () => {
     //console.log(servicos);
     const servicosAdicionados = servicos.map(servico => servico.value);
-    //console.log(servicosAdicionados);
     return todosServicos.filter(servico => !servicosAdicionados.includes(servico.value));
   };
-
-  // Serviços disponíveis filtrados
-  const servicosDisponiveis = getServicosDisponiveis();
 
   // Função para compactar mídia usando MediaBunny
   const compressMedia = async (file) => {
@@ -191,7 +196,7 @@ const ExecutaOS = () => {
       const compressedFile = await mediaBunnyCompression.compressFile(file, (progress) => {
         setCompressionProgress(progress);
       });
-      
+
       return compressedFile;
     } catch (error) {
       console.error('❌ Erro na compressão:', error);
@@ -233,7 +238,7 @@ const ExecutaOS = () => {
   const uploadFoto = async (file) => {
     try {
       let fileToUpload = file;
-      
+
       // Verificar se precisa de compressão (vídeo ou imagem)
       if (mediaBunnyCompression.needsCompression(file)) {
         try {
@@ -247,7 +252,7 @@ const ExecutaOS = () => {
           fileToUpload = file;
         }
       }
-      
+
       toast.info(`Enviando arquivo...`);
 
       // Primeiro faz upload do arquivo
@@ -265,7 +270,7 @@ const ExecutaOS = () => {
           idPontoAtendimentoUsuario: user.IdPontoAtendimentoUsuario,
           foto: uploadResponse.file
         });
-        
+
         if (addFotoResponse.status === 200) {
           toast.success('Arquivo enviado com sucesso!');
           getFotosAgendamento(); // Recarrega as fotos
@@ -303,7 +308,7 @@ const ExecutaOS = () => {
         const response = await Api.deletaFotoAgendamento({
           idSocioVeiculoAgendaExecucaoFoto: foto.idSocioVeiculoAgendaExecucaoFoto
         });
-        
+
         if (response.status === 200) {
           toast.success('Foto removida com sucesso!');
           getFotosAgendamento(); // Recarrega as fotos
@@ -312,10 +317,10 @@ const ExecutaOS = () => {
         }
       }
     } catch (error) {
-       console.error('Erro ao remover foto:', error);
-       toast.error('Erro ao remover foto');
-     }
-   };
+      console.error('Erro ao remover foto:', error);
+      toast.error('Erro ao remover foto');
+    }
+  };
 
   // Handlers para produtos
   const handleAddProduto = () => {
@@ -329,7 +334,7 @@ const ExecutaOS = () => {
   };
 
   const handleUpdateProduto = (id, field, value) => {
-    setProdutos(produtos.map(produto => 
+    setProdutos(produtos.map(produto =>
       produto.id === id ? { ...produto, [field]: value } : produto
     ));
   };
@@ -343,7 +348,7 @@ const ExecutaOS = () => {
     setSelectedService(null);
     setIsServiceModalOpen(true);
   };
-  
+
   const handleCloseServiceModal = () => {
     setIsServiceModalOpen(false);
     setSelectedService(null);
@@ -361,17 +366,17 @@ const ExecutaOS = () => {
       modalDropdownSetter(isOpen);
     }
   };
-  
+
   const handleConfirmService = async () => {
     if (selectedService) {
       // Verificar se o serviço já foi adicionado
       const servicoJaAdicionado = servicos.some(servico => servico.value === selectedService.value);
-      
+
       if (servicoJaAdicionado) {
         alert('Este serviço já foi adicionado à ordem de serviço.');
         return;
       }
-      
+
       const servicoSelecionado = todosServicos.find(s => s.value === selectedService.value);
 
       setBtnLoading(true);
@@ -381,7 +386,7 @@ const ExecutaOS = () => {
         idSocioVeiculo: osData?.idSocioVeiculo,
       })
 
-      if(garantiaResponse?.data?.garantiaValida){
+      if (garantiaResponse?.data?.garantiaValida) {
         toast.info(`Este serviço está na garantia, foi feito recentemente.`);
         setBtnLoading(false);
         return;
@@ -389,7 +394,7 @@ const ExecutaOS = () => {
 
       let _servico = limiteAnuaisServicos?.servicos?.filter(s => { return s.idServico === servicoSelecionado.value })[0];
 
-      if(_servico?.limiteAnual > 0 && !_servico?.podeUsar){
+      if (_servico?.limiteAnual > 0 && !_servico?.podeUsar) {
         toast.info(`Serviço não pode ser usado, limite anual atingido.`);
         setBtnLoading(false);
         return;
@@ -409,13 +414,13 @@ const ExecutaOS = () => {
       handleCloseServiceModal();
     }
   };
-  
+
   const handleAddServico = () => {
     handleOpenServiceModal();
   };
 
   const handleUpdateServico = (id, field, value) => {
-    setServicos(servicos.map(servico => 
+    setServicos(servicos.map(servico =>
       servico.id === id ? { ...servico, [field]: value } : servico
     ));
   };
@@ -492,7 +497,7 @@ const ExecutaOS = () => {
           anotacao: newNote.trim(),
           data: new Date().toISOString()
         });
-        
+
         if (response.status === 200) {
           toast.success('Anotação adicionada com sucesso!');
           setNewNote('');
@@ -513,7 +518,7 @@ const ExecutaOS = () => {
       const response = await Api.deleteAnotacaoAgendamento({
         idSocioVeiculoAgendaExecucaoAnotacao: id
       });
-      
+
       if (response.status === 200) {
         toast.success('Anotação removida com sucesso!');
         // Recarregar anotações
@@ -531,11 +536,41 @@ const ExecutaOS = () => {
   const handleFinalizarOS = () => {
     // Verificar serviços pendentes
     const servicosPendentes = servicos.filter(servico => servico.status !== 'P');
-    
+
     // Abrir modal de finalização
     setIsVideoFinalizacaoModalOpen(true);
     setDropdownOpen(false);
   };
+
+  const handleCancelOS = () => {
+    setIsConfirmCancelModalOpen(false);
+  };
+
+  const handleCancelarOS = () => {
+    setIsConfirmCancelModalOpen(true);
+  }
+
+  const handleCancelConfirmOS = () => {
+    setIsConfirmCancelModalOpen(false);
+  };
+
+  const handleConfirmOS = async () => {
+    let response = await Api.cancelar({
+      idSocioVeiculoAgenda: osData.id,
+      motivo: 'serviço cancelado pelo credenciado.',
+      idSocio: osData.idSocio,
+      idSocioVeiculo: osData.idSocioVeiculo,
+      idPontoAtendimento: user?.IdPontoAtendimento,
+      data: new Date().toISOString()
+    })
+
+    if (response) {
+      toast.success('OS cancelada com sucesso!');
+      navigate('/')
+    } else {
+      toast.error('Erro ao cancelar OS');
+    }
+  }
 
   // Handlers para modais de vídeo
   const handleVideoInicialConfirm = async (video, videoResult) => {
@@ -545,11 +580,11 @@ const ExecutaOS = () => {
       idSocioVeiculoAgenda: osData.id,
       videoInicial: videoResult?.file
     });
-    
+
     setVideoInicialUploaded(true);
     setIsVideoInicialModalOpen(false);
   };
-  
+
   const handleVideoFinalizacaoConfirm = async (video, videoResult) => {
     console.log('Finalizando OS com vídeo:', video);
     console.log('Dados da OS:', {
@@ -564,7 +599,7 @@ const ExecutaOS = () => {
       idSocioVeiculoAgenda: osData.id,
       videoFinal: videoResult?.file
     })
-    
+
     await Api.concluirAgendamento({
       idSocioVeiculoAgenda: osData.id,
       idSocio: osData.idSocio,
@@ -576,10 +611,10 @@ const ExecutaOS = () => {
 
     setVideoFinalizacaoUploaded(true);
     setIsVideoFinalizacaoModalOpen(false);
-    
+
     toast.success('OS finalizada com sucesso!');
   };
-  
+
   // Função para obter serviços pendentes
   const getServicosPendentes = () => {
     return servicos.filter(servico => servico.status !== 'A');
@@ -594,7 +629,7 @@ const ExecutaOS = () => {
     setIsRecibosModalOpen(true);
     setDropdownOpen(false);
   };
-  
+
   // Função para carregar laudos da API
   const getLaudosAgendamento = async () => {
     try {
@@ -617,7 +652,7 @@ const ExecutaOS = () => {
         idPontoAtendimentoUsuario: user.IdPontoAtendimentoUsuario,
         ...laudoData
       });
-      
+
       if (response) {
         // Recarregar a lista de laudos
         await getLaudosAgendamento();
@@ -642,7 +677,7 @@ const ExecutaOS = () => {
       throw error;
     }
   };
-  
+
   // Função para carregar recibos da API
   const getNotasFiscaisAgendamento = async () => {
     try {
@@ -728,9 +763,9 @@ const ExecutaOS = () => {
       <Header />
       <div className="content-wrapper">
         <Sidebar />
-        <div className="main-content" style={{marginBottom: '0px', paddingBottom: '0px'}}>
+        <div className="main-content" style={{ marginBottom: '0px', paddingBottom: '0px' }}>
           <div className="execucao-os">
-            
+
             {/* Header da OS */}
             <header className="execucao-os__header">
               <div className="execucao-os__header-content">
@@ -757,7 +792,7 @@ const ExecutaOS = () => {
             <section className="execucao-os__info-section">
               <h2 className="execucao-os__section-title">Informações da OS</h2>
               <div className="execucao-os__info-grid">
-                
+
                 {/* Cliente */}
                 <div className="execucao-os__card execucao-os__card--full">
                   <div className="execucao-os__card-header">
@@ -814,13 +849,13 @@ const ExecutaOS = () => {
             <section className="execucao-os__work-section">
               <h2 className="execucao-os__section-title">Execução dos Trabalhos</h2>
               <div className="execucao-os__work-grid">
-                
+
                 {/* Serviços */}
                 <div className="execucao-os__card">
                   <div className="execucao-os__card-header">
                     <FiTool className="execucao-os__card-icon" />
                     <h3 className="execucao-os__card-title">Serviços</h3>
-                    <button className="execucao-os__add-btn" style={{display: osData?.status == "CONCLUIDA" ? 'none' : undefined}} onClick={handleAddServico}>
+                    <button className="execucao-os__add-btn" style={{ display: osData?.status == "CONCLUIDA" ? 'none' : undefined }} onClick={handleAddServico}>
                       <FiPlus size={16} />
                       Adicionar
                     </button>
@@ -830,7 +865,7 @@ const ExecutaOS = () => {
                       <div className="execucao-os__empty-state">
                         <FiTool className="execucao-os__empty-icon" />
                         <p>Nenhum serviço adicionado</p>
-                        <button className="execucao-os__empty-btn" style={{display: osData?.status == "CONCLUIDA" ? 'none' : undefined}} onClick={handleAddServico}>
+                        <button className="execucao-os__empty-btn" style={{ display: osData?.status == "CONCLUIDA" ? 'none' : undefined }} onClick={handleAddServico}>
                           Adicionar primeiro serviço
                         </button>
                       </div>
@@ -846,32 +881,34 @@ const ExecutaOS = () => {
                             <div key={servico.id} className="execucao-os__table-row">
                               <div className="execucao-os__table-cell execucao-os__table-cell--status">
                                 <span className={`execucao-os__status-badge execucao-os__status-badge--${servico.status}`}>
-                                  {servico.status === 'A' ? 'Aprovado' : 
-                                   servico.status === 'P' ? 'Pendente' : 'Reprovado'}
+                                  {servico.status === 'A' ? 'Aprovado' :
+                                    servico.status === 'P' ? 'Pendente' : 'Reprovado'}
                                 </span>
                               </div>
                               <div className="execucao-os__table-cell execucao-os__table-cell--service">
                                 <span className="execucao-os__service-name">{servico.label}</span>
                               </div>
                               <div className="execucao-os__table-cell execucao-os__table-cell--actions">
-                                <button 
-                                  className="execucao-os__action-btn-action execucao-os__action-btn--delete"
-                                  onClick={() => handleRemoveServico(servico)}
-                                  title="Excluir serviço"
-                                  style={{display: osData?.status == "CONCLUIDA" ? 'none' : undefined}}
-                                >
-                                  <FiTrash2 size={16} />
-                                </button>
+                                {servico?.FornecidoPelaVcar == "S" ? (null) : (
+                                  <button
+                                    className="execucao-os__action-btn-action execucao-os__action-btn--delete"
+                                    onClick={() => handleRemoveServico(servico)}
+                                    title="Excluir serviço"
+                                    style={{ display: osData?.status == "CONCLUIDA" ? 'none' : undefined }}
+                                  >
+                                    <FiTrash2 size={16} />
+                                  </button>
+                                )}
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
-                    
+
                     {/* MediaUpload oculto para funcionalidade */}
                     <div style={{ display: 'none' }}>
-                      <MediaUpload 
+                      <MediaUpload
                         ref={mediaUploadRef}
                         onMediaAdd={handleAddMedia}
                         acceptedTypes="image/*,video/*"
@@ -1002,8 +1039,8 @@ const ExecutaOS = () => {
                           {osData?.videoInicial && (
                             <div className="execucao-os__foto-item">
                               <div className="execucao-os__video-container">
-                                <video 
-                                  src={Api.getUriUploadPath(osData?.videoInicial)} 
+                                <video
+                                  src={Api.getUriUploadPath(osData?.videoInicial)}
                                   className="execucao-os__video-preview"
                                   controls
                                   preload="metadata"
@@ -1014,8 +1051,8 @@ const ExecutaOS = () => {
                           {osData.videoFinal && (
                             <div className="execucao-os__foto-item">
                               <div className="execucao-os__video-container">
-                                <video 
-                                  src={Api.getUriUploadPath(osData?.videoFinal)} 
+                                <video
+                                  src={Api.getUriUploadPath(osData?.videoFinal)}
                                   className="execucao-os__video-preview"
                                   controls
                                   preload="metadata"
@@ -1029,8 +1066,8 @@ const ExecutaOS = () => {
                                 <img src={foto.url} alt={foto.nome} className="execucao-os__foto-preview" />
                               ) : (
                                 <div className="execucao-os__video-container">
-                                  <video 
-                                    src={foto.url} 
+                                  <video
+                                    src={foto.url}
                                     className="execucao-os__video-preview"
                                     controls
                                     preload="metadata"
@@ -1040,7 +1077,7 @@ const ExecutaOS = () => {
                                   </div>
                                 </div>
                               )}
-                              <button 
+                              <button
                                 className="execucao-os__foto-remove"
                                 onClick={() => handleRemoveFoto(foto.id)}
                                 title={`Remover ${foto.type === 'image' ? 'foto' : 'vídeo'}`}
@@ -1082,7 +1119,7 @@ const ExecutaOS = () => {
                               <p className="execucao-os__anotacao-text">{note.text}</p>
                               <span className="execucao-os__anotacao-timestamp">{note.timestamp}</span>
                             </div>
-                            <button 
+                            <button
                               className="execucao-os__remove-btn"
                               onClick={() => handleRemoveNote(note.id)}
                               title="Remover anotação"
@@ -1103,7 +1140,17 @@ const ExecutaOS = () => {
             {/* Botões de Ação */}
             <div className="execucao-os__actions">
               <div className="execucao-os__actions-desktop">
-                <Button 
+                <Button
+                  variant="danger"
+                  size="large"
+                  onClick={handleCancelarOS}
+                  className="execucao-os__action-btn-custom"
+                  style={{ display: osData?.status == "CONCLUIDA" ? 'none' : undefined }}
+                >
+                  <FiTrash size={20} />
+                  Cancelar OS
+                </Button>
+                <Button
                   variant="secondary"
                   size="large"
                   onClick={handleAdicionarLaudos}
@@ -1112,7 +1159,7 @@ const ExecutaOS = () => {
                   <FiFileText size={20} />
                   Adicionar Laudos
                 </Button>
-                <Button 
+                <Button
                   variant="secondary"
                   size="large"
                   onClick={handleAdicionarRecibos}
@@ -1121,21 +1168,21 @@ const ExecutaOS = () => {
                   <FiDollarSign size={20} />
                   Adicionar Recibos
                 </Button>
-                <Button 
+                <Button
                   variant="primary"
                   size="large"
                   onClick={handleFinalizarOS}
                   className="execucao-os__action-btn-custom"
-                  style={{display: osData?.status == "CONCLUIDA" ? 'none' : undefined}}
+                  style={{ display: osData?.status == "CONCLUIDA" ? 'none' : undefined }}
                 >
                   <FiCheck size={20} />
                   Finalizar OS
                 </Button>
               </div>
-              
+
               <div className="execucao-os__actions-mobile">
                 <div className="execucao-os__dropdown">
-                  <button 
+                  <button
                     className="execucao-os__dropdown-toggle"
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                   >
@@ -1144,27 +1191,35 @@ const ExecutaOS = () => {
                   </button>
                   {dropdownOpen && (
                     <div className="execucao-os__dropdown-menu">
-                      <button 
+                      <button
                         className="execucao-os__dropdown-item"
                         onClick={handleAdicionarLaudos}
                       >
                         <FiFileText size={16} />
                         Adicionar Laudos
                       </button>
-                      <button 
+                      <button
                         className="execucao-os__dropdown-item"
                         onClick={handleAdicionarRecibos}
                       >
                         <FiDollarSign size={16} />
                         Adicionar Recibos
                       </button>
-                      <button 
-                        style={{display: osData?.status == "CONCLUIDA" ? 'none' : undefined}}
+                      <button
+                        style={{ display: osData?.status == "CONCLUIDA" ? 'none' : undefined }}
                         className="execucao-os__dropdown-item"
                         onClick={handleFinalizarOS}
                       >
                         <FiCheck size={16} />
                         Finalizar OS
+                      </button>
+                      <button
+                        style={{ display: osData?.status == "CONCLUIDA" ? 'none' : undefined }}
+                        className="execucao-os__dropdown-item"
+                        onClick={handleCancelarOS}
+                      >
+                        <FiTrash size={16} />
+                        Cancelar OS
                       </button>
                     </div>
                   )}
@@ -1176,7 +1231,7 @@ const ExecutaOS = () => {
         </div>
       </div>
       <BottomNavigation />
-      
+
       {/* Modal de Seleção de Serviços */}
       <Modal
         isOpen={isServiceModalOpen}
@@ -1204,7 +1259,7 @@ const ExecutaOS = () => {
               }}
             />
           </div>
-          
+
           <div className="service-modal-actions">
             <Button
               variant="secondary"
@@ -1221,7 +1276,7 @@ const ExecutaOS = () => {
             </Button>
           </div>
         </div>
-        
+
         <style jsx>{`
           .service-modal-content {
             display: flex;
@@ -1259,7 +1314,7 @@ const ExecutaOS = () => {
           }
         `}</style>
       </Modal>
-      
+
       {/* Modal de Anotações */}
       <Modal
         isOpen={isNotesModalOpen}
@@ -1270,7 +1325,7 @@ const ExecutaOS = () => {
           <div className="notes-modal-description">
             <p>Adicione anotações sobre a execução da OS e gerencie as existentes:</p>
           </div>
-          
+
           <div className="notes-modal-form">
             <textarea
               className="notes-modal-textarea"
@@ -1288,7 +1343,7 @@ const ExecutaOS = () => {
               Adicionar Anotação
             </Button>
           </div>
-          
+
           {anotacoes.length > 0 && (
             <div className="notes-modal-list">
               <h4>Anotações Existentes:</h4>
@@ -1299,7 +1354,7 @@ const ExecutaOS = () => {
                       <p className="note-text">{note.text}</p>
                       <span className="note-timestamp">{note.timestamp}</span>
                     </div>
-                    <button 
+                    <button
                       className="note-remove-btn"
                       onClick={() => handleRemoveNote(note.id)}
                       title="Remover anotação"
@@ -1312,7 +1367,7 @@ const ExecutaOS = () => {
             </div>
           )}
         </div>
-        
+
         <style jsx>{`
           .notes-modal-content {
             display: flex;
@@ -1437,7 +1492,7 @@ const ExecutaOS = () => {
           }
         `}</style>
       </Modal>
-      
+
       {/* Modal de vídeo inicial */}
       {!osData?.videoInicial && (
         <VideoInicialModal
@@ -1446,7 +1501,7 @@ const ExecutaOS = () => {
           agendamento={agendamento}
         />
       )}
-      
+
       {/* Modal de vídeo de finalização */}
       {!osData?.videoFinal && (
         <VideoFinalizacaoModal
@@ -1457,7 +1512,7 @@ const ExecutaOS = () => {
           agendamento={agendamento}
         />
       )}
-      
+
       {/* Modal de Laudos */}
       <LaudosModal
         isOpen={isLaudosModalOpen}
@@ -1466,7 +1521,7 @@ const ExecutaOS = () => {
         onRemoveLaudo={handleRemoveLaudo}
         onAddLaudo={handleAddLaudo}
       />
-      
+
       {/* Modal de Recibos */}
       <RecibosModal
         isOpen={isRecibosModalOpen}
@@ -1476,7 +1531,104 @@ const ExecutaOS = () => {
         onRemoveRecibo={handleRemoveRecibo}
         onAddRecibo={handleAddRecibo}
       />
-      
+
+      {/** Modal de confirmação de cancelamento de agendamento */}
+      <Modal
+        isOpen={isConfirmCancelModalOpen}
+        onClose={handleCancelOS}
+        title="Confirmar Cancelamento"
+        size="small"
+      >
+        <div className="confirm-delete-modal-content">
+
+          <div class="agendamento-details confirm-delete-modal-description">
+            <p>Tem certeza que deseja cancelar a OS?</p>
+            <p>Esta ação não pode ser desfeita.</p>
+          </div>
+
+          <div className="confirm-delete-modal-actions">
+            <Button
+              variant='secondary'
+              onClick={handleCancelConfirmOS}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant='primary'
+              onClick={handleConfirmOS}
+            >
+              Confirmar
+            </Button>
+          </div>
+        </div>
+
+        <style jsx>{`
+          .agendamento-details {
+            background-color: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #ef4444;
+            text-align: left;
+          }
+
+          .agendamento-details p {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #374151;
+          }
+
+          .agendamento-details p:last-child {
+            margin-bottom: 0;
+          }
+
+          .confirm-delete-modal-content {
+            text-align: left;
+          }
+          
+          .confirm-delete-modal-description {
+            margin-bottom: 30px;
+          }
+          
+          .confirm-delete-modal-description p {
+            margin: 10px 0;
+            color: #333;
+          }
+          
+          .confirm-delete-modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+          }
+          
+          .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+          }
+          
+          .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+          }
+          
+          .btn-secondary:hover {
+            background-color: #5a6268;
+          }
+          
+          .btn-danger {
+            background-color: #dc3545;
+            color: white;
+          }
+          
+          .btn-danger:hover {
+            background-color: #c82333;
+          }
+        `}</style>
+      </Modal>
+
       {/* Modal de confirmação de exclusão de serviço */}
       <Modal
         isOpen={isConfirmDeleteModalOpen}
@@ -1492,15 +1644,15 @@ const ExecutaOS = () => {
             )}
             <p>Esta ação não pode ser desfeita.</p>
           </div>
-          
+
           <div className="confirm-delete-modal-actions">
-            <Button 
+            <Button
               variant='secondary'
               onClick={handleCancelDeleteServico}
             >
               Cancelar
             </Button>
-            <Button 
+            <Button
               variant='primary'
               onClick={handleConfirmDeleteServico}
             >
@@ -1508,7 +1660,7 @@ const ExecutaOS = () => {
             </Button>
           </div>
         </div>
-        
+
         <style jsx>{`
           .confirm-delete-modal-content {
             text-align: left;

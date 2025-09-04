@@ -160,10 +160,6 @@ const EspelhoFinanceiroViewModal = ({ isOpen, onClose, transacao }) => {
         }
 
         .espelho-view-info {
-          background: #f8fafc;
-          border-radius: 12px;
-          padding: 24px;
-          border: 1px solid #e2e8f0;
         }
 
         .info-header {
@@ -171,8 +167,7 @@ const EspelhoFinanceiroViewModal = ({ isOpen, onClose, transacao }) => {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 24px;
-          padding-bottom: 16px;
-          border-bottom: 1px solid #e2e8f0;
+          padding-bottom: 0px;
         }
 
         .info-title {
@@ -236,7 +231,7 @@ const EspelhoFinanceiroViewModal = ({ isOpen, onClose, transacao }) => {
 
         .section-icon {
           font-size: 18px;
-          color: #3b82f6;
+          color: var(--primary);
         }
 
         .detail-row {
@@ -301,7 +296,7 @@ const EspelhoFinanceiroViewModal = ({ isOpen, onClose, transacao }) => {
           }
 
           .espelho-view-info {
-            padding: 20px;
+     
           }
 
           .detail-section {

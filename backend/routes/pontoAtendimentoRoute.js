@@ -20,7 +20,9 @@ router.get('/servicos/:idPontoAtendimento', validateToken, async (req, res) => {
             A.IdServico,
             B.IdServico AS value,
             B.Descricao + ' - ' + B.TipoVeiculo AS label, 
-            B.Observacoes AS description
+            B.Observacoes AS description,
+            B.TipoVeiculo,
+            B.FornecidoPelaVcar
         FROM PontosAtendimentoServicos AS A 
         INNER JOIN Servicos AS B ON A.IdServico=B.IdServico
         WHERE A.IdPontoAtendimento=@idPontoAtendimento AND A.AtivoInativo='A';
