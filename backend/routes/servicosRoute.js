@@ -156,6 +156,10 @@ router.post('/verificar-garantia', validateToken, async (req, res) => {
         const dataAgendamento = new Date(row.DataAgendamento);
         const garantia = row.Garantia;
 
+        if(garantia <= 0){
+            return res.json({ garantiaValida: false });
+        }
+
         const dataLimiteGarantia = new Date(dataAgendamento);
         dataLimiteGarantia.setDate(dataAgendamento.getDate() + garantia);
 
