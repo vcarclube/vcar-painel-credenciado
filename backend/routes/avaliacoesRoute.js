@@ -20,12 +20,15 @@ router.get('/get-all/:idPontoAtendimento', validateToken, async (req, res) => {
                 C.Ano AS AnoVeiculo,
                 C.Placa AS PlacaVeiculo,
                 D.Descricao AS MarcaVeiculo,
-                E.Descricao AS ModeloVeiculo
+                E.Descricao AS ModeloVeiculo,
+                SC.Nome AS Cliente
             FROM SociosVeiculosAgenda AS A
             INNER JOIN SociosVeiculosAgendaAvaliacao AS B 
                 ON A.IdSocioVeiculoAgenda = B.IdSocioVeiculoAgenda
             INNER JOIN SociosVeiculos AS C
                 ON A.IdSocioVeiculo = C.IdSocioVeiculo
+            INNER JOIN Socios AS SC
+                ON SC.IdSocio = C.IdSocio
             INNER JOIN Marcas AS D
                 ON C.IdMarca = D.IdMarca
             INNER JOIN Veiculos AS E
@@ -41,7 +44,8 @@ router.get('/get-all/:idPontoAtendimento', validateToken, async (req, res) => {
                 C.Placa,
                 C.Ano,
                 D.Descricao,
-                E.Descricao
+                E.Descricao,
+                SC.Nome
             ORDER BY B.DataLog DESC;
         `, { idPontoAtendimento });
 

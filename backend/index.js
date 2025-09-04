@@ -20,6 +20,7 @@ const avaliacoesRoute = require('./routes/avaliacoesRoute');
 const scannerPlacaRoute = require('./routes/scannerPlacaRoute');
 const retornoServicoRoute = require('./routes/retornoServicoRoute');
 const espelhoRoute = require('./routes/espelhoRoute');
+const servicosRoute = require('./routes/servicosRoute');
 
 app.use('/credenciado', credenciadoRoute);
 app.use('/agendamentos', agendamentosRoute);
@@ -29,6 +30,7 @@ app.use('/avaliacoes', avaliacoesRoute);
 app.use('/scanner', scannerPlacaRoute);
 app.use('/retorno-servico', retornoServicoRoute);
 app.use('/espelho', espelhoRoute);
+app.use('/servico', servicosRoute);
 
 if(process.env.DEVELOPMENT_MODE == "true"){
     var httpServer = http.createServer(app);

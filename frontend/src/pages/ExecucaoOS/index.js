@@ -74,12 +74,14 @@ const ExecutaOS = () => {
 
   const [btnLoading, setBtnLoading] = useState(false);
 
+  const [limiteAnuaisServicos, setLimiteAnuaisServicos] = useState([]);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
-    console.log(osData);
+    getLimiteAnuaisServicos();
   }, [osData])
 
   useEffect(() => {
@@ -111,6 +113,8 @@ const ExecutaOS = () => {
           cliente: _agendamento?.socio?.Nome,
           idSocio: _agendamento?.socio?.IdSocio,
           documento: _agendamento?.socio?.Cpf,
+          idSocioVeiculo: _agendamento?.socioVeiculo?.IdSocioVeiculo,
+          idMotivacao: _agendamento?.motivo?.IdMotivacao,
           veiculo: `${_agendamento?.socioVeiculo?.MarcaVeiculo} ${_agendamento?.socioVeiculo?.Ano} ${_agendamento?.socioVeiculo?.Litragem}`,
           placa: _agendamento?.socioVeiculo?.Placa?.toUpperCase(),
           motivacao: _agendamento?.motivo?.Descricao?.toUpperCase(),
@@ -124,7 +128,6 @@ const ExecutaOS = () => {
         });
         setLoading(false);
         
-        // Abrir modal de vídeo inicial se ainda não foi feito upload
         if (!videoInicialUploaded) {
           setIsVideoInicialModalOpen(true);
         }
@@ -143,6 +146,17 @@ const ExecutaOS = () => {
       }
     } catch (error) {
       console.error('Erro ao obter serviços:', error);
+    }
+  }
+
+  const getLimiteAnuaisServicos = async () => {
+    try {
+      const response = await Api.getLimiteAnualServicos({ idSocioVeiculo: osData?.idSocioVeiculo });
+      if (response) {
+        setLimiteAnuaisServicos(response?.data);
+      }
+    } catch (error) {
+      console.error('Erro ao obter limites anuais:', error);
     }
   }
 
@@ -361,6 +375,25 @@ const ExecutaOS = () => {
       const servicoSelecionado = todosServicos.find(s => s.value === selectedService.value);
 
       setBtnLoading(true);
+
+      let garantiaResponse = await Api.verificarGarantiaServico({
+        idServico: servicoSelecionado.value,
+        idSocioVeiculo: osData?.idSocioVeiculo,
+      })
+
+      if(garantiaResponse?.data?.garantiaValida){
+        toast.info(`Este serviço está na garantia, foi feito recentemente.`);
+        setBtnLoading(false);
+        return;
+      }
+
+      let _servico = limiteAnuaisServicos?.servicos?.filter(s => { return s.idServico === servicoSelecionado.value })[0];
+
+      if(_servico?.limiteAnual > 0 && !_servico?.podeUsar){
+        toast.info(`Serviço não pode ser usado, limite anual atingido.`);
+        setBtnLoading(false);
+        return;
+      }
 
       await Api.vincularServicoAgendamento({
         idPontoAtendimentoUsuario: user?.IdPontoAtendimentoUsuario,
@@ -1461,25 +1494,24 @@ const ExecutaOS = () => {
           </div>
           
           <div className="confirm-delete-modal-actions">
-            <button 
-              className="btn btn-secondary"
+            <Button 
+              variant='secondary'
               onClick={handleCancelDeleteServico}
             >
               Cancelar
-            </button>
-            <button 
-              className="btn btn-danger"
+            </Button>
+            <Button 
+              variant='primary'
               onClick={handleConfirmDeleteServico}
             >
               Excluir
-            </button>
+            </Button>
           </div>
         </div>
         
         <style jsx>{`
           .confirm-delete-modal-content {
-            padding: 20px;
-            text-align: center;
+            text-align: left;
           }
           
           .confirm-delete-modal-description {
@@ -1494,7 +1526,7 @@ const ExecutaOS = () => {
           .confirm-delete-modal-actions {
             display: flex;
             gap: 15px;
-            justify-content: center;
+            justify-content: flex-end;
           }
           
           .btn {

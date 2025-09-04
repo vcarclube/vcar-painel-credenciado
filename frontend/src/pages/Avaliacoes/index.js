@@ -46,7 +46,7 @@ const Avaliacoes = () => {
           const avaliacoesFormatadas = Array.isArray(avaliacoesResponse.data) 
             ? avaliacoesResponse.data.map((avaliacao, index) => ({
                 id: avaliacao.IdSocioVeiculoAgenda || index + 1,
-                cliente: 'Cliente não informado', // API não retorna nome do cliente
+                cliente: avaliacao.Cliente,
                 documento: '', // API não retorna documento
                 veiculo: `${avaliacao.MarcaVeiculo} ${avaliacao.ModeloVeiculo} ${avaliacao.AnoVeiculo}`,
                 placa: avaliacao.PlacaVeiculo,

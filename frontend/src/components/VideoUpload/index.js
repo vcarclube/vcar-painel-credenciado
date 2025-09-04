@@ -278,7 +278,7 @@ const VideoUpload = ({ onVideoUpload, onVideoChange, required = false, label = "
             <FiUpload size={48} />
           </div>
           <div className="video-upload__text">
-            <span className="video-upload__main-text">Clique ou arraste um vídeo aqui</span>
+            <span className="video-upload__main-text">Clique ou arraste um vídeo aqui </span>
             <span className="video-upload__sub-text">MP4, AVI, MOV, WebM (máx. 500MB)</span>
           </div>
           

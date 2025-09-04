@@ -364,7 +364,21 @@ const Api = {
         }).catch(err => {
             return err;
         });
-    }
+    },
+    verificarGarantiaServico: async ({idSocioVeiculo, idServico}) => {
+        return await axios.post(`${API_BASE}/servico/verificar-garantia`, {idSocioVeiculo, idServico}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    getLimiteAnualServicos: async ({idSocioVeiculo}) => {
+        return await axios.post(`${API_BASE}/servico/verificar-limite-anual`, {idSocioVeiculo}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
 }
 
 export default Api;
