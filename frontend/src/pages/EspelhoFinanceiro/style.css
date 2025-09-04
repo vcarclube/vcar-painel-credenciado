@@ -168,7 +168,8 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #3b82f6, #10b981, #f59e0b, #ef4444);
+  /*background: linear-gradient(90deg, #3b82f6, #10b981, #f59e0b, #ef4444);*/
+  background: var(--primary);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
