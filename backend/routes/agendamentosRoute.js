@@ -979,9 +979,7 @@ router.post('/concluir', validateToken, async (req, res) => {
 
         await Utils.notificarWhatsapp({
           phone: socio.Telefone,
-          message: `
-    📆 Olá, ${socio.Nome}👋, Informamos que seu agendamento de *${motivacao?.Descricao }* foi concluído.
-          `
+          message: `📆 Olá, ${socio.Nome}👋, Informamos que seu agendamento de *${motivacao?.Descricao }* foi concluído.`
         });
 
         await Utils.notificarFirebaseCloudMessaging({
