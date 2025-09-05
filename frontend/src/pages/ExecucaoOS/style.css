@@ -897,7 +897,7 @@
   
   .execucao-os__table-header,
   .execucao-os__table-row {
-    grid-template-columns: 100px 1fr 80px;
+    grid-template-columns: 110px 1fr 80px;
   }
   
   .execucao-os__table-col,

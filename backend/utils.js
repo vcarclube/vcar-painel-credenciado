@@ -565,6 +565,8 @@ module.exports = {
                 C.IdServico,
                 C.PagamentoFeito,
                 C.DataPagamento,
+                C.ValorAdicional,
+                C.PecaPorContaDoSocio,
                 
                 -- Dados do Serviço
                 D.Descricao AS NomeServico,
@@ -624,7 +626,7 @@ module.exports = {
                 NomeServico: item.NomeServico || null,
                 NumeroOS: item.NumeroOS || null,
                 StatusAgendamento: item.StatusAgendamento || null,
-                ValorRepasse: item.ValorRepasse ?? item.ValorServico ?? null,
+                ValorRepasse: (item.PecaPorContaDoSocio == 'N' && Number(item.ValorAdicional) > 0) ? Number(item.ValorAdicional) : (Number(item.ValorAdicional) + Number (item.ValorRepasse)),
                 PagamentoFeito: item.PagamentoFeito ?? "N",
                 DataAgendamento: item.DataAgendamento,
                 DataPagamento: item.DataPagamento,

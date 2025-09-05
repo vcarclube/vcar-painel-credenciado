@@ -872,7 +872,7 @@ const ExecutaOS = () => {
                     ) : (
                       <div className="execucao-os__servicos-table">
                         <div className="execucao-os__table-header">
-                          <div className="execucao-os__table-col execucao-os__table-col--status">Status</div>
+                          <div className="execucao-os__table-col execucao-os__table-col--status">Comissão</div>
                           <div className="execucao-os__table-col execucao-os__table-col--service">Nome do Serviço</div>
                           <div className="execucao-os__table-col execucao-os__table-col--actions">Ações</div>
                         </div>
@@ -880,14 +880,26 @@ const ExecutaOS = () => {
                           {servicos.map(servico => (
                             <div key={servico.id} className="execucao-os__table-row">
                               <div className="execucao-os__table-cell execucao-os__table-cell--status">
-                                <span className={`execucao-os__status-badge execucao-os__status-badge--${servico.status}`}>
-                                  {servico.status === 'A' ? 'Aprovado' :
-                                    servico.status === 'P' ? 'Pendente' : 'Reprovado'}
-                                </span>
+                               <div className="execucao-os__service-name-content">
+                                  <div>{servico?.PecaPorContaDoSocio != 'N' ? (<>MÃO&nbsp;DE&nbsp;OBRA</>) : 'VOUCHER'}</div>
+                                </div>
                               </div>
                               <div className="execucao-os__table-cell execucao-os__table-cell--service">
-                                <span className="execucao-os__service-name">{servico.label}</span>
+                                <div className="execucao-os__service-name" style={{display: 'flex', alignItems: 'center'}}>
+                                  <label style={{fontSize: '9pt'}}>{servico.label}</label>
+                                </div>
                               </div>
+                              <style jsx>{`
+                                .execucao-os__service-name-content{
+                                  background: #d1fae5;
+                                  color: var(--primary);
+                                  font-size: 8pt;
+                                  padding: 4px 8px;
+                                  border-radius: 4px;
+                                  display: flex;
+                                  align-items: center;
+                                }
+                              `}</style>
                               <div className="execucao-os__table-cell execucao-os__table-cell--actions">
                                 {servico?.FornecidoPelaVcar == "S" ? (null) : (
                                   <button
