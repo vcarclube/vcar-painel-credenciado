@@ -85,10 +85,9 @@ const LaudosModal = ({ isOpen, onClose, laudos, onRemoveLaudo, onAddLaudo }) => 
   };
 
   const handleDownload = (laudo) => {
-    // Simular download do laudo
     const link = document.createElement('a');
-    link.href = laudo.url;
-    link.download = laudo.nome;
+    link.href = Api.getUriUploadPath(laudo.NomeArquivo);
+    link.download = laudo.NomeArquivo;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -170,8 +169,7 @@ const LaudosModal = ({ isOpen, onClose, laudos, onRemoveLaudo, onAddLaudo }) => 
                   <div className="laudo-info">
                     <h4 className="laudo-name">{laudo.NomeArquivo}</h4>
                     <div className="laudo-details">
-                      <span className="laudo-size">{formatFileSize(laudo?.tamanho)}</span>
-                      <span className="laudo-date">Adicionado em {new Date(laudo.DataLog).toLocaleDateString()}</span>
+                      <span className="laudo-date">Adicionado em {new Date(laudo.DataLog).toLocaleDateString('pt-BR')}</span>
                     </div>
                     {laudo.descricao && (
                       <p className="laudo-description">{laudo?.descricao}</p>
