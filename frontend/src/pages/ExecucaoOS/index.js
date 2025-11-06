@@ -946,7 +946,7 @@ const handleConfirmService = async () => {
                             <div key={servico.id} className="execucao-os__table-row">
                               {/* Coluna Status com ícone e tooltip */}
                               <div className="execucao-os__table-cell execucao-os__table-cell--status-icon">
-                                <div className="execucao-os__status-icon-wrapper" tabIndex={0} role="button" aria-label={servico?.StatusAprovacao === 'A' ? 'Aprovado' : servico?.StatusAprovacao === 'R' ? 'Reprovado' : 'Pendente'} title={servico?.StatusAprovacao === 'A' ? 'Aprovado' : servico?.StatusAprovacao === 'R' ? 'Reprovado' : 'Pendente'}>
+                                <div className="execucao-os__status-icon-wrapper" tabIndex={0} role="button" aria-label={servico?.StatusAprovacao === 'A' ? 'Aprovado' : servico?.StatusAprovacao === 'R' ? 'Reprovado' : 'Pendente de aprovação'} title={servico?.StatusAprovacao === 'A' ? 'Aprovado' : servico?.StatusAprovacao === 'R' ? 'Reprovado' : 'Pendente'}>
                                   <span className={`execucao-os__status-icon execucao-os__status-icon--${servico?.StatusAprovacao || 'P'}`}>
                                     {servico?.StatusAprovacao === 'A' ? (
                                       <FiCheck />
