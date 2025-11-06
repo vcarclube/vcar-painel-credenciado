@@ -27,11 +27,8 @@ const MediaUpload = ({
   const timerRef = useRef(null);
 
   // Expor funções para o componente pai através do triggerRef
-  React.useImperativeHandle(triggerRef, () => ({
-    openFileSelector: () => fileInputRef.current?.click(),
-    startCamera: () => startCamera(false),
-    startVideoRecording: () => startCamera(true)
-  }), []);
+  // Nota: manter este hook APÓS a definição de startCamera/stopCamera para evitar
+  // "Cannot access 'stopCamera' before initialization"
 
   // Função para lidar com upload de arquivos
   const handleFileUpload = useCallback(async (event) => {
@@ -113,6 +110,14 @@ const MediaUpload = ({
       clearInterval(timerRef.current);
     }
   }, [stream]);
+
+  // Expor funções para o componente pai através do triggerRef (agora após stopCamera)
+  React.useImperativeHandle(triggerRef, () => ({
+    openFileSelector: () => fileInputRef.current?.click(),
+    startCamera: () => startCamera(false),
+    startVideoRecording: () => startCamera(true),
+    stopCamera: () => stopCamera()
+  }), [startCamera, stopCamera]);
 
   // Função para capturar foto
   const capturePhoto = useCallback(() => {

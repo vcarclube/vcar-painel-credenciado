@@ -1137,7 +1137,7 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
         @idSocioVeiculoAgenda,
         @idServico,
         @idPontoAtendimentoUsuario,
-        'A',
+        'P',
         GETDATE(),
         'N'
       );

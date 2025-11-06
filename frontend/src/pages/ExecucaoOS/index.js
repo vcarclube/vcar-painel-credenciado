@@ -61,6 +61,15 @@ const ExecutaOS = () => {
   const [isVideoInicialModalOpen, setIsVideoInicialModalOpen] = useState(false);
   const [isVideoFinalizacaoModalOpen, setIsVideoFinalizacaoModalOpen] = useState(false);
   const [videoInicialUploaded, setVideoInicialUploaded] = useState(false);
+
+  // Estados para uploads no modal de Selecionar Serviço
+  const [serviceVideoFile, setServiceVideoFile] = useState(null);
+  const [serviceVideoPreview, setServiceVideoPreview] = useState(null);
+  const [serviceVideoError, setServiceVideoError] = useState('');
+  const [servicePhotosFiles, setServicePhotosFiles] = useState([]);
+  const [servicePhotosPreviews, setServicePhotosPreviews] = useState([]);
+  const [servicePhotosError, setServicePhotosError] = useState('');
+  const serviceMediaUploadRef = useRef(null);
   const [videoFinalizacaoUploaded, setVideoFinalizacaoUploaded] = useState(false);
 
   // Estados para modais de laudos e recibos
@@ -355,6 +364,43 @@ const ExecutaOS = () => {
     if (modalDropdownSetter) {
       modalDropdownSetter(false);
     }
+    // Parar câmera se estiver ativa
+    try { serviceMediaUploadRef.current?.stopCamera?.(); } catch {}
+    // Limpar uploads do modal de serviço ao fechar
+    if (serviceVideoPreview) {
+      try { URL.revokeObjectURL(serviceVideoPreview); } catch {}
+    }
+    servicePhotosPreviews.forEach((url) => { try { URL.revokeObjectURL(url); } catch {} });
+    setServiceVideoFile(null);
+    setServiceVideoPreview(null);
+    setServiceVideoError('');
+    setServicePhotosFiles([]);
+    setServicePhotosPreviews([]);
+    setServicePhotosError('');
+  };
+
+  // Detecção de dispositivo (mobile vs desktop)
+  const isMobileDevice = () => {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent || '';
+    const mobileRegex = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i;
+    const touch = navigator.maxTouchPoints && navigator.maxTouchPoints > 1;
+    return mobileRegex.test(ua) || touch;
+  };
+
+  // Abertura sob demanda: usuário clica para selecionar fotos/vídeo
+  const handleSelectPhotosClick = (e) => {
+    // No mobile, abrir câmera; no desktop, deixar o label disparar o input
+    if (isMobileDevice()) {
+      e.preventDefault();
+      try { serviceMediaUploadRef.current?.startCamera?.(); } catch {}
+    }
+  };
+
+  const handleSelectVideoClick = (e) => {
+    // Deixar o label disparar o input de vídeo (com capture no mobile)
+    // Não abrir automaticamente ao montar o modal
+    // Caso futuramente queira gravar via MediaUpload, poderemos chamar startVideoRecording aqui.
   };
 
   const handleModalDropdownToggle = (setDropdownVisible) => {
@@ -367,10 +413,28 @@ const ExecutaOS = () => {
     }
   };
 
-  const handleConfirmService = async () => {
-    if (selectedService) {
-      // Verificar se o serviço já foi adicionado
-      const servicoJaAdicionado = servicos.some(servico => servico.value === selectedService.value);
+const handleConfirmService = async () => {
+  if (selectedService) {
+    // Validações obrigatórias: vídeo ≤ 1min e pelo menos 3 fotos
+    if (!serviceVideoFile) {
+      toast.info('Selecione um vídeo de até 1 minuto.');
+      return;
+    }
+    if (serviceVideoError) {
+      toast.info(serviceVideoError || 'Vídeo inválido (máximo 60 segundos).');
+      return;
+    }
+    if (servicePhotosFiles.length < 3) {
+      toast.info('Selecione pelo menos 3 fotos.');
+      return;
+    }
+    if (servicePhotosFiles.length > 3) {
+      toast.info('Máximo de 3 fotos.');
+      return;
+    }
+
+    // Verificar se o serviço já foi adicionado
+    const servicoJaAdicionado = servicos.some(servico => servico.value === selectedService.value);
 
       if (servicoJaAdicionado) {
         alert('Este serviço já foi adicionado à ordem de serviço.');
@@ -872,6 +936,7 @@ const ExecutaOS = () => {
                     ) : (
                       <div className="execucao-os__servicos-table">
                         <div className="execucao-os__table-header">
+                          <div className="execucao-os__table-col execucao-os__table-col--status-icon">Status</div>
                           <div className="execucao-os__table-col execucao-os__table-col--status">Comissão</div>
                           <div className="execucao-os__table-col execucao-os__table-col--service">Nome do Serviço</div>
                           <div className="execucao-os__table-col execucao-os__table-col--actions">Ações</div>
@@ -879,9 +944,26 @@ const ExecutaOS = () => {
                         <div className="execucao-os__table-body">
                           {servicos.map(servico => (
                             <div key={servico.id} className="execucao-os__table-row">
+                              {/* Coluna Status com ícone e tooltip */}
+                              <div className="execucao-os__table-cell execucao-os__table-cell--status-icon">
+                                <div className="execucao-os__status-icon-wrapper" tabIndex={0} role="button" aria-label={servico?.StatusAprovacao === 'A' ? 'Aprovado' : servico?.StatusAprovacao === 'R' ? 'Reprovado' : 'Pendente'} title={servico?.StatusAprovacao === 'A' ? 'Aprovado' : servico?.StatusAprovacao === 'R' ? 'Reprovado' : 'Pendente'}>
+                                  <span className={`execucao-os__status-icon execucao-os__status-icon--${servico?.StatusAprovacao || 'P'}`}>
+                                    {servico?.StatusAprovacao === 'A' ? (
+                                      <FiCheck />
+                                    ) : servico?.StatusAprovacao === 'R' ? (
+                                      <FiX />
+                                    ) : (
+                                      <FiClock />
+                                    )}
+                                  </span>
+                                  <span className="execucao-os__status-tooltip">
+                                    {servico?.StatusAprovacao === 'A' ? 'Aprovado' : servico?.StatusAprovacao === 'R' ? 'Reprovado' : 'Pendente'}
+                                  </span>
+                                </div>
+                              </div>
                               <div className="execucao-os__table-cell execucao-os__table-cell--status">
-                               <div className="execucao-os__service-name-content">
-                                  <div>{servico?.PecaPorContaDoSocio != 'N' ? (<>MÃO&nbsp;DE&nbsp;OBRA</>) : 'VOUCHER'}</div>
+                                <div className="execucao-os__service-name-content">
+                                  {servico?.PecaPorContaDoSocio != 'N' ? (<>MÃO&nbsp;DE&nbsp;OBRA</>) : 'VOUCHER'}
                                 </div>
                               </div>
                               <div className="execucao-os__table-cell execucao-os__table-cell--service">
@@ -896,7 +978,6 @@ const ExecutaOS = () => {
                                   font-size: 8pt;
                                   padding: 4px 8px;
                                   border-radius: 4px;
-                                  display: flex;
                                   align-items: center;
                                 }
                               `}</style>
@@ -1256,6 +1337,163 @@ const ExecutaOS = () => {
             <p>Selecione o serviço que será executado na ordem de serviço:</p>
           </div>
 
+          {/* Uploads compactos: Vídeo (≤1min) e Fotos (mín. 2) */}
+          <div className="service-modal-media">
+            <div className="service-modal-upload service-modal-upload--video">
+              <label className="service-modal-upload__label">Vídeo (até 1 min)</label>
+              {!serviceVideoPreview ? (
+                <div className="service-modal-upload__control">
+                  <input
+                    id="service-video-input"
+                    type="file"
+                    accept="video/*"
+                    capture="camcorder"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const url = URL.createObjectURL(file);
+                      const v = document.createElement('video');
+                      v.preload = 'metadata';
+                      v.src = url;
+                      v.onloadedmetadata = () => {
+                        const duration = v.duration || 0;
+                        if (duration > 60) {
+                          setServiceVideoError('O vídeo deve ter no máximo 60 segundos.');
+                          try { URL.revokeObjectURL(url); } catch {}
+                          setServiceVideoFile(null);
+                          setServiceVideoPreview(null);
+                        } else {
+                          setServiceVideoError('');
+                          setServiceVideoFile(file);
+                          setServiceVideoPreview(url);
+                        }
+                      };
+                      v.onerror = () => {
+                        setServiceVideoError('Não foi possível ler o vídeo.');
+                        try { URL.revokeObjectURL(url); } catch {}
+                        setServiceVideoFile(null);
+                        setServiceVideoPreview(null);
+                      };
+                    }}
+                    className="service-modal-upload__input"
+                  />
+                  <label htmlFor="service-video-input" className="service-modal-upload__btn" onClick={handleSelectVideoClick}>
+                    <FiVideo size={16} /> Selecionar Vídeo
+                  </label>
+                  {serviceVideoError && (
+                    <span className="service-modal-upload__error">{serviceVideoError}</span>
+                  )}
+                </div>
+              ) : (
+                <div className="service-modal-upload__preview">
+                  <video src={serviceVideoPreview} className="service-modal-upload__video" controls muted playsInline />
+                  <button
+                    type="button"
+                    className="service-modal-upload__remove"
+                    onClick={() => {
+                      if (serviceVideoPreview) {
+                        try { URL.revokeObjectURL(serviceVideoPreview); } catch {}
+                      }
+                      setServiceVideoFile(null);
+                      setServiceVideoPreview(null);
+                      setServiceVideoError('');
+                    }}
+                    title="Remover vídeo"
+                  >
+                    <FiX size={14} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="service-modal-upload service-modal-upload--photos">
+              <label className="service-modal-upload__label">Fotos (mínimo 3)</label>
+              <div className="service-modal-upload__control">
+                <input
+                  id="service-photos-input"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
+                    if (files.length === 0) return;
+                    const allowed = Math.min(3 - servicePhotosFiles.length, files.length);
+                    const limitedFiles = files.slice(0, allowed);
+                    const urls = limitedFiles.map(f => URL.createObjectURL(f));
+                    // Liberar URLs anteriores
+                    servicePhotosPreviews.forEach((u) => { try { URL.revokeObjectURL(u); } catch {} });
+                    const newFiles = [...servicePhotosFiles, ...limitedFiles].slice(0, 3);
+                    const newPreviews = [...servicePhotosPreviews, ...urls].slice(0, 3);
+                    setServicePhotosFiles(newFiles);
+                    setServicePhotosPreviews(newPreviews);
+                  const tooFew = newFiles.length < 3;
+                  const tooMany = newFiles.length > 3;
+                  setServicePhotosError(tooFew ? 'Selecione pelo menos 3 fotos.' : tooMany ? 'Máximo de 3 fotos.' : '');
+                }}
+                className="service-modal-upload__input"
+              />
+              <label htmlFor="service-photos-input" className="service-modal-upload__btn" onClick={handleSelectPhotosClick}>
+                <FiCamera size={16} /> Selecionar Fotos
+              </label>
+                {servicePhotosError && (
+                  <span className="service-modal-upload__error">{servicePhotosError}</span>
+                )}
+              </div>
+              {/* Câmera compacta para capturar fotos */}
+              <div className="service-modal-upload__camera">
+                <MediaUpload
+                  onMediaAdd={(item) => {
+                    if (item?.type !== 'image') return;
+                    if (servicePhotosFiles.length >= 3) {
+                      setServicePhotosError('Máximo de 3 fotos.');
+                      return;
+                    }
+                    const url = item.url;
+                    const newFiles = [...servicePhotosFiles, item.file];
+                    const newPreviews = [...servicePhotosPreviews, url];
+                    setServicePhotosFiles(newFiles);
+                    setServicePhotosPreviews(newPreviews);
+                    setServicePhotosError(newFiles.length < 3 ? 'Selecione pelo menos 3 fotos.' : '');
+                  }}
+                  acceptedTypes="image/*"
+                  multiple={false}
+                  showCamera={true}
+                  showVideoRecording={false}
+                  hideButtons={true}
+                  triggerRef={serviceMediaUploadRef}
+                  className="service-modal-media-upload-compact"
+                />
+              </div>
+              {servicePhotosPreviews.length > 0 && (
+                <div className="service-modal-upload__thumbs">
+                  {servicePhotosPreviews.map((url, idx) => (
+                    <div key={idx} className="service-modal-upload__thumb">
+                      <img src={url} alt={`Foto ${idx + 1}`} />
+                      <button
+                        type="button"
+                        className="service-modal-upload__remove"
+                        title="Remover foto"
+                      onClick={() => {
+                        const newFiles = [...servicePhotosFiles];
+                        const newPreviews = [...servicePhotosPreviews];
+                        const [removedUrl] = newPreviews.splice(idx, 1);
+                        newFiles.splice(idx, 1);
+                        if (removedUrl) { try { URL.revokeObjectURL(removedUrl); } catch {} }
+                        setServicePhotosFiles(newFiles);
+                        setServicePhotosPreviews(newPreviews);
+                        setServicePhotosError(newFiles.length < 3 ? 'Selecione pelo menos 3 fotos.' : '');
+                      }}
+                      >
+                        <FiX size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="service-modal-select">
             <SearchableSelect
               options={getServicosDisponiveis()}
@@ -1282,7 +1520,7 @@ const ExecutaOS = () => {
             <Button
               variant="primary"
               onClick={handleConfirmService}
-              disabled={!selectedService || btnLoading}
+              disabled={!selectedService || btnLoading || !serviceVideoFile || !!serviceVideoError || servicePhotosFiles.length < 3 || servicePhotosFiles.length > 3}
             >
               Confirmar Serviço
             </Button>
@@ -1306,6 +1544,105 @@ const ExecutaOS = () => {
             font-size: 14px;
             line-height: 1.5;
           }
+
+          .service-modal-media {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+          }
+          .service-modal-upload {
+            border: 1px dashed var(--gray-300);
+            border-radius: 8px;
+            padding: 10px;
+            background: var(--gray-50);
+          }
+          .service-modal-upload__label {
+            display: block;
+            font-size: 12px;
+            color: var(--gray-700);
+            margin-bottom: 6px;
+          }
+          .service-modal-upload__control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .service-modal-upload__input {
+            display: none;
+          }
+          .service-modal-upload__btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: white;
+            border: 1px solid var(--gray-300);
+            color: var(--gray-800);
+            cursor: pointer;
+          }
+          .service-modal-upload__error {
+            color: #b91c1c;
+            font-size: 11px;
+          }
+          .service-modal-upload__preview {
+            position: relative;
+          }
+          .service-modal-upload__video {
+            width: 100%;
+            height: 120px;
+            border-radius: 6px;
+            background: black;
+          }
+          .service-modal-upload__remove {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            border: none;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            width: 22px;
+            height: 22px;
+            border-radius: 11px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .service-modal-upload__thumbs {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+          }
+          .service-modal-upload__thumb {
+            position: relative;
+            width: 100%;
+            padding-top: 100%;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #fff;
+            border: 1px solid var(--gray-200);
+          }
+          .service-modal-upload__thumb img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+          .service-modal-upload--photos .service-modal-upload__remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+          }
           
           .service-modal-select {
             width: 100%;
@@ -1322,6 +1659,9 @@ const ExecutaOS = () => {
           @media (max-width: 480px) {
             .service-modal-actions {
               flex-direction: column-reverse;
+            }
+            .service-modal-media {
+              grid-template-columns: 1fr;
             }
           }
         `}</style>

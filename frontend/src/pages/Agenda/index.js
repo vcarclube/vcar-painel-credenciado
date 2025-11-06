@@ -42,7 +42,7 @@ const Agenda = () => {
   const [filtroDataInicio, setFiltroDataInicio] = useState(primeiroDia);
   const [filtroDataFinal, setFiltroDataFinal] = useState(ultimoDia);
   
-  const [filtroStatus, setFiltroStatus] = useState('PENDENTES');
+  const [filtroStatus, setFiltroStatus] = useState('TODOS');
 
   useEffect(() => {
     window.scrollTo(0, 0);
