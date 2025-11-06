@@ -104,7 +104,7 @@ export default function Login() {
           </form>
 
           <div className="login-footer">
-            <p>Não tem uma conta? <a href="https://credenciado.vcarclube.com.br" className="signup-link">Cadastre-se</a></p>
+            <p>Não tem uma conta? <a href="https://credenciado.vcarclube.com.br/precadastro.html" className="signup-link">Cadastre-se</a></p>
           </div>
         </div>
       </div>
