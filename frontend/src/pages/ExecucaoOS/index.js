@@ -473,7 +473,7 @@ const handleConfirmService = async () => {
 
       setBtnLoading(false);
 
-      toast.success(`Serviço vinculado com sucesso.`)
+      toast.success(`Serviço adicionado com sucesso, aguarde aprovação da matriz...`)
 
       getServicosVinculados();
       handleCloseServiceModal();
@@ -957,7 +957,7 @@ const handleConfirmService = async () => {
                                       <FiClock />
                                     )}
                                   </span>
-                                  <span className="execucao-os__status-tooltip">
+                                  <span className="execucao-os__status-tooltip" style={{marginLeft: servico?.StatusAprovacao === 'A' ? '28px' : servico?.StatusAprovacao === 'R' ? '30px' : '65px'}}>
                                     {servico?.StatusAprovacao === 'A' ? 'Aprovado' : servico?.StatusAprovacao === 'R' ? 'Reprovado' : 'Pendente de aprovação'}
                                   </span>
                                 </div>
@@ -1334,8 +1334,8 @@ const handleConfirmService = async () => {
         onDropdownToggle={handleModalDropdownToggle}
       >
         <div className="service-modal-content">
-          <div className="service-modal-description">
-            <p>Selecione o serviço que será executado na ordem de serviço:</p>
+          <div className="service-modal-description" style={{textAlign: 'left'}}>
+            Selecione o serviço que será executado na ordem de serviço, sujeito à aprovação ou reprovação pela matriz.
           </div>
 
           {/* Uploads compactos: Vídeo (≤1min) e Fotos (mín. 2) */}
@@ -1523,7 +1523,7 @@ const handleConfirmService = async () => {
               onClick={handleConfirmService}
               disabled={!selectedService || btnLoading || !serviceVideoFile || !!serviceVideoError || servicePhotosFiles.length < 3 || servicePhotosFiles.length > 3}
             >
-              Confirmar Serviço
+              Adicionar Serviço
             </Button>
           </div>
         </div>
