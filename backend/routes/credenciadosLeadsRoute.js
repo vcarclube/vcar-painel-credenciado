@@ -50,9 +50,9 @@ router.post('/', async (req, res) => {
     const destinatarios = [
       '61981644455', // Andréia
       '61981684455', // Ailton
-      '61981648316', // Lucas
       '61981010028', // Cintia
       '61991930897', // Marcos
+      '61984400040', // Lucas
     ];
 
     // ✅ Notificação em paralelo
