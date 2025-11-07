@@ -468,6 +468,7 @@ const handleConfirmService = async () => {
         idPontoAtendimentoUsuario: user?.IdPontoAtendimentoUsuario,
         idSocioVeiculoAgenda,
         idServico: servicoSelecionado.value,
+        numeroOS: osData?.numero,
       })
 
       setBtnLoading(false);

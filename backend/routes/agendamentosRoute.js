@@ -1113,10 +1113,10 @@ router.get('/servicos-vinculados/:idSocioVeiculoAgenda', validateToken, async (r
 
 router.post('/vincular-servico', validateToken , async (req, res) => {
   try{
-    const { idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico } = req.body;
-    if (!idPontoAtendimentoUsuario || !idSocioVeiculoAgenda || !idServico) {
+    const { idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico, numeroOS } = req.body;
+    if (!idPontoAtendimentoUsuario || !idSocioVeiculoAgenda || !idServico || !numeroOS) {
       return res.status(400).json({ 
-        message: 'Dados incompletos: idPontoAtendimentoUsuario, idSocioVeiculoAgenda e idServico são obrigatórios' 
+        message: 'Dados incompletos: idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico e numeroOS são obrigatórios' 
       });
     }
 
@@ -1147,6 +1147,35 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
       idPontoAtendimentoUsuario,
       idServico
     });
+
+    let credenciado = await Utils.getPontoAtendimentoByUsuario(idPontoAtendimentoUsuario);
+    let servico = await Utils.getServicoById(idServico);
+    let { IdSocioVeiculo } = await Utils.getSocioVeiculoByIdSocioVeiculoAgenda(idSocioVeiculoAgenda);
+    let socioVeiculo = await Utils.getSocioVeiculoById(IdSocioVeiculo);
+    let socio = await Utils.getSocioById(socioVeiculo?.IdSocio);
+
+    // ✅ Montagem da mensagem
+    const message = `✅ Nova solicitação de aprovação de serviço
+    
+*Credenciado*: ${credenciado.Descricao}
+*Nº OS*: ${numeroOS}
+*Serviço*: ${servico.Descricao}
+*Sócio*: ${socio.Nome}
+*Veículo*: ${socioVeiculo?.MarcaVeiculo} - ${socioVeiculo?.VeiculoModelo}`;
+    
+    // ✅ Lista de destinatários
+    const destinatarios = [
+      '61981644455', // Andréia
+      '61981684455', // Ailton
+      '61981010028', // Cintia
+      '61991930897', // Marcos
+      '61984400040', // Lucas
+    ];
+    
+    // ✅ Notificação em paralelo
+    await Promise.all(
+      destinatarios.map(phone => Utils.notificarWhatsapp({ phone, message }))
+    );
 
     return res.status(200).json({
       message: 'Serviço vinculado com sucesso'

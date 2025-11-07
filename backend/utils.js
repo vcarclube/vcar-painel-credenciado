@@ -350,6 +350,15 @@ module.exports = {
         `, { idSocioVeiculo });
         return result.recordset[0];
     },
+    getPontoAtendimentoByUsuario: async (idPontoAtendimentoUsuario) => {
+        let result = await db.query(`
+            SELECT A.*, B.*
+            FROM PontosAtendimentoUsuarios AS A
+            INNER JOIN PontosAtendimento AS B ON A.IdPontoAtendimento=B.IdPontoAtendimento
+            WHERE A.IdPontoAtendimentoUsuario = @IdPontoAtendimentoUsuario
+        `, { idPontoAtendimentoUsuario });
+        return result.recordset[0];
+    },
     getPontoAtendimentoById: async (idPontoAtendimento) => {
         let result = await db.query(`
             SELECT A.*, B.*
@@ -500,6 +509,12 @@ module.exports = {
             }
             return false;
         }
+    },
+    getServicoById: async (idServico) => {
+        let result = await db.query(`
+            SELECT IdServico, Descricao FROM Servicos WHERE IdServico = @idServico AND AtivoInativo = 'A';
+        `, {idServico});
+        return result.recordset[0];
     },
     getServicoByNameReserva: async () => {
         let result = await db.query(`
