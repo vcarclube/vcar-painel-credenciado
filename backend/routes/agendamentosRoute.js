@@ -184,7 +184,7 @@ const inserirFinanceiroEspelho = async (idSocioVeiculoAgenda) => {
     return true;
 };
 
-const finalizarExecucao = async (idSocioVeiculoAgenda, usuarioId) => {
+const finalizarExecucao = async (idSocioVeiculoAgenda, usuarioId, responsavel = null, observacao = null, km = null) => {
     const agora = new Date().toISOString().slice(0, 19).replace("T", " ");
 
     // 1) Atualizar execução
@@ -200,6 +200,9 @@ const finalizarExecucao = async (idSocioVeiculoAgenda, usuarioId) => {
     await db.query(`
         UPDATE SociosVeiculosAgenda
         SET StatusAgendamento = 'C',
+            ResponsavelFinalizacao = @responsavel,
+            ObservacaoFinalizacao = @observacao,
+            KmFinalizacao = @km,
             ValorServico = (
                 SELECT ValorServico
                 FROM Servicos
@@ -211,7 +214,7 @@ const finalizarExecucao = async (idSocioVeiculoAgenda, usuarioId) => {
             )
         WHERE IdSocioVeiculoAgenda = @idSocioVeiculoAgenda
         AND StatusAgendamento <> 'C';
-    `, { idSocioVeiculoAgenda });
+    `, { idSocioVeiculoAgenda, responsavel, observacao, km });
 
     // 3) Buscar vendas efetivadas
     const vendasEfetivadasResult = await db.query(`
@@ -963,7 +966,7 @@ router.post('/iniciar', validateToken, async (req, res) => {
 
 router.post('/concluir', validateToken, async (req, res) => {
     try {
-        const { idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio } = req.body;
+        const { idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio, responsavel, observacao, km } = req.body;
         
         if (!idSocioVeiculoAgenda || !idPontoAtendimentoUsuario || !idSocio ) {
             return res.status(400).json({ 
@@ -971,7 +974,7 @@ router.post('/concluir', validateToken, async (req, res) => {
             });
         }
 
-        await finalizarExecucao(idSocioVeiculoAgenda, idPontoAtendimentoUsuario);
+        await finalizarExecucao(idSocioVeiculoAgenda, idPontoAtendimentoUsuario, responsavel, observacao, km);
 
         let agendamento = await Utils.getAgendamentoById(idSocioVeiculoAgenda);
         let socio = await Utils.getSocioById(idSocio);

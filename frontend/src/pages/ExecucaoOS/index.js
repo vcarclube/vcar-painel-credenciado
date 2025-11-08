@@ -818,7 +818,7 @@ const handleConfirmService = async () => {
     setIsVideoInicialModalOpen(false);
   };
 
-  const handleVideoFinalizacaoConfirm = async (video, videoResult) => {
+  const handleVideoFinalizacaoConfirm = async (video, videoResult, dadosFinalizacao = {}) => {
     console.log('Finalizando OS com vídeo:', video);
     console.log('Dados da OS:', {
       osData,
@@ -837,7 +837,10 @@ const handleConfirmService = async () => {
       idSocioVeiculoAgenda: osData.id,
       idSocio: osData.idSocio,
       idPontoAtendimentoUsuario: user.IdPontoAtendimentoUsuario,
-      data: new Date().toISOString()
+      data: new Date().toISOString(),
+      responsavel: dadosFinalizacao?.responsavel || '',
+      observacao: dadosFinalizacao?.observacao || '',
+      km: dadosFinalizacao?.km || ''
     })
 
     await getAgendamento();
@@ -2038,13 +2041,13 @@ const handleConfirmService = async () => {
       </Modal>
 
       {/* Modal de vídeo inicial */}
-      {!osData?.videoInicial && (
+      {/*!osData?.videoInicial && (
         <VideoInicialModal
           isOpen={isVideoInicialModalOpen}
           onConfirm={handleVideoInicialConfirm}
           agendamento={agendamento}
         />
-      )}
+      )*/}
 
       {/* Modal de vídeo de finalização */}
       {!osData?.videoFinal && (

@@ -337,8 +337,8 @@ const Api = {
             return err;
         });
     },
-    concluirAgendamento: async ({idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio}) => {
-        return await axios.post(`${API_BASE}/agendamentos/concluir`, {idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio}, Environment.HEADERS).then(async (response) => {
+    concluirAgendamento: async ({idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio, responsavel, observacao, km}) => {
+        return await axios.post(`${API_BASE}/agendamentos/concluir`, {idSocioVeiculoAgenda, idPontoAtendimentoUsuario, idSocio, responsavel, observacao, km}, Environment.HEADERS).then(async (response) => {
             return await response;
         }).catch(err => {
             return err;
