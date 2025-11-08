@@ -432,18 +432,10 @@ const ExecutaOS = () => {
   };
 
   // Abertura sob demanda: usuário clica para selecionar fotos/vídeo
-  const handleSelectPhotosClick = (e) => {
-    // No mobile, abrir câmera; no desktop, deixar o label disparar o input
-    if (isMobileDevice()) {
-      e.preventDefault();
-      try {
-        // Tentar abrir a câmera embutida
-        serviceMediaUploadRef.current?.startCamera?.();
-      } catch (err) {
-        // Fallback: se falhar, abrir seletor nativo (com capture="environment")
-        try { serviceMediaUploadRef.current?.openFileSelector?.(); } catch {}
-      }
-    }
+  const handleSelectPhotosClick = () => {
+    // Sempre deixar o label disparar o input nativo de fotos
+    // Sem abrir câmera embutida no mobile
+    return;
   };
 
   const handleSelectVideoClick = (e) => {
@@ -1520,7 +1512,6 @@ const handleConfirmService = async () => {
                   id="service-photos-input"
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   multiple
                   onChange={(e) => {
                     const files = Array.from(e.target.files || []).filter(f => f.type.startsWith('image/'));
@@ -1565,7 +1556,7 @@ const handleConfirmService = async () => {
                   }}
                   acceptedTypes="image/*"
                   multiple={false}
-                  showCamera={true}
+                  showCamera={false}
                   showVideoRecording={false}
                   hideButtons={true}
                   triggerRef={serviceMediaUploadRef}
