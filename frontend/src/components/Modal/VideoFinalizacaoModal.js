@@ -39,7 +39,9 @@ const VideoFinalizacaoModal = ({ isOpen, onCancel, onConfirm, servicosPendentes 
           <p><strong>Atenção:</strong> Existem {servicosPendentes.length} serviço(s) pendente(s):</p>
           <ul style={{listStyle: 'none'}}>
             {servicosPendentes.map((servico, index) => (
-              <li key={index} style={{fontSize: '10pt'}}>{servico.label} - {servico.status == 'P' ? 'Pendente' : servico.status}</li>
+              <li key={index} style={{fontSize: '10pt'}}>
+                {servico.label} - Pendente
+              </li>
             ))}
           </ul>
           <p style={{marginTop: '15px'}}>Complete todos os serviços antes de finalizar a OS.</p>

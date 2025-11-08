@@ -91,6 +91,8 @@ const ExecutaOS = () => {
 
   const [isConfirmCancelModalOpen, setIsConfirmCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const servicosPollingRef = useRef(null);
+  const prevAprovacaoStatusRef = useRef({});
 
   // Modal de visualização de mídia
   const [isMediaPreviewOpen, setIsMediaPreviewOpen] = useState(false);
@@ -170,6 +172,74 @@ const ExecutaOS = () => {
       console.error('Erro ao obter agendamento:', error);
     }
   };
+
+  // Polling de status de aprovação dos serviços a cada 5s (somente pendentes)
+  useEffect(() => {
+    const hasPendentes = (servicos || []).some((s) => (s?.StatusAprovacao ?? 'P') === 'P');
+
+    // Se não há pendentes, encerra qualquer polling existente
+    if (!hasPendentes) {
+      if (servicosPollingRef.current) {
+        clearInterval(servicosPollingRef.current);
+        servicosPollingRef.current = null;
+      }
+      return;
+    }
+
+    // Evita múltiplos intervals
+    if (servicosPollingRef.current) return;
+
+    // Inicializa mapa de status atual para evitar toasts na primeira checagem
+    const currentStatusMap = {};
+    (servicos || []).forEach((s) => {
+      currentStatusMap[s.id] = s?.StatusAprovacao ?? 'P';
+    });
+    prevAprovacaoStatusRef.current = currentStatusMap;
+
+    servicosPollingRef.current = setInterval(async () => {
+      try {
+        const response = await Api.getServicosVinculadosAgendamento({ idSocioVeiculoAgenda: osData?.id });
+        if (response?.status === 200) {
+          const novosServicos = response?.data?.servicos || [];
+
+          // Detecta transições de Pendente -> Aprovado/Reprovado e emite toast
+          novosServicos.forEach((s) => {
+            const prev = prevAprovacaoStatusRef.current[s.id];
+            const curr = s?.StatusAprovacao ?? 'P';
+            if ((prev === 'P' || prev === undefined) && curr === 'A') {
+              toast.success(`Serviço aprovado${s?.label ? `: ${s.label}` : ''}!`);
+            } else if ((prev === 'P' || prev === undefined) && curr === 'R') {
+              toast.error(`Serviço reprovado${s?.label ? `: ${s.label}` : ''}.`);
+            }
+          });
+
+          // Atualiza estado e mapa de status
+          setServicos(novosServicos);
+          const nextStatusMap = {};
+          novosServicos.forEach((s) => {
+            nextStatusMap[s.id] = s?.StatusAprovacao ?? 'P';
+          });
+          prevAprovacaoStatusRef.current = nextStatusMap;
+
+          // Se não houver mais pendentes, encerra polling
+          const aindaPendentes = novosServicos.some((s) => (s?.StatusAprovacao ?? 'P') === 'P');
+          if (!aindaPendentes && servicosPollingRef.current) {
+            clearInterval(servicosPollingRef.current);
+            servicosPollingRef.current = null;
+          }
+        }
+      } catch (err) {
+        // Silencia erros transitórios de rede; polling seguirá na próxima iteração
+      }
+    }, 5000);
+
+    return () => {
+      if (servicosPollingRef.current) {
+        clearInterval(servicosPollingRef.current);
+        servicosPollingRef.current = null;
+      }
+    };
+  }, [servicos, osData?.id]);
 
   const getServicos = async (refOsData) => {
     try {
@@ -780,7 +850,8 @@ const handleConfirmService = async () => {
 
   // Função para obter serviços pendentes
   const getServicosPendentes = () => {
-    return servicos.filter(servico => servico.status !== 'A');
+    // Considera pendente apenas quando StatusAprovacao === 'P'
+    return servicos.filter(servico => (servico?.StatusAprovacao ?? 'P') === 'P');
   };
 
   const handleAdicionarLaudos = () => {
