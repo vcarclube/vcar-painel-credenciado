@@ -1113,7 +1113,7 @@ router.get('/servicos-vinculados/:idSocioVeiculoAgenda', validateToken, async (r
 
 router.post('/vincular-servico', validateToken , async (req, res) => {
   try{
-    const { idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico, numeroOS } = req.body;
+    const { idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico, numeroOS, video, fotos = [], foto1, foto2, foto3 } = req.body;
     if (!idPontoAtendimentoUsuario || !idSocioVeiculoAgenda || !idServico || !numeroOS) {
       return res.status(400).json({ 
         message: 'Dados incompletos: idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico e numeroOS são obrigatórios' 
@@ -1121,6 +1121,13 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
     }
 
     let idSocioVeiculoAgendaExecucaoServicoGenerated = Utils.generateUUID();
+
+    // Mapear fotos enviadas para Foto1..Foto3
+    const fotosArray = Array.isArray(fotos) ? fotos : [];
+    const Foto1 = foto1 || fotosArray[0] || null;
+    const Foto2 = foto2 || fotosArray[1] || null;
+    const Foto3 = foto3 || fotosArray[2] || null;
+    const Video = video || null;
 
     await db.query(`
       INSERT INTO SociosVeiculosAgendaExecucaoServicos (
@@ -1130,7 +1137,11 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
         IdUsuario,
         StatusAprovacao,
         DataLog,
-        PagamentoFeito
+        PagamentoFeito,
+        Foto1,
+        Foto2,
+        Foto3,
+        Video
       )
       VALUES (
         @idSocioVeiculoAgendaExecucaoServicoGenerated,
@@ -1139,13 +1150,21 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
         @idPontoAtendimentoUsuario,
         'P',
         GETDATE(),
-        'N'
+        'N',
+        @Foto1,
+        @Foto2,
+        @Foto3,
+        @Video
       );
     `, { 
       idSocioVeiculoAgendaExecucaoServicoGenerated,
       idSocioVeiculoAgenda,
       idPontoAtendimentoUsuario,
-      idServico
+      idServico,
+      Foto1,
+      Foto2,
+      Foto3,
+      Video
     });
 
     let credenciado = await Utils.getPontoAtendimentoByUsuario(idPontoAtendimentoUsuario);
@@ -1178,7 +1197,9 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
     );
 
     return res.status(200).json({
-      message: 'Serviço vinculado com sucesso'
+      message: 'Serviço vinculado com sucesso',
+      idSocioVeiculoAgendaExecucaoServico: idSocioVeiculoAgendaExecucaoServicoGenerated,
+      media: { Foto1, Foto2, Foto3, Video }
     });
 
   } catch (error) {

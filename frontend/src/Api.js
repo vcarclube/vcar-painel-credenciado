@@ -141,8 +141,8 @@ const Api = {
             return err;
         });
     },
-    vincularServicoAgendamento: async ({idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico, numeroOS}) => {
-        return await axios.post(`${API_BASE}/agendamentos/vincular-servico`, {idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico, numeroOS}, Environment.HEADERS).then(async (response) => {
+    vincularServicoAgendamento: async ({idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico, numeroOS, video, fotos, foto1, foto2, foto3}) => {
+        return await axios.post(`${API_BASE}/agendamentos/vincular-servico`, {idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico, numeroOS, video, fotos, foto1, foto2, foto3}, Environment.HEADERS).then(async (response) => {
             return await response;
         }).catch(err => {
             return err;

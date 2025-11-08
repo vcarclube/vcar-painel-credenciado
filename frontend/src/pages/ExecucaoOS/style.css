@@ -945,7 +945,7 @@
   .execucao-os__table-row {
     grid-template-columns: 50px 100px 1fr 70px; /* compacto para mobile */
   }
-  
+
   .execucao-os__table-col,
   .execucao-os__table-cell {
     padding: 12px 8px;
@@ -1152,4 +1152,10 @@
     width: 36px;
     height: 36px;
   }
+}
+
+.service-modal-description {
+  text-align: center !important;
+  color: #64748b !important;
+  text-align: left !important;
 }

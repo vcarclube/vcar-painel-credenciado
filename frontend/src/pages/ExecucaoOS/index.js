@@ -464,11 +464,59 @@ const handleConfirmService = async () => {
         return;
       }
 
+      // Upload dos arquivos do serviço (vídeo e até 3 fotos) com compressão
+      const uploadSingle = async (file) => {
+        let fileToUpload = file;
+        try {
+          if (mediaBunnyCompression.needsCompression(file)) {
+            toast.info('Comprimindo mídia, aguarde...');
+            fileToUpload = await compressMedia(file);
+          }
+          const formData = new FormData();
+          formData.append('file', fileToUpload);
+          const uploadResponse = await Api.upload(formData);
+          if (!uploadResponse?.success || !uploadResponse?.file) {
+            throw new Error('Falha no upload da mídia');
+          }
+          return uploadResponse.file;
+        } catch (err) {
+          console.error('Erro no upload:', err);
+          throw err;
+        }
+      };
+
+      let videoFilename = null;
+      const fotosFilenames = [];
+
+      try {
+        toast.info('Enviando vídeo do serviço...');
+        videoFilename = await uploadSingle(serviceVideoFile);
+        toast.success('Vídeo enviado com sucesso');
+
+        if (servicePhotosFiles.length > 0) {
+          toast.info('Enviando fotos do serviço...');
+          for (let i = 0; i < Math.min(3, servicePhotosFiles.length); i++) {
+            const fname = await uploadSingle(servicePhotosFiles[i]);
+            fotosFilenames.push(fname);
+          }
+          toast.success('Fotos enviadas com sucesso');
+        }
+      } catch (uploadErr) {
+        setBtnLoading(false);
+        toast.error('Erro ao enviar mídias do serviço. Tente novamente.');
+        return;
+      }
+
       await Api.vincularServicoAgendamento({
         idPontoAtendimentoUsuario: user?.IdPontoAtendimentoUsuario,
         idSocioVeiculoAgenda,
         idServico: servicoSelecionado.value,
         numeroOS: osData?.numero,
+        video: videoFilename,
+        fotos: fotosFilenames,
+        foto1: fotosFilenames[0],
+        foto2: fotosFilenames[1],
+        foto3: fotosFilenames[2],
       })
 
       setBtnLoading(false);
@@ -1408,7 +1456,7 @@ const handleConfirmService = async () => {
             </div>
 
             <div className="service-modal-upload service-modal-upload--photos">
-              <label className="service-modal-upload__label">Fotos (mínimo 3)</label>
+              <label className="service-modal-upload__label">Fotos (até 3 fotos)</label>
               <div className="service-modal-upload__control">
                 <input
                   id="service-photos-input"
@@ -1675,7 +1723,7 @@ const handleConfirmService = async () => {
         title="Gerenciar Anotações"
       >
         <div className="notes-modal-content">
-          <div className="notes-modal-description">
+          <div className="notes-modal-description" style={{textAlign: 'left'}}>
             <p>Adicione anotações sobre a execução da OS e gerencie as existentes:</p>
           </div>
 
