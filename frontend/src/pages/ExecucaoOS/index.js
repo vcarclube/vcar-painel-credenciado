@@ -90,6 +90,7 @@ const ExecutaOS = () => {
   const [limiteAnuaisServicos, setLimiteAnuaisServicos] = useState([]);
 
   const [isConfirmCancelModalOpen, setIsConfirmCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
   // Modal de visualização de mídia
   const [isMediaPreviewOpen, setIsMediaPreviewOpen] = useState(false);
@@ -699,6 +700,7 @@ const handleConfirmService = async () => {
 
   const handleCancelOS = () => {
     setIsConfirmCancelModalOpen(false);
+    setCancelReason('');
   };
 
   const handleCancelarOS = () => {
@@ -707,12 +709,17 @@ const handleConfirmService = async () => {
 
   const handleCancelConfirmOS = () => {
     setIsConfirmCancelModalOpen(false);
+    setCancelReason('');
   };
 
   const handleConfirmOS = async () => {
+    if (!cancelReason || cancelReason.trim() === '') {
+      toast.error('Informe o motivo do cancelamento.');
+      return;
+    }
     let response = await Api.cancelar({
       idSocioVeiculoAgenda: osData.id,
-      motivo: 'serviço cancelado pelo credenciado.',
+      motivo: cancelReason && cancelReason.trim() !== '' ? cancelReason.trim() : 'serviço cancelado pelo credenciado.',
       idSocio: osData.idSocio,
       idSocioVeiculo: osData.idSocioVeiculo,
       idPontoAtendimento: user?.IdPontoAtendimento,
@@ -721,6 +728,7 @@ const handleConfirmService = async () => {
 
     if (response) {
       toast.success('OS cancelada com sucesso!');
+      setCancelReason('');
       navigate('/')
     } else {
       toast.error('Erro ao cancelar OS');
@@ -2041,6 +2049,22 @@ const handleConfirmService = async () => {
             <p>Esta ação não pode ser desfeita.</p>
           </div>
 
+          <div className="cancel-reason">
+            <label className="cancel-reason-label" htmlFor="cancel-reason-textarea">Motivo do cancelamento <span className="required-asterisk">*</span></label>
+            <textarea
+              id="cancel-reason-textarea"
+              className={`cancel-reason-textarea ${cancelReason.trim() === '' ? 'invalid' : ''}`}
+              rows={4}
+              placeholder="Descreva o motivo do cancelamento"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              required
+            />
+            {cancelReason.trim() === '' && (
+              <div className="cancel-reason-helper">Campo obrigatório</div>
+            )}
+          </div>
+
           <div className="confirm-delete-modal-actions">
             <Button
               variant='secondary'
@@ -2051,6 +2075,7 @@ const handleConfirmService = async () => {
             <Button
               variant='primary'
               onClick={handleConfirmOS}
+              disabled={cancelReason.trim() === ''}
             >
               Confirmar
             </Button>
@@ -2087,6 +2112,33 @@ const handleConfirmService = async () => {
           .confirm-delete-modal-description p {
             margin: 10px 0;
             color: #333;
+          }
+          
+          .cancel-reason {
+            margin-bottom: 20px;
+          }
+          .cancel-reason-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #374151;
+          }
+          .required-asterisk { color: #ef4444; }
+          .cancel-reason-textarea {
+            width: 100%;
+            resize: vertical;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-size: 14px;
+            color: #111827;
+            background-color: #fff;
+          }
+          .cancel-reason-textarea.invalid { border-color: #ef4444; }
+          .cancel-reason-helper {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #ef4444;
           }
           
           .confirm-delete-modal-actions {
