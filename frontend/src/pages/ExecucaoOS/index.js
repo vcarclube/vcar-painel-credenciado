@@ -436,7 +436,13 @@ const ExecutaOS = () => {
     // No mobile, abrir câmera; no desktop, deixar o label disparar o input
     if (isMobileDevice()) {
       e.preventDefault();
-      try { serviceMediaUploadRef.current?.startCamera?.(); } catch {}
+      try {
+        // Tentar abrir a câmera embutida
+        serviceMediaUploadRef.current?.startCamera?.();
+      } catch (err) {
+        // Fallback: se falhar, abrir seletor nativo (com capture="environment")
+        try { serviceMediaUploadRef.current?.openFileSelector?.(); } catch {}
+      }
     }
   };
 
