@@ -69,6 +69,7 @@ const ExecutaOS = () => {
   const [servicePhotosFiles, setServicePhotosFiles] = useState([]);
   const [servicePhotosPreviews, setServicePhotosPreviews] = useState([]);
   const [servicePhotosError, setServicePhotosError] = useState('');
+  const [serviceDescription, setServiceDescription] = useState('');
   const serviceMediaUploadRef = useRef(null);
   const [videoFinalizacaoUploaded, setVideoFinalizacaoUploaded] = useState(false);
 
@@ -89,6 +90,21 @@ const ExecutaOS = () => {
   const [limiteAnuaisServicos, setLimiteAnuaisServicos] = useState([]);
 
   const [isConfirmCancelModalOpen, setIsConfirmCancelModalOpen] = useState(false);
+
+  // Modal de visualização de mídia
+  const [isMediaPreviewOpen, setIsMediaPreviewOpen] = useState(false);
+  const [mediaPreview, setMediaPreview] = useState(null);
+
+  const handleOpenMediaPreview = (media) => {
+    if (!media) return;
+    setMediaPreview(media);
+    setIsMediaPreviewOpen(true);
+  };
+
+  const handleCloseMediaPreview = () => {
+    setIsMediaPreviewOpen(false);
+    setMediaPreview(null);
+  };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -358,6 +374,32 @@ const ExecutaOS = () => {
     setIsServiceModalOpen(true);
   };
 
+  // Mídias provenientes dos serviços vinculados (Foto1, Foto2, Foto3, Video)
+  const servicosMedia = (servicos || []).flatMap((s) => {
+    const items = [];
+    const servicoId = s?.id || s?.IdSocioVeiculoAgendaExecucaoServico || s?.IdSocioVeiculoAgendaExecucaoServico;
+    const addItem = (filename, typeHint) => {
+      if (!filename) return;
+      const lower = String(filename).toLowerCase();
+      const isVideo = typeHint === 'video' || lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.webm');
+      items.push({
+        id: `servico-${servicoId}-${isVideo ? 'video' : 'foto'}-${filename}`,
+        nome: filename,
+        url: Api.getUriUploadPath(filename),
+        type: isVideo ? 'video' : 'image',
+        // sem idSocioVeiculoAgendaExecucaoFoto para evitar opção de remoção
+      });
+    };
+    addItem(s?.Foto1, 'image');
+    addItem(s?.Foto2, 'image');
+    addItem(s?.Foto3, 'image');
+    addItem(s?.Video, 'video');
+    return items;
+  });
+
+  // Mídias combinadas: fotos/vídeos do agendamento + mídias dos serviços
+  const combinedMedia = [...servicosMedia, ...(fotos || [])];
+
   const handleCloseServiceModal = () => {
     setIsServiceModalOpen(false);
     setSelectedService(null);
@@ -377,6 +419,7 @@ const ExecutaOS = () => {
     setServicePhotosFiles([]);
     setServicePhotosPreviews([]);
     setServicePhotosError('');
+    setServiceDescription('');
   };
 
   // Detecção de dispositivo (mobile vs desktop)
@@ -512,6 +555,7 @@ const handleConfirmService = async () => {
         idSocioVeiculoAgenda,
         idServico: servicoSelecionado.value,
         numeroOS: osData?.numero,
+        descricao: serviceDescription?.trim() || null,
         video: videoFilename,
         fotos: fotosFilenames,
         foto1: fotosFilenames[0],
@@ -1167,7 +1211,7 @@ const handleConfirmService = async () => {
                     </div>
                   )}
                   <div className="execucao-os__card-content">
-                    {fotos.length === 0 && !osData?.videoInicial ? (
+                    {combinedMedia.length === 0 && !osData?.videoInicial && !osData?.videoFinal ? (
                       <div className="execucao-os__empty-state">
                         <FiCamera className="execucao-os__empty-icon" />
                         <p>Nenhuma foto ou vídeo adicionado</p>
@@ -1202,14 +1246,20 @@ const handleConfirmService = async () => {
                               </div>
                             </div>
                           )}
-                          {fotos.map(foto => (
-                            <div key={foto.id} className="execucao-os__foto-item">
-                              {foto.type === 'image' ? (
-                                <img src={foto.url} alt={foto.nome} className="execucao-os__foto-preview" />
+                          {combinedMedia.map(media => (
+                            <div key={media.id} className="execucao-os__foto-item">
+                              {media.type === 'image' ? (
+                                <img
+                                  src={media.url}
+                                  alt={media.nome}
+                                  className="execucao-os__foto-preview"
+                                  onClick={() => handleOpenMediaPreview(media)}
+                                  style={{ cursor: 'zoom-in' }}
+                                />
                               ) : (
-                                <div className="execucao-os__video-container">
+                                <div className="execucao-os__video-container" onClick={() => handleOpenMediaPreview(media)} style={{ cursor: 'zoom-in' }}>
                                   <video
-                                    src={foto.url}
+                                    src={media.url}
                                     className="execucao-os__video-preview"
                                     controls
                                     preload="metadata"
@@ -1219,13 +1269,15 @@ const handleConfirmService = async () => {
                                   </div>
                                 </div>
                               )}
-                              <button
-                                className="execucao-os__foto-remove"
-                                onClick={() => handleRemoveFoto(foto.id)}
-                                title={`Remover ${foto.type === 'image' ? 'foto' : 'vídeo'}`}
-                              >
-                                <FiX size={14} />
-                              </button>
+                              {media.idSocioVeiculoAgendaExecucaoFoto && (
+                                <button
+                                  className="execucao-os__foto-remove"
+                                  onClick={(e) => { e.stopPropagation(); handleRemoveFoto(media.id); }}
+                                  title={`Remover ${media.type === 'image' ? 'foto' : 'vídeo'}`}
+                                >
+                                  <FiX size={14} />
+                                </button>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -1383,7 +1435,7 @@ const handleConfirmService = async () => {
       >
         <div className="service-modal-content">
           <div className="service-modal-description" style={{textAlign: 'left'}}>
-            Selecione o serviço que será executado na ordem de serviço, sujeito à aprovação ou reprovação pela matriz.
+            Selecione o serviço que será executado na OS, sujeito à aprovação ou reprovação pela matriz.
           </div>
 
           {/* Uploads compactos: Vídeo (≤1min) e Fotos (mín. 2) */}
@@ -1541,6 +1593,21 @@ const handleConfirmService = async () => {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Descrição do serviço a ser prestado */}
+          <div className="service-modal-description-field" style={{ textAlign: 'left' }}>
+            <label htmlFor="service-description-textarea" style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>
+              Descrição do serviço (opcional)
+            </label>
+            <textarea
+              id="service-description-textarea"
+              value={serviceDescription}
+              onChange={(e) => setServiceDescription(e.target.value)}
+              placeholder="Descreva o serviço que será prestado..."
+              rows={3}
+              style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ddd', resize: 'vertical' }}
+            />
           </div>
 
           <div className="service-modal-select">
@@ -1913,6 +1980,36 @@ const handleConfirmService = async () => {
           agendamento={agendamento}
         />
       )}
+
+      {/* Modal de visualização de mídia */}
+      <Modal
+        isOpen={isMediaPreviewOpen}
+        onClose={handleCloseMediaPreview}
+        title={mediaPreview?.type === 'image' ? 'Visualizar Foto' : 'Visualizar Vídeo'}
+      >
+        <div style={{ padding: '10px' }}>
+          {mediaPreview?.type === 'image' ? (
+            <img
+              src={mediaPreview?.url}
+              alt={mediaPreview?.nome}
+              style={{ width: '100%', height: 'auto', borderRadius: 8 }}
+            />
+          ) : mediaPreview ? (
+            <video
+              src={mediaPreview?.url}
+              controls
+              autoPlay
+              preload="metadata"
+              style={{ width: '100%', borderRadius: 8 }}
+            />
+          ) : null}
+          {mediaPreview?.nome && (
+            <div style={{ marginTop: 8, fontSize: 12, color: '#6c757d' }}>
+              {mediaPreview?.nome}
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* Modal de Laudos */}
       <LaudosModal

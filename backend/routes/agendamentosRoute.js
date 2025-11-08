@@ -1113,7 +1113,7 @@ router.get('/servicos-vinculados/:idSocioVeiculoAgenda', validateToken, async (r
 
 router.post('/vincular-servico', validateToken , async (req, res) => {
   try{
-    const { idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico, numeroOS, video, fotos = [], foto1, foto2, foto3 } = req.body;
+    const { idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico, numeroOS, descricao, video, fotos = [], foto1, foto2, foto3 } = req.body;
     if (!idPontoAtendimentoUsuario || !idSocioVeiculoAgenda || !idServico || !numeroOS) {
       return res.status(400).json({ 
         message: 'Dados incompletos: idPontoAtendimentoUsuario, idSocioVeiculoAgenda, idServico e numeroOS são obrigatórios' 
@@ -1141,7 +1141,8 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
         Foto1,
         Foto2,
         Foto3,
-        Video
+        Video,
+        Observacoes
       )
       VALUES (
         @idSocioVeiculoAgendaExecucaoServicoGenerated,
@@ -1154,7 +1155,8 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
         @Foto1,
         @Foto2,
         @Foto3,
-        @Video
+        @Video,
+        @Observacoes
       );
     `, { 
       idSocioVeiculoAgendaExecucaoServicoGenerated,
@@ -1164,7 +1166,8 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
       Foto1,
       Foto2,
       Foto3,
-      Video
+      Video,
+      Observacoes: descricao || null
     });
 
     let credenciado = await Utils.getPontoAtendimentoByUsuario(idPontoAtendimentoUsuario);
