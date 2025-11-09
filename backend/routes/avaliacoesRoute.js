@@ -69,7 +69,7 @@ router.get('/get-average/:idPontoAtendimento', validateToken, async (req, res) =
 
         const result = await db.query(`
             SELECT 
-                AVG(A.Nota) AS MediaNotas,
+                AVG(CAST(A.Nota AS DECIMAL(10,2))) AS MediaNotas,
                 COUNT(*) AS TotalAvaliacoes
             FROM SociosVeiculosAgendaAvaliacao AS A
             INNER JOIN SociosVeiculosAgenda AS B
