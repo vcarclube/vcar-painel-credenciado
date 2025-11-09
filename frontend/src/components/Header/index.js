@@ -9,6 +9,8 @@ export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { user, logout } = useContext(MainContext);
   const dropdownRef = useRef(null);
+  const [descricao, setDescricao] = useState(null);
+  const [logoSrc, setLogoSrc] = useState(null);
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -22,6 +24,20 @@ export default function Header() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, []);
+
+  // Ler 'Descricao' e 'Logotipo' do localStorage.userData
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('userData');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setDescricao(parsed?.Descricao || null);
+        setLogoSrc('https://adm.vcarclube.com.br/'+parsed?.Logotipo || null);
+      }
+    } catch (e) {
+      // Ignorar erros de parse
+    }
   }, []);
 
   const handleLogout = () => {
@@ -46,11 +62,11 @@ export default function Header() {
         <div className="header-user" ref={dropdownRef}>
           <div className="user-info" onClick={toggleDropdown}>
             <img 
-              src={user.avatar || '/logo_black.png'} 
+              src={logoSrc || user.Logotipo || user.avatar || '/logo_black.png'} 
               alt={user.name} 
               className="user-avatar"
             />
-            <span className="user-name">{user.name}</span>
+            <span className="user-name">{descricao || user.name}</span>
             <svg 
               className={`dropdown-arrow ${dropdownOpen ? 'open' : ''}`}
               width="16" 
@@ -70,7 +86,7 @@ export default function Header() {
             <div className="user-dropdown">
               <div className="dropdown-header">
                 <img 
-                  src={user.avatar || '/logo_black.png'} 
+                  src={logoSrc || user.Logotipo || user.avatar || '/logo_black.png'} 
                   alt={user.name} 
                   className="dropdown-avatar"
                 />
