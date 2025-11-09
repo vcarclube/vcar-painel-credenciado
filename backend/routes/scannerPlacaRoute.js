@@ -71,7 +71,7 @@ router.post("/enviar-convite", validateToken, async (req, res) => {
 Venha fazer parte da VCarClube, o plano de saúde veicular feito pra quem ama o seu carro! 🛠️🔧
 Com benefícios exclusivos, assistência 24h e muito mais!
 
-Seja um sócio agora mesmo 👉 https://socio.vcarclube.com.br/
+Seja um sócio agora mesmo 👉 https://vcarclube.com.br/
 
 💚 Seu carro merece esse cuidado!
       `
