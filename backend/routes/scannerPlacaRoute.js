@@ -13,8 +13,9 @@ router.get('/get-agendamento-pontoatendimento-by-placa/:idPontoAtendimento/:plac
         const result = await db.query(`
             SELECT 
                 S.Nome AS NomeSocio,
+                S.IdSocio,
                 SVA.IdSocioVeiculoAgenda,
-                SVA.IdSocioVeiculo,
+                SV.IdSocioVeiculo,
                 SVA.IdPontoAtendimento,
                 SVA.DataAgendamento,
                 SVA.HoraAgendamento,

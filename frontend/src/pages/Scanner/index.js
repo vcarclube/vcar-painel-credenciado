@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCamera, FiRefreshCw, FiCheck, FiAlertCircle, FiUser, FiPhone } from 'react-icons/fi';
-import { Header, Sidebar, BottomNavigation, AgendamentoModal, Button, Modal, Input } from '../../components';
+import { FiCamera, FiRefreshCw, FiCheck, FiAlertCircle, FiUser, FiPhone, FiInfo } from 'react-icons/fi';
+import { Header, Sidebar, BottomNavigation, Button, Modal, Input } from '../../components';
 import { MainContext } from '../../helpers/MainContext';
 import Api from '../../Api';
 import { toast } from 'react-toastify';
@@ -14,6 +14,7 @@ import './style.css';
 const Scanner = () => {
   const { user } = useContext(MainContext);
   const navigate = useNavigate();
+  // Referências e estados antigos de câmera/scan não serão mais utilizados
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const workerRef = useRef(null);
@@ -25,14 +26,15 @@ const Scanner = () => {
   const [stream, setStream] = useState(null);
   const [detectedPlate, setDetectedPlate] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showAgendamentoModal, setShowAgendamentoModal] = useState(false);
   const [showConviteModal, setShowConviteModal] = useState(false);
-  const [vehicleData, setVehicleData] = useState(null);
+  const [socioInfo, setSocioInfo] = useState(null);
   const [telefoneConvite, setTelefoneConvite] = useState('');
   const [enviandoConvite, setEnviandoConvite] = useState(false);
   const [error, setError] = useState('');
-  const [cameraPermission, setCameraPermission] = useState('checking');
+  const [cameraPermission, setCameraPermission] = useState('denied');
   const [scanCount, setScanCount] = useState(0);
+  const [manualPlate, setManualPlate] = useState('');
+  const [consultando, setConsultando] = useState(false);
 
   // Lista de palavras irrelevantes para filtrar
   const IRRELEVANT_WORDS = [
@@ -429,6 +431,49 @@ const Scanner = () => {
     }
   };
 
+  // Sanitizar entrada de placa
+  const sanitizePlate = (value) => {
+    return value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  };
+
+  // Detectar formato pela entrada
+  const getPlateFormat = (clean) => {
+    if (/^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(clean)) return 'Mercosul';
+    if (/^[A-Z]{3}[0-9]{4}$/.test(clean)) return 'Antiga';
+    return null;
+  };
+
+  // Consulta manual de placa (sem câmera)
+  const consultarPlacaManual = async () => {
+    const clean = sanitizePlate(manualPlate);
+    if (clean.length !== 7) {
+      toast.error('Informe uma placa válida com 7 caracteres.');
+      return;
+    }
+    const format = getPlateFormat(clean);
+    if (!format) {
+      toast.error('Formato de placa inválido. Ex.: ABC1D23 ou ABC1234');
+      return;
+    }
+
+    setConsultando(true);
+    try {
+      const apiResult = await testPlateWithAPI(clean);
+      const formattedPlate = formatPlate(clean, format);
+      setDetectedPlate(formattedPlate);
+      if (apiResult?.found) {
+        processAPIResult(apiResult.data, formattedPlate);
+      } else {
+        toast.info('Veículo encontrado mas não é sócio. Envie um convite.');
+        setShowConviteModal(true);
+      }
+    } catch (e) {
+      toast.error('Erro ao consultar placa. Tente novamente.');
+    } finally {
+      setConsultando(false);
+    }
+  };
+
   // Capturar e analisar frame
   const captureAndAnalyze = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current || !workerRef.current || isProcessingRef.current) {
@@ -556,13 +601,14 @@ const Scanner = () => {
         navigate(`/execucao-os/${dados.IdSocioVeiculoAgenda}`);
       }, 1500);
     } else if (dados.NomeSocio) {
-      setVehicleData({
+      setSocioInfo({
         placa: dados.PlacaVeiculo || placa,
         nomeSocio: dados.NomeSocio,
         veiculo: `${dados.MarcaVeiculo || ''} ${dados.ModeloVeiculo || ''} ${dados.AnoVeiculo || ''}`.trim(),
-        idSocioVeiculo: dados.IdSocioVeiculo
+        idSocioVeiculo: dados.IdSocioVeiculo,
+        idSocio: dados.IdSocio
       });
-      setShowAgendamentoModal(true);
+      toast.info('Sócio encontrado, nenhum agendamento marcado.');
     }
   };
 
@@ -629,11 +675,6 @@ const Scanner = () => {
   // Inicialização
   useEffect(() => {
     window.scrollTo(0, 0);
-    startCamera();
-    
-    return () => {
-      stopCamera();
-    };
   }, []);
 
   // Cleanup
@@ -646,7 +687,6 @@ const Scanner = () => {
       if (workerRef.current) {
         workerRef.current.terminate();
       }
-      stopCamera();
     };
   }, []);
 
@@ -657,126 +697,104 @@ const Scanner = () => {
         <Header />
         <div className="scan-container">
           <div className="scan-header">
-            <h1>Scanner de Placas</h1>
-            <p style={{marginBottom: '15px'}}>Posicione a placa do veículo na tela - verificação automática a cada segundo</p>
+            <h1>Consulta por Placa</h1>
+            <p>Consulte Ordens de Serviço (OS) pela placa do veículo.</p>
+            <br/>
           </div>
-
-          <div className="scan-content">
-            {cameraPermission === 'denied' ? (
-              <div className="scan-error">
-                <div className="scan-error-icon">
-                  <FiAlertCircle size={64} />
-                </div>
-                <h2>Problema com a Câmera</h2>
-                <p>{error}</p>
-                <Button variant='transparent' onClick={startCamera}>
-                  <FiRefreshCw />
-                  Tentar Novamente
-                </Button>
-              </div>
-            ) : (
-              <div className="scan-active">
-                {(cameraPermission === 'checking' || (cameraPermission === 'granted' && !isScanning)) && (
-                  <div className="scan-loading-overlay">
-                    <div className="scan-loading-icon">
-                      <FiCamera size={64} className="scan-spinning" />
-                    </div>
-                    <h2>Iniciando Câmera...</h2>
-                    <p>Aguarde enquanto ativamos a câmera e o sistema de OCR</p>
+          <div className="scan-layout">
+            <section className="scan-main">
+              <div className="scan-card">
+                <div className="scan-manual">
+                  <div className="scan-helper">
+                    <p>Informe a placa para consultar OS; se não houver, convide via WhatsApp.</p>
+                    <div className="scan-example">Exemplos: <strong>ABC1D23</strong> ou <strong>ABC-1234</strong></div>
                   </div>
-                )}
-                
-                <div className="scan-video-container">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="scan-video"
-                    style={{ opacity: isScanning ? 1 : 0 }}
-                  />
-                  <div className="scan-overlay">
-                    <div className="scan-frame">
-                      <div className="scan-corners">
-                        <div className="scan-corner scan-corner-top-left"></div>
-                        <div className="scan-corner scan-corner-top-right"></div>
-                        <div className="scan-corner scan-corner-bottom-left"></div>
-                        <div className="scan-corner scan-corner-bottom-right"></div>
-                      </div>
-                      {/*isProcessing && (
-                        <div className="scan-processing">
-                          <FiRefreshCw className="scan-spinning" />
-                          <span>Scan #{scanCount}</span>
-                          <small>Analisando texto e testando placas...</small>
+                  <div className="form-group">
+                    <label htmlFor="placa">Placa do veículo</label>
+                    <Input
+                      id="placa"
+                      placeholder="ABC1D23 ou ABC-1234"
+                      ref={useMask({
+                        mask: '___-____',
+                        replacement: { _: /[A-Za-z0-9]/ }
+                      })}
+                      value={manualPlate}
+                      onChange={(e) => setManualPlate(e.target.value.toUpperCase())}
+                    />
+                  </div>
+                  <div className="scan-actions-row">
+                    <Button variant="transparent" onClick={() => { setManualPlate(''); setDetectedPlate(''); setSocioInfo(null); }}>
+                      Limpar
+                    </Button>
+                    <Button variant="primary" onClick={consultarPlacaManual} disabled={consultando}>
+                      {consultando ? 'Consultando...' : 'Consultar'}
+                    </Button>
+                  </div>
+                  {socioInfo && (
+                    <div className="scan-socio-card" style={{ marginTop: 16 }}>
+                      <div className="scan-socio-header">
+                        <FiUser className="scan-socio-icon" />
+                        <div>
+                          <h3>Sócio encontrado</h3>
+                          <p>Nenhum agendamento marcado para este veículo.</p>
                         </div>
-                      )*/}
+                      </div>
+                      <div className="scan-socio-grid">
+                        <div className="scan-socio-item">
+                          <span className="scan-socio-label">Nome</span>
+                          <span className="scan-socio-value">{socioInfo.nomeSocio}</span>
+                        </div>
+                        <div className="scan-socio-item">
+                          <span className="scan-socio-label">Placa</span>
+                          <span className="scan-socio-value">{socioInfo.placa}</span>
+                        </div>
+                        <div className="scan-socio-item">
+                          <span className="scan-socio-label">Veículo</span>
+                          <span className="scan-socio-value">{socioInfo.veiculo || '—'}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-                <div className="scan-controls">
-                  {detectedPlate ? (
-                    <div className="scan-plate-detected">
+                  )}
+                  {detectedPlate && (
+                    <div className="scan-plate-detected" style={{ marginTop: 20 }}>
                       <div className="scan-detected-plate">
                         <FiCheck className="scan-check-icon" />
                         <span className="scan-plate-text">{detectedPlate}</span>
                       </div>
                       <div className="scan-plate-actions">
-                        {/*<Button variant='primary' onClick={confirmarPlaca}>
-                          <FiCheck />
-                          Confirmar
-                        </Button>*/}
-                        <Button variant='transparent' onClick={tentarNovamente}>
+                        <Button variant='transparent' onClick={() => { setDetectedPlate(''); setManualPlate(''); }}>
                           <FiRefreshCw />
                           Tentar Novamente
                         </Button>
                       </div>
                     </div>
-                  ) : (
-                    <div className="scan-status">
-                      {/*<div className="scan-manual-controls">
-                        <Button 
-                          variant='transparent' 
-                          onClick={captureManual}
-                          disabled={isProcessing}
-                        >
-                          <FiCamera />
-                          Capturar Agora
-                        </Button>
-                      </div>*/}
-                      
-                      {isProcessing && (
-                        <div className="scan-processing-indicator">
-                          <div className="scan-spinner"></div>
-                          <span>Capturando placa...</span>
-                        </div>
-                      )}
-                      
-                      {/* isScanning && !isProcessing && (
-                        <div className="scan-auto-indicator">
-                          <div className="scan-pulse"></div>
-                          <span>Scanner ativo - Verificando A CADA SEGUNDO</span>
-                        </div>
-                      )*/}
-                    </div>
                   )}
                 </div>
               </div>
-            )}
+            </section>
+            <aside className="scan-aside">
+              <div className="scan-card scan-tips-card">
+                <div className="scan-tips-header">
+                  <div className="scan-tips-icon"><FiInfo size={18} /></div>
+                  <div>
+                    <h3>Dicas rápidas</h3>
+                    <p>Melhore a precisão da consulta por placa.</p>
+                  </div>
+                </div>
+                <ul className="scan-tips-list">
+                  <li className="scan-tips-item">Use letras maiúsculas e evite espaços.</li>
+                  <li className="scan-tips-item">Formatos aceitos: ABC1D23 e ABC-1234.</li>
+                  <li className="scan-tips-item">Se não encontrar, convide via WhatsApp.</li>
+                </ul>
+              </div>
+            </aside>
           </div>
         </div>
       </div>
       
       <BottomNavigation />
       
-      {/* Modal de Agendamento */}
-      <AgendamentoModal
-        isOpen={showAgendamentoModal}
-        onClose={() => setShowAgendamentoModal(false)}
-        vehicleData={vehicleData}
-      />
+      {/* Fluxo de agendamento removido (restrito) */}
       
       {/* Modal de Convite */}
       <Modal
@@ -785,7 +803,6 @@ const Scanner = () => {
           setShowConviteModal(false);
           setTelefoneConvite('');
           setDetectedPlate('');
-          startCamera();
         }}
         title="Convidar para ser Sócio"
         size="medium"
@@ -826,7 +843,6 @@ const Scanner = () => {
                 setShowConviteModal(false);
                 setTelefoneConvite('');
                 setDetectedPlate('');
-                startCamera();
               }}
               disabled={enviandoConvite}
             >

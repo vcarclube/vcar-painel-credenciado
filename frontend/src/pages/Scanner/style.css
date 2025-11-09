@@ -3,6 +3,7 @@
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  margin-left: 280px; /* Offset for fixed Sidebar */
 }
 
 /* Scanner Header */
@@ -29,6 +30,123 @@
   justify-content: center;
   align-items: start;
   min-height: 500px;
+}
+
+/* New responsive grid layout */
+.scan-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.scan-main {
+  min-width: 0;
+}
+
+.scan-aside {
+  min-width: 0;
+}
+
+/* Manual Card */
+.scan-card {
+  width: 100%;
+  max-width: 720px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  padding: 24px;
+}
+
+.scan-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.scan-helper {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #374151;
+}
+
+.scan-example {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.scan-actions-row {
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Socio result card */
+.scan-socio-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.scan-socio-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.scan-socio-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #111827;
+}
+
+.scan-socio-header p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.scan-socio-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-bg);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-socio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.scan-socio-item {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.scan-socio-label {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.scan-socio-value {
+  display: block;
+  font-size: 14px;
+  color: #111827;
+  font-weight: 600;
 }
 
 /* Scanner Error Screen */
@@ -528,8 +646,16 @@
     font-size: 2rem;
   }
   
+  .scan-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
   .scan-video-container {
     max-width: 100%;
+  }
+  .scan-card {
+    padding: 16px;
   }
   
   .scan-frame {
@@ -659,4 +785,74 @@
   .convite-info h3 {
     font-size: 1.25rem;
   }
+}
+/* --- Tips Card (Dicas rápidas) --- */
+.scan-tips-card {
+  padding: 20px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.scan-tips-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.scan-tips-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #111827; /* Gray-900 */
+}
+
+.scan-tips-header p {
+  margin: 0;
+  color: #6b7280; /* Gray-500 */
+  font-size: 13px;
+}
+
+.scan-tips-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-bg);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-tips-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.scan-tips-item {
+  position: relative;
+  padding-left: 22px;
+  color: #374151; /* Gray-700 */
+  font-size: 14px;
+}
+
+.scan-tips-item::before {
+  content: '✔';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #10b981; /* Emerald-500 */
+  font-size: 14px;
+  line-height: 1;
+}
+
+@media (max-width: 768px) {
+  .scan-container { margin-left: 0; }
+  .scan-tips-card { padding: 16px; }
+  .scan-tips-header h3 { font-size: 15px; }
+  .scan-tips-header p { font-size: 12px; }
 }

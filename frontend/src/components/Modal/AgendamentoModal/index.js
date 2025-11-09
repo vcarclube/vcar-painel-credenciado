@@ -98,10 +98,10 @@ const AgendamentoModal = ({ isOpen, onClose, vehicleData }) => {
     setIsSubmitting(true);
     
     try {
-      // Simular chamada da API
+
       await Api.agendar({
         idPontoAtendimento: user.IdPontoAtendimento,
-        idSocio: user.IdSocio,
+        idSocio: vehicleData?.idSocioVeiculo,
         idSocioVeiculo: vehicleData?.idSocioVeiculo,
         data: formData.dataAgendamento,
         hora: formData.horario,

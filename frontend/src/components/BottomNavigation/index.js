@@ -30,7 +30,7 @@ const BottomNavigation = () => {
     },
     {
       id: 'scan',
-      label: 'Escanear',
+      label: 'Consultar',
       icon: FiMaximize,
       path: '/scan'
     },
