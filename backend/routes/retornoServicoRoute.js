@@ -406,8 +406,6 @@ router.get('/agendamentos-disponiveis/:idPontoAtendimento', validateToken, async
         ORDER BY DataAgendamento DESC;
     `;
 
-    console.log(query);
-
     const result = await db.query(query, {idPontoAtendimento});
 
     res.json({

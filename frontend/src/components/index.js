@@ -11,3 +11,4 @@ export { default as LaudosModal } from './Modal/LaudosModal';
 export { default as RecibosModal } from './Modal/RecibosModal';
 export { default as EspelhoFinanceiroViewModal } from './Modal/EspelhoFinanceiroViewModal';
 export { default as AgendamentoModal } from './Modal/AgendamentoModal';
+export { default as OpeningHoursRequiredModal } from './Modal/OpeningHoursRequiredModal';

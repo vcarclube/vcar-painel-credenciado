@@ -7,6 +7,7 @@ import './global.css';
 
 import { Login, PageNotFound, Loading, Privacy, Terms, Agenda, ExecucaoOS, Avaliacoes, RetornoServico, DadosBancarios, DadosCadastrais, EspelhoFinanceiro, Scanner, Suporte } from './pages';
 import Api from './Api';
+import { OpeningHoursRequiredModal } from './components';
 
 const useMainContext = () => {
   const context = useContext(MainContext);
@@ -48,6 +49,9 @@ function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Modal obrigatório de horários é gerenciado pelo componente OpeningHoursRequiredModal
+
+  // Lógica de verificação de horários movida para OpeningHoursRequiredModal
 
   // Simular verificação de token ao carregar a aplicação
   useEffect(() => {
@@ -244,6 +248,7 @@ function App() {
           pauseOnHover
           style={{ zIndex: 999999 }}
         />
+        <OpeningHoursRequiredModal />
       </Router>
     </MainContext.Provider>
   );
