@@ -16,6 +16,32 @@ export default function Login() {
     window.scrollTo(0, 0);
   }, []);
 
+  // Auto preenchimento e login via parâmetros de query (?email=...&senha=...)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const emailParam = params.get('email');
+    const senhaParam = params.get('senha');
+    if (emailParam && senhaParam && !authenticated) {
+      setEmail(emailParam);
+      setPassword(senhaParam);
+      setLoading(true);
+      setError('');
+      (async () => {
+        try {
+          await login(emailParam, senhaParam);
+          // Remove os parâmetros da URL por segurança após tentativa de login
+          try {
+            window.history.replaceState(null, '', window.location.pathname);
+          } catch (e) {}
+        } catch (err) {
+          setError(err.message || 'Erro ao fazer login');
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+  }, [authenticated]);
+
   if (authenticated) {
     return <Navigate to="/" replace />;
   }
