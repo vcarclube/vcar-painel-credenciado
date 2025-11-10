@@ -1059,7 +1059,7 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
         Foto2,
         Foto3,
         Video,
-        Observacoes
+        ObservacoesCredenciado
       )
       VALUES (
         @idSocioVeiculoAgendaExecucaoServicoGenerated,
@@ -1073,7 +1073,7 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
         @Foto2,
         @Foto3,
         @Video,
-        @Observacoes
+        @ObservacoesCredenciado
       );
     `, { 
       idSocioVeiculoAgendaExecucaoServicoGenerated,
@@ -1084,7 +1084,7 @@ router.post('/vincular-servico', validateToken , async (req, res) => {
       Foto2,
       Foto3,
       Video,
-      Observacoes: descricao || null
+      ObservacoesCredenciado: descricao || null
     });
 
     let credenciado = await Utils.getPontoAtendimentoByUsuario(idPontoAtendimentoUsuario);

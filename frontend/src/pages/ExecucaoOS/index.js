@@ -1116,7 +1116,7 @@ const handleConfirmService = async () => {
                         </div>
                         <div className="execucao-os__table-body">
                           {servicos.map(servico => (
-                            <div key={servico.id} className="execucao-os__table-row">
+                            <div key={servico.id} className="execucao-os__table-row" style={{background: servico.StatusAprovacao == 'R' ? '#fff6f6' : 'transparent'}}>
                               {/* Coluna Status com ícone e tooltip */}
                               <div className="execucao-os__table-cell execucao-os__table-cell--status-icon">
                                 <div className="execucao-os__status-icon-wrapper" tabIndex={0} role="button" aria-label={servico?.StatusAprovacao === 'A' ? 'Aprovado' : servico?.StatusAprovacao === 'R' ? 'Reprovado' : 'Pendente'} title={servico?.StatusAprovacao === 'A' ? 'Aprovado' : servico?.StatusAprovacao === 'R' ? 'Reprovado' : 'Pendente'}>
@@ -1141,7 +1141,16 @@ const handleConfirmService = async () => {
                               </div>
                               <div className="execucao-os__table-cell execucao-os__table-cell--service">
                                 <div className="execucao-os__service-name" style={{display: 'flex', alignItems: 'center'}}>
+                                  <div>
                                   <label style={{fontSize: '9pt'}}>{servico.label}</label>
+                                  {servico.StatusAprovacao == 'R' ? (
+                                    <div>
+                                      <label className="execucao-os__service-name-content" style={{background: '#fecaca', color: '#ef4444'}}>
+                                        <b>OBS: </b>{servico.ObservacoesCredenciado}
+                                      </label>
+                                    </div>
+                                  ) : (null)}
+                                  </div>
                                 </div>
                               </div>
                               <style jsx>{`
