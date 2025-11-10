@@ -1146,7 +1146,7 @@ const handleConfirmService = async () => {
                                   {servico.StatusAprovacao == 'R' ? (
                                     <div>
                                       <label className="execucao-os__service-name-content" style={{background: '#fecaca', color: '#ef4444'}}>
-                                        <b>OBS: </b>{servico.ObservacoesCredenciado}
+                                        <b>OBS: </b>{servico.Observacoes}
                                       </label>
                                     </div>
                                   ) : (null)}
