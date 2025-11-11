@@ -22,7 +22,7 @@ if (!fs.existsSync(uploadDir)) {
 
 const ftpViewPool = {
     connections: new Map(),
-    maxConnections: 5,
+    maxConnections: parseInt(process.env.FTP_MAX_CONNECTIONS || '20', 10),
     
     // Limpeza periódica de conexões inválidas
     startCleanupTimer() {
@@ -55,64 +55,65 @@ const ftpViewPool = {
     },
     
     async getConnection() {
-        // Procurar conexão disponível e válida
-        for (const [id, connection] of this.connections) {
-            if (!connection.inUse) {
-                // Verificar se a conexão ainda está válida
-                try {
-                    await connection.client.pwd(); // Teste simples de conectividade
-                    connection.inUse = true;
-                    connection.lastUsed = Date.now();
-                    console.log(`♻️ Reutilizando conexão ${id}`);
-                    return connection;
-                } catch (testError) {
-                    console.log(`🔄 Conexão ${id} inválida, removendo...`);
-                    this.connections.delete(id);
+        const deadline = Date.now() + 30000; // espere até 30s por uma conexão
+        while (true) {
+            // Procurar conexão disponível e válida
+            for (const [id, connection] of this.connections) {
+                if (!connection.inUse) {
                     try {
-                        connection.client.close();
-                    } catch (closeError) {
-                        // Ignorar erro ao fechar conexão já morta
+                        await connection.client.pwd();
+                        connection.inUse = true;
+                        connection.lastUsed = Date.now();
+                        console.log(`♻️ Reutilizando conexão ${id}`);
+                        return connection;
+                    } catch (testError) {
+                        console.log(`🔄 Conexão ${id} inválida, removendo...`);
+                        this.connections.delete(id);
+                        try { connection.client.close(); } catch (_) {}
                     }
                 }
             }
-        }
-        
-        // Criar nova conexão se não atingiu o limite
-        if (this.connections.size < this.maxConnections) {
-            const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            const client = new ftp.Client();
-            client.ftp.verbose = false;
-            
-            // Configurar timeout mais baixo para detectar problemas rapidamente
-            client.ftp.timeout = 10000; // 10 segundos
-            
-            try {
-                await client.access({
-                    host: process.env.FTP_HOST,
-                    user: process.env.FTP_USER,
-                    password: process.env.FTP_PASSWORD,
-                    secure: false
-                });
-                
-                const connection = {
-                    id: connectionId,
-                    client,
-                    inUse: true,
-                    created: Date.now(),
-                    lastUsed: Date.now()
-                };
-                
-                this.connections.set(connectionId, connection);
-                console.log(`🆕 Nova conexão criada: ${connectionId}`);
-                return connection;
-                
-            } catch (err) {
-                console.error('Erro ao criar conexão FTP:', err);
-                throw err;
+
+            // Criar nova conexão se não atingiu o limite
+            if (this.connections.size < this.maxConnections) {
+                const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                const client = new ftp.Client();
+                client.ftp.verbose = false;
+                client.ftp.timeout = 10000; // 10 segundos
+
+                try {
+                    await client.access({
+                        host: process.env.FTP_HOST,
+                        user: process.env.FTP_USER,
+                        password: process.env.FTP_PASSWORD,
+                        secure: false
+                    });
+
+                    const connection = {
+                        id: connectionId,
+                        client,
+                        inUse: true,
+                        created: Date.now(),
+                        lastUsed: Date.now()
+                    };
+
+                    this.connections.set(connectionId, connection);
+                    console.log(`🆕 Nova conexão criada: ${connectionId}`);
+                    return connection;
+                } catch (err) {
+                    console.error('Erro ao criar conexão FTP:', err);
+                    // Se falhar criação, prossiga esperando
+                }
             }
+
+            // Se passou do deadline, estourar
+            if (Date.now() > deadline) {
+                throw new Error('Pool de conexões esgotado');
+            }
+
+            // Aguardar liberação
+            await new Promise(r => setTimeout(r, 150));
         }
-        
-        throw new Error('Pool de conexões esgotado');
     },
     
     releaseConnection(connection) {
@@ -393,91 +394,137 @@ router.get("/files/:filename", async (req, res) => {
         res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
         res.setHeader("X-Content-Type-Options", "nosniff");
         
-        // Cleanup function
-        const cleanup = () => {
+        // Cleanup: diferenciar encerramento normal vs abortado
+        const releaseOnly = () => {
             if (connection) {
                 ftpViewPool.releaseConnection(connection);
                 connection = null;
+                console.log('🔓 Conexão liberada no finish');
+            }
+        };
+        const forceClose = () => {
+            if (connection) {
+                try { connection.client.close(); } catch(_) {}
+                ftpViewPool.connections.delete(connection.id);
+                connection = null;
+                console.log('🔌 Conexão encerrada e removida (abort/error)');
             }
         };
         
-        res.on('close', cleanup);
-        res.on('error', cleanup);
-        res.on('finish', cleanup);
+        res.on('finish', releaseOnly);
+        res.on('close', forceClose);
+        res.on('error', forceClose);
         
-        // LÓGICA PARA VÍDEOS COM RANGE SUPPORT
-        if (isVideo && range) {
-            console.log(`🎬 Vídeo com range request: ${(fileInfo.size / (1024 * 1024)).toFixed(2)}MB`);
-            
+        // SUPORTE GENÉRICO A RANGE (vídeo, imagem, áudio)
+        if (range && fileInfo.size && Number.isFinite(fileInfo.size)) {
             const parts = range.replace(/bytes=/, "").split("-");
-            let start = parseInt(parts[0], 10) || 0;
-            let end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + (2 * 1024 * 1024) - 1, fileInfo.size - 1); // 2MB chunks
-            
-            // Garantir que não exceda o arquivo
-            if (end >= fileInfo.size) {
-                end = fileInfo.size - 1;
-            }
-            
-            const contentLength = end - start + 1;
-            
+            const start = parseInt(parts[0], 10) || 0;
+            const requestedEnd = parts[1] ? parseInt(parts[1], 10) : null;
+            const safeEnd = requestedEnd !== null && !Number.isNaN(requestedEnd)
+                ? Math.min(requestedEnd, fileInfo.size - 1)
+                : fileInfo.size - 1;
+            const contentLength = safeEnd - start + 1;
+
             res.status(206);
-            res.setHeader("Content-Range", `bytes ${start}-${end}/${fileInfo.size}`);
+            res.setHeader("Content-Range", `bytes ${start}-${safeEnd}/${fileInfo.size}`);
             res.setHeader("Content-Length", contentLength);
             res.setHeader("Cache-Control", "public, max-age=3600");
-            
-            console.log(`📦 Chunk: ${start}-${end} (${(contentLength / (1024 * 1024)).toFixed(2)}MB)`);
-            
-            try {
-                // Criar um stream personalizado para controlar o range
-                const passThrough = new PassThrough();
-                
-                // Configurar o comando FTP para range
-                if (start > 0) {
-                    await client.send(`REST ${start}`);
+
+            console.log(`📦 Range: ${start}-${safeEnd} (${(contentLength / (1024 * 1024)).toFixed(2)}MB)`);
+
+            // Se o cliente pediu um fim explícito, honrar enviando APENAS esse intervalo.
+            if (requestedEnd !== null && !Number.isNaN(requestedEnd)) {
+                const pt = new PassThrough();
+                // Transform para limitar bytes ao contentLength
+                const limiter = new stream.Transform({
+                    readableHighWaterMark: 64 * 1024,
+                    writableHighWaterMark: 64 * 1024,
+                    transform(chunk, enc, cb) {
+                        if (this.bytesSent === undefined) this.bytesSent = 0;
+                        const remaining = contentLength - this.bytesSent;
+                        if (remaining <= 0) {
+                            return cb();
+                        }
+                        if (chunk.length <= remaining) {
+                            this.bytesSent += chunk.length;
+                            cb(null, chunk);
+                        } else {
+                            this.bytesSent += remaining;
+                            cb(null, chunk.slice(0, remaining));
+                            this.end();
+                        }
+                    }
+                });
+
+                // Ao terminar o chunk, encerrar o FTP para abortar o restante com segurança
+                limiter.on('finish', () => {
+                    try { pt.destroy(); } catch (_) {}
+                    try { client.close(); } catch (_) {}
+                    console.log('✅ Chunk concluído, FTP encerrado para honrar Range');
+                });
+
+                // Iniciar download para o PassThrough e encadear limitador -> res
+                const downloadPromise = client.downloadTo(pt, filename, start);
+                pt.pipe(limiter).pipe(res);
+
+                try {
+                    await downloadPromise;
+                    console.log(`🎯 Streaming (chunk) iniciado no offset ${start}`);
+                } catch (streamErr) {
+                    const msg = String(streamErr && streamErr.message || '');
+                    if (streamErr.code === 'ERR_STREAM_PREMATURE_CLOSE' || msg.includes('User closed client during task')) {
+                        console.log('ℹ️ Streaming abortado pelo cliente (premature close)');
+                    } else {
+                        console.error('❌ Erro no streaming:', streamErr);
+                        if (!res.headersSent) {
+                            res.status(500).json({ error: "Erro no streaming" });
+                        }
+                    }
                 }
-                
-                // Pipe para resposta
-                passThrough.pipe(res);
-                
-                // Iniciar o download
-                await client.downloadTo(passThrough, filename);
-                
-                console.log(`🎯 Streaming iniciado: ${start}-${end}`);
-                
-            } catch (streamErr) {
-                console.error('❌ Erro no streaming:', streamErr);
-                if (!res.headersSent) {
-                    res.status(500).json({ error: "Erro no streaming do vídeo" });
+            } else {
+                // Sem fim explícito: enviar até EOF
+                try {
+                    await client.downloadTo(res, filename, start);
+                    console.log(`🎯 Streaming iniciado no offset ${start}`);
+                } catch (streamErr) {
+                    const msg = String(streamErr && streamErr.message || '');
+                    if (streamErr.code === 'ERR_STREAM_PREMATURE_CLOSE' || msg.includes('User closed client during task')) {
+                        console.log('ℹ️ Streaming abortado pelo cliente (premature close)');
+                    } else {
+                        console.error('❌ Erro no streaming:', streamErr);
+                        if (!res.headersSent) {
+                            res.status(500).json({ error: "Erro no streaming" });
+                        }
+                    }
                 }
             }
             
         } else if (isVideo) {
-            // Vídeo sem range - forçar range inicial para melhor compatibilidade
-            console.log(`🎬 Vídeo sem range, enviando chunk inicial`);
+            // Vídeo sem Range: responder com 206 e Content-Range completo para máxima compatibilidade
+            console.log(`🎬 Vídeo sem range, respondendo 206 com faixa completa`);
             
-            const chunkSize = 2 * 1024 * 1024; // 2MB inicial
-            const end = Math.min(chunkSize - 1, fileInfo.size - 1);
-            
-            res.status(206);
-            res.setHeader("Content-Range", `bytes 0-${end}/${fileInfo.size}`);
-            res.setHeader("Content-Length", end + 1);
+            if (fileInfo.size && Number.isFinite(fileInfo.size)) {
+                res.status(206);
+                res.setHeader("Content-Range", `bytes 0-${fileInfo.size - 1}/${fileInfo.size}`);
+                res.setHeader("Content-Length", fileInfo.size);
+            } else {
+                // Sem tamanho confiável: cair para 200
+                res.status(200);
+            }
             res.setHeader("Cache-Control", "public, max-age=3600");
-            
+
             try {
-                const passThrough = new PassThrough();
-                
-                // Pipe para resposta
-                passThrough.pipe(res);
-                
-                // Download do arquivo
-                await client.downloadTo(passThrough, filename);
-                
+                await client.downloadTo(res, filename);
                 console.log(`🎯 Streaming concluído`);
-                
             } catch (streamErr) {
-                console.error('❌ Erro no streaming:', streamErr);
-                if (!res.headersSent) {
-                    res.status(500).json({ error: "Erro no streaming do vídeo" });
+                const msg = String(streamErr && streamErr.message || '');
+                if (streamErr.code === 'ERR_STREAM_PREMATURE_CLOSE' || msg.includes('User closed client during task')) {
+                    console.log('ℹ️ Streaming abortado pelo cliente (premature close)');
+                } else {
+                    console.error('❌ Erro no streaming:', streamErr);
+                    if (!res.headersSent) {
+                        res.status(500).json({ error: "Erro no streaming" });
+                    }
                 }
             }
             
@@ -486,7 +533,9 @@ router.get("/files/:filename", async (req, res) => {
             console.log(`📄 Arquivo não-vídeo: ${(fileInfo.size / (1024 * 1024)).toFixed(2)}MB`);
             
             res.setHeader("Cache-Control", "public, max-age=86400");
-            res.setHeader("Content-Length", fileInfo.size);
+            if (fileInfo.size && Number.isFinite(fileInfo.size)) {
+                res.setHeader("Content-Length", fileInfo.size);
+            }
             
             await client.downloadTo(res, filename);
         }
