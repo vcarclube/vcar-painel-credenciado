@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Modal from './index';
 import { Button, Input } from '../index';
 import Api from '../../Api';
@@ -6,8 +6,12 @@ import { toast } from 'react-toastify';
 import { FiSave, FiX } from 'react-icons/fi';
 import { useMask } from '@react-input/mask';
 import './style.css';
+import { MainContext } from '../../helpers/MainContext';
 
 const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => {
+
+  const { user } = useContext(MainContext);
+
   const [formData, setFormData] = useState({
     tipoPagamento: 'PIX',
     TipoChavePix: 'CPF',
@@ -165,7 +169,7 @@ const DadosBancariosCreateModal = ({ isOpen, onClose, onSave, dado = null }) => 
 
     setLoading(true);
     try {
-      const idPontoAtendimento = localStorage.getItem('idPontoAtendimento') || 'C75C6ADC-E2CA-4212-AD69-77A01610D25A';
+      const idPontoAtendimento = user?.IdPontoAtendimento;
       
       const dadoToSave = {
         TipoChavePix: formData.tipoPagamento === 'PIX' ? formData.TipoChavePix : '',
