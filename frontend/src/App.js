@@ -7,7 +7,7 @@ import './global.css';
 
 import { Login, PageNotFound, Loading, Privacy, Terms, Agenda, ExecucaoOS, Avaliacoes, RetornoServico, DadosBancarios, DadosCadastrais, EspelhoFinanceiro, Scanner, Suporte } from './pages';
 import Api from './Api';
-import { OpeningHoursRequiredModal } from './components';
+import { OpeningHoursRequiredModal, BankAccountRequiredModal } from './components';
 
 const useMainContext = () => {
   const context = useContext(MainContext);
@@ -249,6 +249,7 @@ function App() {
           style={{ zIndex: 999999 }}
         />
         <OpeningHoursRequiredModal />
+        <BankAccountRequiredModal />
       </Router>
     </MainContext.Provider>
   );
