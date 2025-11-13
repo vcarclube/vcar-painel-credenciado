@@ -26,6 +26,7 @@ import './style.css';
 import Api from '../../Api';
 import { toast } from 'react-toastify';
 import { MainContext } from '../../helpers/MainContext';
+import Utils from '../../Utils';
 
 const ExecutaOS = () => {
   const navigate = useNavigate();
@@ -138,6 +139,9 @@ const ExecutaOS = () => {
 
         let _agendamento = response.data;
 
+        // Formatação robusta de DataHoraInicio para evitar atrasos/adiantamentos
+        const { date: dataInicioFormatada, time: horaInicioFormatada } = Utils.formatBrazilDateTime(_agendamento?.execucao?.DataHoraInicio);
+
         setOsData({
           id: _agendamento?.agendamento?.IdSocioVeiculoAgenda,
           numero: _agendamento?.agendamento?.NumeroOS,
@@ -151,8 +155,8 @@ const ExecutaOS = () => {
           placa: _agendamento?.socioVeiculo?.Placa?.toUpperCase(),
           motivacao: _agendamento?.motivo?.Descricao?.toUpperCase(),
           status: _agendamento?.agendamento?.StatusAgendamento == 'A' ? 'EM EXECUÇÃO' : 'CONCLUIDA',
-          dataInicio: new Date(_agendamento?.execucao?.DataHoraInicio).toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          horaInicio: new Date(_agendamento?.execucao?.DataHoraInicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          dataInicio: dataInicioFormatada,
+          horaInicio: horaInicioFormatada,
           execucaoInicial: _agendamento?.execucao?.ExecutorInicio,
           execucaoFinal: _agendamento?.execucao?.ExecutorFim,
           videoInicial: _agendamento?.agendamento?.VideoInicial,
@@ -1015,7 +1019,7 @@ const handleConfirmService = async () => {
                 <div className="execucao-os__meta">
                   <div className="execucao-os__meta-item">
                     <FiCalendar className="execucao-os__meta-icon" />
-                    <span>Iniciado em: {osData.dataInicio?.split(",")[0]}</span>
+                    <span>Iniciado em: {osData.dataInicio}</span>
                   </div>
                   <div className="execucao-os__meta-item">
                     <FiClock className="execucao-os__meta-icon" />
