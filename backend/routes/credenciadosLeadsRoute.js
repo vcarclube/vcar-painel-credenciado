@@ -15,6 +15,8 @@ router.post('/', async (req, res) => {
 
     const idCredenciadoLead = Utils.generateUUID();
 
+    const agora = new Date();
+
     const dataFormatada = agora.toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
