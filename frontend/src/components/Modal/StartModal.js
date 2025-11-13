@@ -10,8 +10,22 @@ const StartModal = ({ isOpen, onClose, onConfirm, agendamento, idPontoAtendiment
     setLoading(true);
     try {
 
-      let dataAtual = new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })?.replace(",", "")?.split(" ")[0];
-      let horaAtual = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const timeZone = 'America/Sao_Paulo';
+      const agora = new Date();
+
+      const dataAtual = new Intl.DateTimeFormat('pt-BR', {
+        timeZone,
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }).format(agora);
+
+      const horaAtual = new Intl.DateTimeFormat('pt-BR', {
+        timeZone,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(agora);
 
       await onConfirm(agendamento?.id, {
         idSocioVeiculoAgenda: agendamento?.id,
