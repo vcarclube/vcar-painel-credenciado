@@ -16,6 +16,7 @@ router.post('/', async (req, res) => {
     const idCredenciadoLead = Utils.generateUUID();
 
     const agora = new Date();
+    const timeZone = process.env.TIMEZONE || 'America/Sao_Paulo';
 
     const dataFormatada = agora.toLocaleString('pt-BR', {
       day: '2-digit',
@@ -23,7 +24,8 @@ router.post('/', async (req, res) => {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false // 24h
+      hour12: false, // 24h
+      timeZone
     });
 
     // ✅ Inserção no banco
