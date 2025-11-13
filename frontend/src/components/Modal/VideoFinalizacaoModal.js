@@ -13,7 +13,11 @@ const VideoFinalizacaoModal = ({ isOpen, onCancel, onConfirm, servicosPendentes 
   const [observacao, setObservacao] = useState('');
 
   const hasServicosPendentes = servicosPendentes.length > 0;
-  const canFinalize = video && !hasServicosPendentes && responsavel.trim() !== '';
+  const canFinalize = video 
+    && !hasServicosPendentes 
+    && responsavel.trim() !== '' 
+    && (km?.toString()?.trim() !== '')
+    && observacao.trim() !== '';
 
   const handleVideoChange = (videoFile, result) => {
     setVideo(videoFile);
@@ -21,7 +25,11 @@ const VideoFinalizacaoModal = ({ isOpen, onCancel, onConfirm, servicosPendentes 
   };
 
   const handleConfirm = () => {
-    if (video && servicosPendentes.length === 0 && responsavel.trim() !== '') {
+    if (video 
+      && servicosPendentes.length === 0 
+      && responsavel.trim() !== '' 
+      && (km?.toString()?.trim() !== '')
+      && observacao.trim() !== '') {
       onConfirm(video, videoResult, {
         responsavel: responsavel.trim(),
         km: km?.toString() || '',
@@ -79,7 +87,7 @@ const VideoFinalizacaoModal = ({ isOpen, onCancel, onConfirm, servicosPendentes 
           )}
         </div>
         <div style={{ marginBottom: 12 }}>
-          <label htmlFor="km" style={{ display: 'block', marginBottom: 6 }}>KM atual do veículo (opcional)</label>
+          <label htmlFor="km" style={{ display: 'block', marginBottom: 6 }}>KM atual do veículo <span style={{ color: '#ef4444' }}>*</span></label>
           <Input
             id="km"
             type="number"
@@ -88,18 +96,24 @@ const VideoFinalizacaoModal = ({ isOpen, onCancel, onConfirm, servicosPendentes 
             onChange={(e) => setKm(e.target.value)}
             placeholder="Informe o KM atual"
           />
+          {(km?.toString()?.trim() === '') && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#ef4444' }}>Campo obrigatório</div>
+          )}
         </div>
         <div style={{ marginBottom: 12 }}>
-          <label htmlFor="observacao" style={{ display: 'block', marginBottom: 6 }}>Observação (opcional)</label>
+          <label htmlFor="observacao" style={{ display: 'block', marginBottom: 6 }}>Observação <span style={{ color: '#ef4444' }}>*</span></label>
           <textarea
             id="observacao"
             rows={3}
             value={observacao}
             onChange={(e) => setObservacao(e.target.value)}
-            placeholder="Adicione alguma observação, se necessário"
+            placeholder="Descreva observações relevantes para a finalização"
             className="input-component"
             style={{ resize: 'vertical' }}
           />
+          {observacao.trim() === '' && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#ef4444' }}>Campo obrigatório</div>
+          )}
         </div>
       </div>
       
