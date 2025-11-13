@@ -17,7 +17,9 @@ import {
   FiEye,
   FiTrash2,
   FiVideo,
-  FiTrash
+  FiTrash,
+  FiChevronLeft,
+  FiChevronRight
 } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation, Modal, SearchableSelect, Button, MediaUpload, LaudosModal, RecibosModal } from '../../components';
 import { VideoInicialModal, VideoFinalizacaoModal } from '../../components/Modal';
@@ -98,16 +100,128 @@ const ExecutaOS = () => {
   // Modal de visualização de mídia
   const [isMediaPreviewOpen, setIsMediaPreviewOpen] = useState(false);
   const [mediaPreview, setMediaPreview] = useState(null);
+  const [mediaPreviewIndex, setMediaPreviewIndex] = useState(-1);
 
   const handleOpenMediaPreview = (media) => {
     if (!media) return;
     setMediaPreview(media);
+    try {
+      const idx = combinedMedia.findIndex((m) => m?.id === media?.id);
+      setMediaPreviewIndex(idx >= 0 ? idx : -1);
+    } catch (e) {
+      setMediaPreviewIndex(-1);
+    }
     setIsMediaPreviewOpen(true);
   };
 
   const handleCloseMediaPreview = () => {
     setIsMediaPreviewOpen(false);
     setMediaPreview(null);
+    setMediaPreviewIndex(-1);
+  };
+
+  const goToPrevMedia = () => {
+    if (mediaPreviewIndex > 0) {
+      const newIndex = mediaPreviewIndex - 1;
+      setMediaPreviewIndex(newIndex);
+      setMediaPreview(combinedMedia[newIndex]);
+    }
+  };
+
+  const goToNextMedia = () => {
+    if (mediaPreviewIndex < combinedMedia.length - 1) {
+      const newIndex = mediaPreviewIndex + 1;
+      setMediaPreviewIndex(newIndex);
+      setMediaPreview(combinedMedia[newIndex]);
+    }
+  };
+
+  // Componente de imagem com pinch-to-zoom para mobile
+  const ZoomableImage = ({ src, alt, resetKey }) => {
+    const containerRef = useRef(null);
+    const [scale, setScale] = useState(1);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const lastDistanceRef = useRef(null);
+    const lastTouchRef = useRef(null);
+
+    useEffect(() => {
+      // Reset quando a imagem muda ou quando navega
+      setScale(1);
+      setOffset({ x: 0, y: 0 });
+      lastDistanceRef.current = null;
+      lastTouchRef.current = null;
+    }, [src, resetKey]);
+
+    const getDistance = (touches) => {
+      const [a, b] = touches;
+      const dx = a.clientX - b.clientX;
+      const dy = a.clientY - b.clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        lastDistanceRef.current = getDistance(e.touches);
+      } else if (e.touches.length === 1) {
+        lastTouchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+    };
+
+    const onTouchMove = (e) => {
+      // Impede o scroll padrão durante gesto
+      e.preventDefault();
+      if (e.touches.length === 2) {
+        const dist = getDistance(e.touches);
+        if (lastDistanceRef.current) {
+          const delta = dist - lastDistanceRef.current;
+          const sensitivity = 0.005;
+          let nextScale = scale + delta * sensitivity;
+          nextScale = Math.min(4, Math.max(1, nextScale));
+          setScale(nextScale);
+        }
+        lastDistanceRef.current = dist;
+      } else if (e.touches.length === 1 && scale > 1) {
+        const t = e.touches[0];
+        const last = lastTouchRef.current || { x: t.clientX, y: t.clientY };
+        const dx = t.clientX - last.x;
+        const dy = t.clientY - last.y;
+        setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+        lastTouchRef.current = { x: t.clientX, y: t.clientY };
+      }
+    };
+
+    const onTouchEnd = () => {
+      lastDistanceRef.current = null;
+      lastTouchRef.current = null;
+      if (scale <= 1.01) {
+        setScale(1);
+        setOffset({ x: 0, y: 0 });
+      }
+    };
+
+    return (
+      <div
+        ref={containerRef}
+        style={{ position: 'relative', overflow: 'hidden', borderRadius: 8, touchAction: 'none' }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <img
+          src={src}
+          alt={alt}
+          style={{
+            width: '100%',
+            height: 'auto',
+            transform: `scale(${scale}) translate(${offset.x / scale}px, ${offset.y / scale}px)`,
+            transformOrigin: 'center center',
+            willChange: 'transform',
+            userSelect: 'none',
+            pointerEvents: 'none'
+          }}
+        />
+      </div>
+    );
   };
 
   useEffect(() => {
@@ -2083,21 +2197,76 @@ const handleConfirmService = async () => {
         title={mediaPreview?.type === 'image' ? 'Visualizar Foto' : 'Visualizar Vídeo'}
       >
         <div style={{ padding: '10px' }}>
-          {mediaPreview?.type === 'image' ? (
-            <img
-              src={mediaPreview?.url}
-              alt={mediaPreview?.nome}
-              style={{ width: '100%', height: 'auto', borderRadius: 8 }}
-            />
-          ) : mediaPreview ? (
-            <video
-              src={mediaPreview?.url}
-              controls
-              autoPlay
-              preload="metadata"
-              style={{ width: '100%', borderRadius: 8 }}
-            />
-          ) : null}
+          <div style={{ position: 'relative' }}>
+            {mediaPreview?.type === 'image' ? (
+              <ZoomableImage src={mediaPreview?.url} alt={mediaPreview?.nome} resetKey={mediaPreviewIndex} />
+            ) : mediaPreview ? (
+              <div className="execucao-os__video-container">
+                <video
+                  src={mediaPreview?.url}
+                  controls
+                  autoPlay
+                  preload="metadata"
+                  style={{ width: '100%', borderRadius: 8 }}
+                />
+              </div>
+            ) : null}
+
+            {/* Setas de navegação */}
+            <button
+              type="button"
+              onClick={goToPrevMedia}
+              disabled={mediaPreviewIndex <= 0}
+              aria-label="Anterior"
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: 8,
+                transform: 'translateY(-50%)',
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                border: 'none',
+                background: 'rgba(0,0,0,0.45)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: mediaPreviewIndex > 0 ? 'pointer' : 'not-allowed',
+                opacity: mediaPreviewIndex > 0 ? 1 : 0.5,
+                zIndex: 5
+              }}
+            >
+              <FiChevronLeft size={20} />
+            </button>
+            <button
+              type="button"
+              onClick={goToNextMedia}
+              disabled={mediaPreviewIndex >= combinedMedia.length - 1}
+              aria-label="Próximo"
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: 8,
+                transform: 'translateY(-50%)',
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                border: 'none',
+                background: 'rgba(0,0,0,0.45)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: mediaPreviewIndex < combinedMedia.length - 1 ? 'pointer' : 'not-allowed',
+                opacity: mediaPreviewIndex < combinedMedia.length - 1 ? 1 : 0.5,
+                zIndex: 5
+              }}
+            >
+              <FiChevronRight size={20} />
+            </button>
+          </div>
+
           {mediaPreview?.nome && (
             <div style={{ marginTop: 8, fontSize: 12, color: '#6c757d' }}>
               {mediaPreview?.nome}
