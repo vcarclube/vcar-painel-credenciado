@@ -2,6 +2,7 @@ import React from 'react';
 import Modal from './index';
 import { Button } from '../index';
 import { FiDollarSign, FiCalendar, FiUser, FiTruck, FiFileText } from 'react-icons/fi';
+import Utils from '../../Utils';
 
 const EspelhoFinanceiroViewModal = ({ isOpen, onClose, transacao }) => {
   if (!transacao) return null;
@@ -67,7 +68,7 @@ const EspelhoFinanceiroViewModal = ({ isOpen, onClose, transacao }) => {
               <div className="detail-row">
                 <div className="detail-item">
                   <label className="detail-label">Placa:</label>
-                  <span className="detail-value">{transacao.placa}</span>
+                  <span className="detail-value">{transacao.placa.toUpperCase()}</span>
                 </div>
               </div>
             </div>
@@ -98,12 +99,12 @@ const EspelhoFinanceiroViewModal = ({ isOpen, onClose, transacao }) => {
               <div className="detail-row">
                 <div className="detail-item">
                   <label className="detail-label">Data Agendamento:</label>
-                  <span className="detail-value">{transacao.dataAgendamento}</span>
+                  <span className="detail-value">{Utils.formatBrazilDateTimeString(transacao.dataAgendamento)}</span>
                 </div>
                 
                 <div className="detail-item">
                   <label className="detail-label">Data Execução:</label>
-                  <span className="detail-value">{transacao.dataExecucao}</span>
+                  <span className="detail-value">{Utils.formatBrazilDateTimeString(transacao.dataExecucao)}</span>
                 </div>
               </div>
             </div>
