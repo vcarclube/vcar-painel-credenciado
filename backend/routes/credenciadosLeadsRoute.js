@@ -15,6 +15,15 @@ router.post('/', async (req, res) => {
 
     const idCredenciadoLead = Utils.generateUUID();
 
+    const dataFormatada = agora.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false // 24h
+    });
+
     // ✅ Inserção no banco
     const query = `
       INSERT INTO CredenciadosLeads (
@@ -22,18 +31,22 @@ router.post('/', async (req, res) => {
         NomeOficina,
         NomeCompleto,
         Email,
-        whatsapp
+        Whatsapp,
+        AtivoInativo,
+        DataCadastro
       )
       VALUES (
         @idCredenciadoLead,
         @nomeOficina,
         @nomeCompleto,
         @email,
-        @whatsapp
+        @whatsapp,
+        'A',
+        @dataFormatada
       )
     `;
 
-    const params = { idCredenciadoLead, nomeOficina, nomeCompleto, email, whatsapp };
+    const params = { idCredenciadoLead, nomeOficina, nomeCompleto, email, whatsapp, dataFormatada };
     await db.query(query, params);
 
     // ✅ Montagem da mensagem
