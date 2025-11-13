@@ -1536,48 +1536,51 @@ const handleConfirmService = async () => {
             <div className="service-modal-upload service-modal-upload--video">
               <label className="service-modal-upload__label">Vídeo (até 1 min)</label>
               {!serviceVideoPreview ? (
-                <div className="service-modal-upload__control">
-                  <input
-                    id="service-video-input"
-                    type="file"
-                    accept="video/*"
-                    capture="camcorder"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const url = URL.createObjectURL(file);
-                      const v = document.createElement('video');
-                      v.preload = 'metadata';
-                      v.src = url;
-                      v.onloadedmetadata = () => {
-                        const duration = v.duration || 0;
-                        if (duration > 60) {
-                          setServiceVideoError('O vídeo deve ter no máximo 60 segundos.');
+                <>
+                  <div className="service-modal-upload__control">
+                    <input
+                      id="service-video-input"
+                      type="file"
+                      accept="video/*"
+                      capture="camcorder"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const url = URL.createObjectURL(file);
+                        const v = document.createElement('video');
+                        v.preload = 'metadata';
+                        v.src = url;
+                        v.onloadedmetadata = () => {
+                          const duration = v.duration || 0;
+                          if (duration > 60) {
+                            setServiceVideoError('O vídeo deve ter no máximo 60 segundos.');
+                            try { URL.revokeObjectURL(url); } catch {}
+                            setServiceVideoFile(null);
+                            setServiceVideoPreview(null);
+                          } else {
+                            setServiceVideoError('');
+                            setServiceVideoFile(file);
+                            setServiceVideoPreview(url);
+                          }
+                        };
+                        v.onerror = () => {
+                          setServiceVideoError('Não foi possível ler o vídeo.');
                           try { URL.revokeObjectURL(url); } catch {}
                           setServiceVideoFile(null);
                           setServiceVideoPreview(null);
-                        } else {
-                          setServiceVideoError('');
-                          setServiceVideoFile(file);
-                          setServiceVideoPreview(url);
-                        }
-                      };
-                      v.onerror = () => {
-                        setServiceVideoError('Não foi possível ler o vídeo.');
-                        try { URL.revokeObjectURL(url); } catch {}
-                        setServiceVideoFile(null);
-                        setServiceVideoPreview(null);
-                      };
-                    }}
-                    className="service-modal-upload__input"
-                  />
-                  <label htmlFor="service-video-input" className="service-modal-upload__btn" onClick={handleSelectVideoClick}>
-                    <FiVideo size={16} /> Selecionar Vídeo
-                  </label>
-                  {serviceVideoError && (
-                    <span className="service-modal-upload__error">{serviceVideoError}</span>
-                  )}
-                </div>
+                        };
+                      }}
+                      className="service-modal-upload__input"
+                    />
+                    <label htmlFor="service-video-input" className="service-modal-upload__btn" onClick={handleSelectVideoClick}>
+                      <FiVideo size={16} /> Selecionar Vídeo
+                    </label>
+                    {serviceVideoError && (
+                      <span className="service-modal-upload__error">{serviceVideoError}</span>
+                    )}
+                  </div>
+                  <label className="service-modal-upload__label">*O vídeo deve conter narração e explicações detalhadas sobre o serviço.</label>
+                </>
               ) : (
                 <div className="service-modal-upload__preview">
                   <video src={serviceVideoPreview} className="service-modal-upload__video" controls muted playsInline />
@@ -1690,7 +1693,7 @@ const handleConfirmService = async () => {
           {/* Descrição do serviço a ser prestado */}
           <div className="service-modal-description-field" style={{ textAlign: 'left' }}>
             <label htmlFor="service-description-textarea" style={{ display: 'block', fontWeight: 600, marginBottom: 6 }}>
-              Descrição do serviço (opcional)
+              Descrição do serviço
             </label>
             <textarea
               id="service-description-textarea"
