@@ -28,14 +28,6 @@
   flex-direction: column;
 }
 
-/* Modal Container with dropdown visible */
-.modal-container.dropdown-visible {
-  overflow: visible;
-}
-
-.modal-container.dropdown-visible .modal-content {
-  overflow: visible;
-}
 
 /* Modal Sizes */
 .modal-small {
@@ -102,14 +94,10 @@
   overflow-y: auto;
 }
 
-/* Allow dropdown to overflow modal when SearchableSelect is open */
-.modal-container:has(.searchable-select.open) {
-  overflow: visible;
-}
-
-.modal-container:has(.searchable-select.open) .modal-content {
-  overflow: visible;
-}
+/* Dropdown do SearchableSelect usa position: fixed com z-index alto,
+   então não precisamos alterar overflow do modal para exibi-lo.
+   Mantemos o recorte do conteúdo do modal para que elementos internos
+   (como botões) não apareçam fora do container. */
 
 /* Animation */
 @keyframes modalSlideIn {

@@ -17,6 +17,7 @@ const SearchableSelect = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [opensUp, setOpensUp] = useState(false);
   const selectRef = useRef(null);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -58,12 +59,29 @@ const SearchableSelect = ({
   const calculateDropdownPosition = () => {
     if (selectRef.current) {
       const rect = selectRef.current.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-      
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+      // Altura estimada do dropdown: conteúdo (240px) + barra de busca (~56px) + bordas
+      const searchBarHeight = hideSearchInput ? 0 : 56;
+      const estimatedDropdownHeight = Math.min(300, Math.floor(viewportHeight * 0.6));
+      const totalDropdownHeight = estimatedDropdownHeight; // options-container controla scroll interno
+
+      // Posição padrão: abaixo do trigger
+      let top = rect.bottom;
+
+      // Se não houver espaço suficiente abaixo, posiciona acima
+      const willOverflowDown = top + totalDropdownHeight > viewportHeight - 8;
+      if (willOverflowDown) {
+        top = Math.max(rect.top - totalDropdownHeight, 8);
+        setOpensUp(true);
+      } else {
+        setOpensUp(false);
+      }
+
+      // Para elementos com position: fixed, left/top já são relativos ao viewport (não somar scroll)
       setDropdownPosition({
-        top: rect.bottom,
-        left: rect.left + scrollLeft,
+        top,
+        left: rect.left,
         width: rect.width
       });
     }
@@ -128,7 +146,7 @@ const SearchableSelect = ({
   return (
     <div 
       ref={selectRef}
-      className={`searchable-select ${className} ${disabled ? 'disabled' : ''} ${isOpen ? 'open' : ''}`}
+      className={`searchable-select ${className} ${disabled ? 'disabled' : ''} ${isOpen ? 'open' : ''} ${isOpen ? (opensUp ? 'open-up' : 'open-down') : ''}`}
       onKeyDown={handleKeyDown}
     >
       <div 
@@ -169,7 +187,7 @@ const SearchableSelect = ({
       {isOpen && (
         <div 
           ref={dropdownRef}
-          className="select-dropdown"
+          className={`select-dropdown ${opensUp ? 'open-up' : 'open-down'}`}
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,

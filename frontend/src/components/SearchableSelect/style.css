@@ -34,8 +34,19 @@
 
 .searchable-select.open .select-trigger {
   border-color: var(--primary);
+}
+
+/* Abrindo para baixo: remove arredondamento inferior do trigger */
+.searchable-select.open-down .select-trigger {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
+}
+
+/* Abrindo para cima: remove arredondamento superior do trigger */
+.searchable-select.open-up .select-trigger {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  /* mantém o arredondamento inferior */
 }
 
 .searchable-select.disabled .select-trigger {
@@ -113,14 +124,24 @@
   position: fixed;
   background: var(--white);
   border: 1px solid var(--primary);
-  border-top: none;
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 999999;
   max-height: 300px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+/* Abrindo para baixo: sem borda superior, arredonda embaixo */
+.select-dropdown.open-down {
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+/* Abrindo para cima: sem borda inferior, arredonda em cima */
+.select-dropdown.open-up {
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 .search-container {
