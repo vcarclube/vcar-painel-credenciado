@@ -1382,7 +1382,7 @@ const handleConfirmService = async () => {
                 <div className="execucao-os__card">
                   <div className="execucao-os__card-header">
                     <FiCamera className="execucao-os__card-icon" />
-                    <h3 className="execucao-os__card-title">Fotos e Vídeos da Execução (opcional)</h3>
+                    <h3 className="execucao-os__card-title">Fotos e Vídeos da Execução</h3>
                     <button className="execucao-os__add-btn" onClick={handleAddMediaClick}>
                       <FiPlus size={16} />
                       Adicionar
@@ -1497,7 +1497,7 @@ const handleConfirmService = async () => {
                 <div className="execucao-os__card">
                   <div className="execucao-os__card-header">
                     <FiFileText className="execucao-os__card-icon" />
-                    <h3 className="execucao-os__card-title">Anotações Gerais (opcional)</h3>
+                    <h3 className="execucao-os__card-title">Anotações Gerais</h3>
                     <button className="execucao-os__add-btn" onClick={handleOpenNotesModal}>
                       <FiPlus size={16} />
                       Adicionar

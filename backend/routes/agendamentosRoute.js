@@ -901,7 +901,7 @@ router.post('/concluir', validateToken, async (req, res) => {
 
         await Utils.notificarFirebaseCloudMessaging({
           idSocio: socio.IdSocio,
-          title: 'Serviço iniciado',
+          title: 'Serviço concluído',
           body: `📆 Olá, ${socio.Nome}👋, Informamos que seu agendamento de *${motivacao?.Descricao }* foi concluído.`
         });
 
