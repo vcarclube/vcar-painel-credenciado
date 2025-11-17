@@ -1393,9 +1393,12 @@ const handleConfirmService = async () => {
 
                 {/* Fotos e Vídeos da Execução */}
                 <div className="execucao-os__card">
-                  <div className="execucao-os__card-header">
+                  <div className="execucao-os__card-header" style={{justifyContent: 'flex-start'}}>
                     <FiCamera className="execucao-os__card-icon" />
-                    <h3 className="execucao-os__card-title">Fotos e Vídeos da Execução</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <h3 className="execucao-os__card-title">Mídias para matriz</h3>
+                      <div style={{ fontSize: '10pt', color: 'var(--gray-600)' }}>Mídias dos serviços enviados para análise da matriz.</div>
+                    </div>
                   </div>
                   <div className="execucao-os__card-content">
                     {execucaoMedia.length === 0 ? (
@@ -1435,11 +1438,14 @@ const handleConfirmService = async () => {
                   </div>
                 </div>
 
-                {/* Fotos e Vídeos para Cliente */}
+                {/* Fotos e Vídeos para Credenciado */}
                 <div className="execucao-os__card">
                   <div className="execucao-os__card-header">
                     <FiCamera className="execucao-os__card-icon" />
-                    <h3 className="execucao-os__card-title">Fotos e Vídeos para Cliente</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                      <h3 className="execucao-os__card-title">Mídias para cliente</h3>
+                      <div style={{ fontSize: '10pt', color: 'var(--gray-600)' }}>Envio manual de mídias para o cliente acompanhar os serviços.</div>
+                    </div>
                     <button className="execucao-os__add-btn" onClick={handleAddMediaClick}>
                       <FiPlus size={16} />
                       Adicionar
@@ -1478,7 +1484,7 @@ const handleConfirmService = async () => {
                     {fotos.length === 0 ? (
                       <div className="execucao-os__empty-state">
                         <FiCamera className="execucao-os__empty-icon" />
-                        <p>Nenhuma foto ou vídeo para cliente</p>
+                        <p>Nenhuma foto ou vídeo para credenciado</p>
                         <button className="execucao-os__empty-btn" onClick={handleAddMediaClick}>
                           Adicionar primeira foto ou vídeo
                         </button>
