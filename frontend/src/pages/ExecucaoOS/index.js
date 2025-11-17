@@ -19,7 +19,8 @@ import {
   FiVideo,
   FiTrash,
   FiChevronLeft,
-  FiChevronRight
+  FiChevronRight,
+  FiChevronDown
 } from 'react-icons/fi';
 import { Header, Sidebar, BottomNavigation, Modal, SearchableSelect, Button, MediaUpload, LaudosModal, RecibosModal } from '../../components';
 import { VideoInicialModal, VideoFinalizacaoModal } from '../../components/Modal';
@@ -64,6 +65,9 @@ const ExecutaOS = () => {
   const [isVideoInicialModalOpen, setIsVideoInicialModalOpen] = useState(false);
   const [isVideoFinalizacaoModalOpen, setIsVideoFinalizacaoModalOpen] = useState(false);
   const [videoInicialUploaded, setVideoInicialUploaded] = useState(false);
+  const [openMatriz, setOpenMatriz] = useState(false);
+  const [openCliente, setOpenCliente] = useState(false);
+  const [openAnotacoes, setOpenAnotacoes] = useState(false);
 
   // Estados para uploads no modal de Selecionar Serviço
   const [serviceVideoFile, setServiceVideoFile] = useState(null);
@@ -1393,13 +1397,17 @@ const handleConfirmService = async () => {
 
                 {/* Fotos e Vídeos da Execução */}
                 <div className="execucao-os__card">
-                  <div className="execucao-os__card-header" style={{justifyContent: 'flex-start'}}>
+                  <div className="execucao-os__card-header" onClick={() => setOpenMatriz(!openMatriz)} style={{ cursor: 'pointer' }}>
                     <FiCamera className="execucao-os__card-icon" />
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <h3 className="execucao-os__card-title">Mídias para matriz</h3>
                       <div style={{ fontSize: '10pt', color: 'var(--gray-600)' }}>Mídias dos serviços enviados para análise da matriz.</div>
                     </div>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+                      {openMatriz ? <FiChevronDown /> : <FiChevronRight />}
+                    </div>
                   </div>
+                  {openMatriz && (
                   <div className="execucao-os__card-content">
                     {execucaoMedia.length === 0 ? (
                       <div className="execucao-os__empty-state">
@@ -1436,21 +1444,23 @@ const handleConfirmService = async () => {
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
 
                 {/* Fotos e Vídeos para Credenciado */}
                 <div className="execucao-os__card">
-                  <div className="execucao-os__card-header">
+                  <div className="execucao-os__card-header" onClick={() => setOpenCliente(!openCliente)} style={{ cursor: 'pointer' }}>
                     <FiCamera className="execucao-os__card-icon" />
                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                       <h3 className="execucao-os__card-title">Mídias para cliente</h3>
                       <div style={{ fontSize: '10pt', color: 'var(--gray-600)' }}>Envio manual de mídias para o cliente acompanhar os serviços.</div>
                     </div>
-                    <button className="execucao-os__add-btn" onClick={handleAddMediaClick}>
-                      <FiPlus size={16} />
-                      Adicionar
-                    </button>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+                      {openCliente ? <FiChevronDown /> : <FiChevronRight />}
+                    </div>
                   </div>
+                  {openCliente && (
+                  <>
                   {isCompressing && (
                     <div className="execucao-os__compression-progress" style={{
                       padding: '10px 20px',
@@ -1481,6 +1491,12 @@ const handleConfirmService = async () => {
                     </div>
                   )}
                   <div className="execucao-os__card-content">
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                      <button className="execucao-os__add-btn" onClick={handleAddMediaClick}>
+                        <FiPlus size={16} />
+                        Adicionar
+                      </button>
+                    </div>
                     {fotos.length === 0 ? (
                       <div className="execucao-os__empty-state">
                         <FiCamera className="execucao-os__empty-icon" />
@@ -1528,19 +1544,27 @@ const handleConfirmService = async () => {
                       </div>
                     )}
                   </div>
+                  </>
+                  )}
                 </div>
 
                 {/* Anotações */}
                 <div className="execucao-os__card">
-                  <div className="execucao-os__card-header">
+                  <div className="execucao-os__card-header" onClick={() => setOpenAnotacoes(!openAnotacoes)} style={{ cursor: 'pointer' }}>
                     <FiFileText className="execucao-os__card-icon" />
                     <h3 className="execucao-os__card-title">Anotações Gerais</h3>
-                    <button className="execucao-os__add-btn" onClick={handleOpenNotesModal}>
-                      <FiPlus size={16} />
-                      Adicionar
-                    </button>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+                      {openAnotacoes ? <FiChevronDown /> : <FiChevronRight />}
+                    </div>
                   </div>
+                  {openAnotacoes && (
                   <div className="execucao-os__card-content">
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                      <button className="execucao-os__add-btn" onClick={handleOpenNotesModal}>
+                        <FiPlus size={16} />
+                        Adicionar
+                      </button>
+                    </div>
                     {anotacoes.length === 0 ? (
                       <div className="execucao-os__empty-state">
                         <FiFileText className="execucao-os__empty-icon" />
@@ -1569,6 +1593,7 @@ const handleConfirmService = async () => {
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
 
 
