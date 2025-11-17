@@ -1552,7 +1552,7 @@ const handleConfirmService = async () => {
                 <div className="execucao-os__card">
                   <div className="execucao-os__card-header" onClick={() => setOpenAnotacoes(!openAnotacoes)} style={{ cursor: 'pointer' }}>
                     <FiFileText className="execucao-os__card-icon" />
-                    <h3 className="execucao-os__card-title">Anotações Gerais</h3>
+                    <h3 className="execucao-os__card-title">Anotações gerais</h3>
                     <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
                       {openAnotacoes ? <FiChevronDown /> : <FiChevronRight />}
                     </div>
