@@ -1491,7 +1491,7 @@ const handleConfirmService = async () => {
                     </div>
                   )}
                   <div className="execucao-os__card-content">
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '13px' }}>
                       <button className="execucao-os__add-btn" onClick={handleAddMediaClick}>
                         <FiPlus size={16} />
                         Adicionar
@@ -1559,7 +1559,7 @@ const handleConfirmService = async () => {
                   </div>
                   {openAnotacoes && (
                   <div className="execucao-os__card-content">
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '13px' }}>
                       <button className="execucao-os__add-btn" onClick={handleOpenNotesModal}>
                         <FiPlus size={16} />
                         Adicionar
