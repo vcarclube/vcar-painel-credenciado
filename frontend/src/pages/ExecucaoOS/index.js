@@ -1484,7 +1484,7 @@ const handleConfirmService = async () => {
                     {fotos.length === 0 ? (
                       <div className="execucao-os__empty-state">
                         <FiCamera className="execucao-os__empty-icon" />
-                        <p>Nenhuma foto ou vídeo para credenciado</p>
+                        <p>Nenhuma foto ou vídeo para cliente</p>
                         <button className="execucao-os__empty-btn" onClick={handleAddMediaClick}>
                           Adicionar primeira foto ou vídeo
                         </button>
