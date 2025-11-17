@@ -101,12 +101,15 @@ const ExecutaOS = () => {
   const [isMediaPreviewOpen, setIsMediaPreviewOpen] = useState(false);
   const [mediaPreview, setMediaPreview] = useState(null);
   const [mediaPreviewIndex, setMediaPreviewIndex] = useState(-1);
+  const [previewList, setPreviewList] = useState([]);
 
-  const handleOpenMediaPreview = (media) => {
+  const handleOpenMediaPreviewFrom = (media, list) => {
     if (!media) return;
+    const safeList = Array.isArray(list) ? list : [];
+    setPreviewList(safeList);
     setMediaPreview(media);
     try {
-      const idx = combinedMedia.findIndex((m) => m?.id === media?.id);
+      const idx = safeList.findIndex((m) => m?.id === media?.id);
       setMediaPreviewIndex(idx >= 0 ? idx : -1);
     } catch (e) {
       setMediaPreviewIndex(-1);
@@ -124,15 +127,15 @@ const ExecutaOS = () => {
     if (mediaPreviewIndex > 0) {
       const newIndex = mediaPreviewIndex - 1;
       setMediaPreviewIndex(newIndex);
-      setMediaPreview(combinedMedia[newIndex]);
+      setMediaPreview(previewList[newIndex]);
     }
   };
 
   const goToNextMedia = () => {
-    if (mediaPreviewIndex < combinedMedia.length - 1) {
+    if (mediaPreviewIndex < previewList.length - 1) {
       const newIndex = mediaPreviewIndex + 1;
       setMediaPreviewIndex(newIndex);
-      setMediaPreview(combinedMedia[newIndex]);
+      setMediaPreview(previewList[newIndex]);
     }
   };
 
@@ -588,6 +591,16 @@ const ExecutaOS = () => {
 
   // Mídias combinadas: fotos/vídeos do agendamento + mídias dos serviços
   const combinedMedia = [...servicosMedia, ...(fotos || [])];
+  // Mídias da execução: vídeos inicial/final + mídias dos serviços vinculados
+  const execucaoMedia = [
+    ...(osData?.videoInicial
+      ? [{ id: 'video-inicial', nome: osData.videoInicial, url: Api.getUriUploadPath(osData.videoInicial), type: 'video' }]
+      : []),
+    ...(osData?.videoFinal
+      ? [{ id: 'video-final', nome: osData.videoFinal, url: Api.getUriUploadPath(osData.videoFinal), type: 'video' }]
+      : []),
+    ...servicosMedia
+  ];
 
   const handleCloseServiceModal = () => {
     setIsServiceModalOpen(false);
@@ -1378,11 +1391,55 @@ const handleConfirmService = async () => {
                 </div>
                 */}
 
-                {/* Fotos e Vídeos */}
+                {/* Fotos e Vídeos da Execução */}
                 <div className="execucao-os__card">
                   <div className="execucao-os__card-header">
                     <FiCamera className="execucao-os__card-icon" />
                     <h3 className="execucao-os__card-title">Fotos e Vídeos da Execução</h3>
+                  </div>
+                  <div className="execucao-os__card-content">
+                    {execucaoMedia.length === 0 ? (
+                      <div className="execucao-os__empty-state">
+                        <FiCamera className="execucao-os__empty-icon" />
+                        <p>Nenhuma mídia de execução disponível</p>
+                      </div>
+                    ) : (
+                      <div className="execucao-os__fotos-grid">
+                        {execucaoMedia.map((media) => (
+                          <div key={media.id} className="execucao-os__foto-item">
+                            {media.type === 'image' ? (
+                              <img
+                                src={media.url}
+                                alt={media.nome}
+                                className="execucao-os__foto-preview"
+                                onClick={() => handleOpenMediaPreviewFrom(media, execucaoMedia)}
+                                style={{ cursor: 'zoom-in' }}
+                              />
+                            ) : (
+                              <div className="execucao-os__video-container" onClick={() => handleOpenMediaPreviewFrom(media, execucaoMedia)} style={{ cursor: 'zoom-in' }}>
+                                <video
+                                  src={media.url}
+                                  className="execucao-os__video-preview"
+                                  controls
+                                  preload="metadata"
+                                />
+                                <div className="execucao-os__video-overlay">
+                                  <FiVideo size={24} />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Fotos e Vídeos para Cliente */}
+                <div className="execucao-os__card">
+                  <div className="execucao-os__card-header">
+                    <FiCamera className="execucao-os__card-icon" />
+                    <h3 className="execucao-os__card-title">Fotos e Vídeos para Cliente</h3>
                     <button className="execucao-os__add-btn" onClick={handleAddMediaClick}>
                       <FiPlus size={16} />
                       Adicionar
@@ -1418,77 +1475,51 @@ const handleConfirmService = async () => {
                     </div>
                   )}
                   <div className="execucao-os__card-content">
-                    {combinedMedia.length === 0 && !osData?.videoInicial && !osData?.videoFinal ? (
+                    {fotos.length === 0 ? (
                       <div className="execucao-os__empty-state">
                         <FiCamera className="execucao-os__empty-icon" />
-                        <p>Nenhuma foto ou vídeo adicionado</p>
+                        <p>Nenhuma foto ou vídeo para cliente</p>
                         <button className="execucao-os__empty-btn" onClick={handleAddMediaClick}>
                           Adicionar primeira foto ou vídeo
                         </button>
                       </div>
                     ) : (
-                      <>
-                        <div className="execucao-os__fotos-grid">
-                          {osData?.videoInicial && (
-                            <div className="execucao-os__foto-item">
-                              <div className="execucao-os__video-container">
+                      <div className="execucao-os__fotos-grid">
+                        {fotos.map((media) => (
+                          <div key={media.id} className="execucao-os__foto-item">
+                            {media.type === 'image' ? (
+                              <img
+                                src={media.url}
+                                alt={media.nome}
+                                className="execucao-os__foto-preview"
+                                onClick={() => handleOpenMediaPreviewFrom(media, fotos)}
+                                style={{ cursor: 'zoom-in' }}
+                              />
+                            ) : (
+                              <div className="execucao-os__video-container" onClick={() => handleOpenMediaPreviewFrom(media, fotos)} style={{ cursor: 'zoom-in' }}>
                                 <video
-                                  src={Api.getUriUploadPath(osData?.videoInicial)}
-                                  className="execucao-os__video-preview"
-                                  controls
-                                  preload="metadata"
-                                />
-                              </div>
-                            </div>
-                          )}
-                          {osData.videoFinal && (
-                            <div className="execucao-os__foto-item">
-                              <div className="execucao-os__video-container">
-                                <video
-                                  src={Api.getUriUploadPath(osData?.videoFinal)}
-                                  className="execucao-os__video-preview"
-                                  controls
-                                  preload="metadata"
-                                />
-                              </div>
-                            </div>
-                          )}
-                          {combinedMedia.map(media => (
-                            <div key={media.id} className="execucao-os__foto-item">
-                              {media.type === 'image' ? (
-                                <img
                                   src={media.url}
-                                  alt={media.nome}
-                                  className="execucao-os__foto-preview"
-                                  onClick={() => handleOpenMediaPreview(media)}
-                                  style={{ cursor: 'zoom-in' }}
+                                  className="execucao-os__video-preview"
+                                  controls
+                                  preload="metadata"
                                 />
-                              ) : (
-                                <div className="execucao-os__video-container" onClick={() => handleOpenMediaPreview(media)} style={{ cursor: 'zoom-in' }}>
-                                  <video
-                                    src={media.url}
-                                    className="execucao-os__video-preview"
-                                    controls
-                                    preload="metadata"
-                                  />
-                                  <div className="execucao-os__video-overlay">
-                                    <FiVideo size={24} />
-                                  </div>
+                                <div className="execucao-os__video-overlay">
+                                  <FiVideo size={24} />
                                 </div>
-                              )}
-                              {media.idSocioVeiculoAgendaExecucaoFoto && (
-                                <button
-                                  className="execucao-os__foto-remove"
-                                  onClick={(e) => { e.stopPropagation(); handleRemoveFoto(media.id); }}
-                                  title={`Remover ${media.type === 'image' ? 'foto' : 'vídeo'}`}
-                                >
-                                  <FiX size={14} />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </>
+                              </div>
+                            )}
+                            {media.idSocioVeiculoAgendaExecucaoFoto && (
+                              <button
+                                className="execucao-os__foto-remove"
+                                onClick={(e) => { e.stopPropagation(); handleRemoveFoto(media.id); }}
+                                title={`Remover ${media.type === 'image' ? 'foto' : 'vídeo'}`}
+                              >
+                                <FiX size={14} />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -2242,7 +2273,7 @@ const handleConfirmService = async () => {
             <button
               type="button"
               onClick={goToNextMedia}
-              disabled={mediaPreviewIndex >= combinedMedia.length - 1}
+              disabled={mediaPreviewIndex >= previewList.length - 1}
               aria-label="Próximo"
               style={{
                 position: 'absolute',
@@ -2258,8 +2289,8 @@ const handleConfirmService = async () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: mediaPreviewIndex < combinedMedia.length - 1 ? 'pointer' : 'not-allowed',
-                opacity: mediaPreviewIndex < combinedMedia.length - 1 ? 1 : 0.5,
+                cursor: mediaPreviewIndex < previewList.length - 1 ? 'pointer' : 'not-allowed',
+                opacity: mediaPreviewIndex < previewList.length - 1 ? 1 : 0.5,
                 zIndex: 5
               }}
             >
