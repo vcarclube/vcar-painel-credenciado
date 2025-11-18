@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   FiCalendar,
   FiStar,
@@ -9,11 +9,14 @@ import {
 import DrawerMenu from '../DrawerMenu';
 import './style.css';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { MainContext } from '../../helpers/MainContext';
 
 const BottomNavigation = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { user } = useContext(MainContext);
+  const isAdministrativo = user?.Administrativo === 'S';
 
   const navigationItems = [
     {
@@ -48,7 +51,8 @@ const BottomNavigation = () => {
     }
   ];
 
-  // Função para determinar qual item está ativo baseado na rota atual
+  const items = isAdministrativo ? navigationItems : navigationItems.filter(i => ['agenda','avaliacoes','scan','menu'].includes(i.id));
+
   const getActiveTab = () => {
     const currentPath = location.pathname;
     
@@ -58,7 +62,7 @@ const BottomNavigation = () => {
     }
     
     // Verificar outras rotas
-    const activeItem = navigationItems.find(item => {
+    const activeItem = items.find(item => {
       if (item.path === '/') {
         return currentPath === '/';
       }
@@ -80,7 +84,7 @@ const BottomNavigation = () => {
     <>
       <nav className="bottom-navigation">
         <div className="bottom-nav-container">
-          {navigationItems.map((item) => {
+          {items.map((item) => {
             const IconComponent = item.icon;
             const isActive = getActiveTab() === item.id;
             

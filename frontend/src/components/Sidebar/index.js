@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { MainContext } from '../../helpers/MainContext';
 import './style.css';
 
 function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useContext(MainContext);
+  const isAdministrativo = user?.Administrativo === 'S';
   const [openDropdowns, setOpenDropdowns] = useState({
     operacoes: false,
     financeiro: false,
@@ -40,18 +43,19 @@ function Sidebar() {
           </div>
         </div>
 
-        {/* Usuários */}
-        <div className="sidebar-item" onClick={() => navigate('/usuarios')}>
-          <div className={`sidebar-link ${location.pathname === '/usuarios' ? 'active' : ''}`}>
-            <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <circle cx="8" cy="8" r="3"></circle>
-              <circle cx="16" cy="11" r="3"></circle>
-              <path d="M2 20c0-3.314 2.686-6 6-6h0"></path>
-              <path d="M12 20c0-3.314 2.686-6 6-6h0"></path>
-            </svg>
-            <span>Usuários</span>
+        {isAdministrativo && (
+          <div className="sidebar-item" onClick={() => navigate('/usuarios')}>
+            <div className={`sidebar-link ${location.pathname === '/usuarios' ? 'active' : ''}`}>
+              <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="8" cy="8" r="3"></circle>
+                <circle cx="16" cy="11" r="3"></circle>
+                <path d="M2 20c0-3.314 2.686-6 6-6h0"></path>
+                <path d="M12 20c0-3.314 2.686-6 6-6h0"></path>
+              </svg>
+              <span>Usuários</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Avaliações */}
         <div className="sidebar-item" onClick={() => navigate('/avaliacoes')}>
@@ -87,32 +91,33 @@ function Sidebar() {
           )}
         </div>
 
-        {/* Dropdown Financeiro */}
-        <div className="sidebar-item">
-          <div 
-            className={`sidebar-link dropdown-toggle ${openDropdowns.financeiro ? 'active-dropdown' : ''}`}
-            onClick={() => toggleDropdown('financeiro')}
-          >
-            <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <line x1="12" y1="1" x2="12" y2="23"></line>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            <span>Financeiro</span>
-            <svg className={`dropdown-arrow ${openDropdowns.financeiro ? 'rotated' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="6,9 12,15 18,9"></polyline>
-            </svg>
-          </div>
-          {openDropdowns.financeiro && (
-            <div className="dropdown-menu">
-              <div className="dropdown-item" onClick={() => navigate('/espelho')}>
-                <span>Espelho</span>
-              </div>
-              <div className="dropdown-item" onClick={() => navigate('/dados-bancarios')}>
-                <span>Dados Bancários</span>
-              </div>
+        {isAdministrativo && (
+          <div className="sidebar-item">
+            <div 
+              className={`sidebar-link dropdown-toggle ${openDropdowns.financeiro ? 'active-dropdown' : ''}`}
+              onClick={() => toggleDropdown('financeiro')}
+            >
+              <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              <span>Financeiro</span>
+              <svg className={`dropdown-arrow ${openDropdowns.financeiro ? 'rotated' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <polyline points="6,9 12,15 18,9"></polyline>
+              </svg>
             </div>
-          )}
-        </div>
+            {openDropdowns.financeiro && (
+              <div className="dropdown-menu">
+                <div className="dropdown-item" onClick={() => navigate('/espelho')}>
+                  <span>Espelho</span>
+                </div>
+                <div className="dropdown-item" onClick={() => navigate('/dados-bancarios')}>
+                  <span>Dados Bancários</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Suporte 
         <div className="sidebar-item" onClick={() => navigate('/suporte')}>
@@ -125,36 +130,37 @@ function Sidebar() {
           </div>
         </div>*/}
 
-        {/* Dropdown Informações */}
-        <div className="sidebar-item">
-          <div 
-            className={`sidebar-link dropdown-toggle ${openDropdowns.informacoes ? 'active-dropdown' : ''}`}
-            onClick={() => toggleDropdown('informacoes')}
-          >
-            <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-            </svg>
-            <span>Informações</span>
-            <svg className={`dropdown-arrow ${openDropdowns.informacoes ? 'rotated' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <polyline points="6,9 12,15 18,9"></polyline>
-            </svg>
-          </div>
-          {openDropdowns.informacoes && (
-            <div className="dropdown-menu">
-              <div className="dropdown-item">
-                <span>Contrato</span>
-              </div>
-              <div className="dropdown-item">
-                <span>Política de Privacidade</span>
-              </div>
-              <div className="dropdown-item">
-                <span>Termos de Uso</span>
-              </div>
+        {isAdministrativo && (
+          <div className="sidebar-item">
+            <div 
+              className={`sidebar-link dropdown-toggle ${openDropdowns.informacoes ? 'active-dropdown' : ''}`}
+              onClick={() => toggleDropdown('informacoes')}
+            >
+              <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>Informações</span>
+              <svg className={`dropdown-arrow ${openDropdowns.informacoes ? 'rotated' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <polyline points="6,9 12,15 18,9"></polyline>
+              </svg>
             </div>
-          )}
-        </div>
+            {openDropdowns.informacoes && (
+              <div className="dropdown-menu">
+                <div className="dropdown-item">
+                  <span>Contrato</span>
+                </div>
+                <div className="dropdown-item">
+                  <span>Política de Privacidade</span>
+                </div>
+                <div className="dropdown-item">
+                  <span>Termos de Uso</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </nav>
     </div>
   );

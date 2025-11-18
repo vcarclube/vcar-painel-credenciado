@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   FiX,
   FiChevronDown,
@@ -22,9 +22,12 @@ import {
 } from 'react-icons/fi';
 import './style.css';
 import { useNavigate } from 'react-router-dom';
+import { MainContext } from '../../helpers/MainContext';
 
 const DrawerMenu = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const { user } = useContext(MainContext);
+  const isAdministrativo = user?.Administrativo === 'S';
   const [openDropdowns, setOpenDropdowns] = useState({});
 
   // Fechar drawer ao pressionar ESC
@@ -123,7 +126,7 @@ const DrawerMenu = ({ isOpen, onClose }) => {
         </div>
         
         <div className="drawer-content">
-          {menuItems.map((item) => {
+          {(isAdministrativo ? menuItems : menuItems.filter(i => i.id === 'operacoes')).map((item) => {
             const IconComponent = item.icon;
             const isDropdownOpen = openDropdowns[item.id];
             
