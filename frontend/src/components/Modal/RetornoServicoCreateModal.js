@@ -24,7 +24,6 @@ const RetornoServicoCreateModal = ({ isOpen, onClose, onSuccess }) => {
 
   // Opções para os selects
   const tipoRetornoOptions = [
-    { value: 'PEÇA', label: 'PEÇA' },
     { value: 'MÃO DE OBRA', label: 'MÃO DE OBRA' },
     { value: 'ATENDIMENTO', label: 'ATENDIMENTO' },
     { value: 'OUTROS', label: 'OUTROS' }
