@@ -213,7 +213,6 @@ const RetornoServico = () => {
                     onChange={(e) => setFiltroTipo(e.target.value)}
                   >
                     <option value="TODOS">TODOS</option>
-                    <option value="PEÇA">PEÇA</option>
                     <option value="MÃO DE OBRA">MÃO DE OBRA</option>
                     <option value="ATENDIMENTO">ATENDIMENTO</option>
                     <option value="OUTROS">OUTROS</option>
