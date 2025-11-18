@@ -148,7 +148,7 @@ function Sidebar() {
             </div>
             {openDropdowns.informacoes && (
               <div className="dropdown-menu">
-                <div className="dropdown-item">
+                <div className="dropdown-item" onClick={() => navigate('/contratos')}>
                   <span>Contrato</span>
                 </div>
                 <div className="dropdown-item">

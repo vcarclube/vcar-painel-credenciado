@@ -1,0 +1,100 @@
+.contratos-container {
+  padding: var(--spacing-lg);
+  max-width: 1400px;
+}
+.contratos-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+.contratos-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.contratos-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.contratos-icon {
+  font-size: 1.5rem;
+  color: var(--primary);
+}
+.contratos-title h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+.contratos-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.contrato-content {
+  text-align: left;
+  color: var(--gray-800);
+}
+.contrato-content h1 {
+  font-size: 1.5rem;
+  color: var(--gray-900);
+  margin-bottom: 16px;
+}
+.contrato-content h2 {
+  font-size: 1.2rem;
+  color: var(--gray-900);
+  margin: 18px 0 8px;
+}
+.contrato-content h3 {
+  font-size: 1.05rem;
+  color: var(--gray-900);
+  margin: 14px 0 6px;
+}
+.contrato-content h4 {
+  font-size: 1rem;
+  color: var(--gray-900);
+  margin: 10px 0 6px;
+}
+.contrato-content p {
+  margin: 8px 0;
+  line-height: 1.8;
+}
+.contrato-content ul {
+  margin: 8px 0 12px 20px;
+}
+.contrato-content li {
+  margin: 4px 0;
+}
+.contrato-content hr {
+  border: none;
+  border-top: 1px solid var(--gray-200);
+  margin: 16px 0;
+}
+
+@media print {
+  .sidebar,
+  .header-container,
+  .bottom-navigation {
+    display: none !important;
+  }
+  .main-content,
+  .contratos-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+  .contratos-card {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .contratos-header .contratos-actions {
+    display: none !important;
+  }
+}
