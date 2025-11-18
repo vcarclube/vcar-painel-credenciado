@@ -13,3 +13,4 @@ export { default as DadosCadastrais } from './DadosCadastrais';
 export { default as EspelhoFinanceiro } from './EspelhoFinanceiro';
 export { default as Scanner } from './Scanner';
 export { default as Suporte } from './Suporte';
+export { default as Usuarios } from './Usuarios';

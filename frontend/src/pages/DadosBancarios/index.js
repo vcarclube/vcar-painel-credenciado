@@ -222,7 +222,7 @@ const DadosBancarios = () => {
               
               <div className="dados-bancarios-filters">
                 <div className="filter-group">
-                  <label>Tipo de Pagamento:</label>
+                  <label style={{textAlign: 'left'}}>Tipo de Pagamento:</label>
                   <select 
                     value={filtroTipoPagamento}
                     onChange={(e) => setFiltroTipoPagamento(e.target.value)}
@@ -234,7 +234,7 @@ const DadosBancarios = () => {
                 </div>
                 
                 <div className="filter-group">
-                  <label>Selecionado</label>
+                  <label style={{textAlign: 'left'}}>Selecionado</label>
                   <select
                     value={filtroSelecionado}
                     onChange={(e) => setFiltroSelecionado(e.target.value)}

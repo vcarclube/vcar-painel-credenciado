@@ -236,7 +236,7 @@ const Agenda = () => {
               </div>
               <div className="agenda-filters">
                 <div className="filter-group">
-                  <label>Data Início:</label>
+                  <label style={{textAlign: 'left'}}>Data Início:</label>
                   <input 
                     type="date" 
                     value={filtroDataInicio}
@@ -244,7 +244,7 @@ const Agenda = () => {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Data Final:</label>
+                  <label style={{textAlign: 'left'}}>Data Final:</label>
                   <input 
                     type="date" 
                     value={filtroDataFinal}
@@ -252,7 +252,7 @@ const Agenda = () => {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Status:</label>
+                  <label style={{textAlign: 'left'}}>Status:</label>
                   <select 
                     value={filtroStatus}
                     onChange={(e) => setFiltroStatus(e.target.value)}

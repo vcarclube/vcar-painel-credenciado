@@ -17,7 +17,8 @@ import {
   FiHelpCircle,
   FiHeadphones,
   FiShield,
-  FiBookOpen
+  FiBookOpen,
+  FiUsers
 } from 'react-icons/fi';
 import './style.css';
 import { useNavigate } from 'react-router-dom';
@@ -73,6 +74,13 @@ const DrawerMenu = ({ isOpen, onClose }) => {
       ]
     },
     {
+      id: 'usuarios',
+      label: 'Usuários',
+      icon: FiUsers,
+      hasDropdown: false,
+      path: '/usuarios'
+    },
+    {
       id: 'informacoes',
       label: 'Informações',
       icon: FiInfo,
@@ -89,8 +97,8 @@ const DrawerMenu = ({ isOpen, onClose }) => {
     if (item.hasDropdown) {
       toggleDropdown(item.id);
     } else {
-      // Aqui você pode adicionar navegação real
-      // navigate(item.path);
+      //Aqui você pode adicionar navegação real
+      navigate(item.path);
       onClose();
     }
   };

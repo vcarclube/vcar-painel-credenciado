@@ -5,7 +5,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './global.css';
 
-import { Login, PageNotFound, Loading, Privacy, Terms, Agenda, ExecucaoOS, Avaliacoes, RetornoServico, DadosBancarios, DadosCadastrais, EspelhoFinanceiro, Scanner, Suporte } from './pages';
+import { Login, PageNotFound, Loading, Privacy, Terms, Agenda, ExecucaoOS, Avaliacoes, RetornoServico, DadosBancarios, DadosCadastrais, EspelhoFinanceiro, Scanner, Suporte, Usuarios } from './pages';
 import Api from './Api';
 import { OpeningHoursRequiredModal, BankAccountRequiredModal } from './components';
 
@@ -222,6 +222,14 @@ function App() {
             element={
               <PrivateRoute>
                 <Scanner />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/usuarios"
+            element={
+              <PrivateRoute>
+                <Usuarios />
               </PrivateRoute>
             }
           />

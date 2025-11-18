@@ -316,7 +316,7 @@ const EspelhoFinanceiro = () => {
                 </div>
                 <div className="espelho-filters-grid">
                   <div className="espelho-filter-group">
-                    <label>Data Início:</label>
+                    <label style={{textAlign: 'left'}}>Data Início:</label>
                     <input
                       type="date"
                       value={filtros.dataInicio}
@@ -324,7 +324,7 @@ const EspelhoFinanceiro = () => {
                     />
                   </div>
                   <div className="espelho-filter-group">
-                    <label>Data Final:</label>
+                    <label style={{textAlign: 'left'}}>Data Final:</label>
                     <input
                       type="date"
                       value={filtros.dataFim}
@@ -332,7 +332,7 @@ const EspelhoFinanceiro = () => {
                     />
                   </div>
                   <div className="espelho-filter-group">
-                    <label>Status:</label>
+                    <label style={{textAlign: 'left'}}>Status:</label>
                     <select
                       value={filtros.status}
                       onChange={(e) => handleFiltroChange('status', e.target.value)}

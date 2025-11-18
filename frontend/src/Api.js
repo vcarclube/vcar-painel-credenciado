@@ -379,6 +379,41 @@ const Api = {
             return err;
         });
     },
+    listaUsuarios: async ({idPontoAtendimento}) => {
+        return await axios.get(`${API_BASE}/usuarios/lista/${idPontoAtendimento}`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    addUsuario: async ({Nome, Email, Telefone, Senha, IdPontoAtendimento, IdUsuarioTipo}) => {
+        return await axios.post(`${API_BASE}/usuarios/adicionar`, {Nome, Email, Telefone, Senha, IdPontoAtendimento, IdUsuarioTipo}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    updateUsuario: async ({IdPontoAtendimentoUsuario, Nome, Email, Telefone, Senha, IdPontoAtendimento, IdUsuarioTipo}) => {
+        return await axios.post(`${API_BASE}/usuarios/atualizar`, {IdPontoAtendimentoUsuario, Nome, Email, Telefone, Senha, IdPontoAtendimento, IdUsuarioTipo}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    deleteUsuario: async ({IdPontoAtendimentoUsuario}) => {
+        return await axios.post(`${API_BASE}/usuarios/deletar`, {IdPontoAtendimentoUsuario}, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
+    getUsuariosTipos: async () => {
+        return await axios.get(`${API_BASE}/usuarios/tipos`, Environment.HEADERS).then(async (response) => {
+            return await response;
+        }).catch(err => {
+            return err;
+        });
+    },
 }
 
 export default Api;

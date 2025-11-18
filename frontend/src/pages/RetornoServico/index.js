@@ -187,15 +187,15 @@ const RetornoServico = () => {
               </div>
               <div className="retorno-servico-filters">
                 <div className="filter-group">
-                  <label>Data Início:</label>
+                  <label style={{textAlign: 'left'}}>Data Início:</label>
                   <input type="date" defaultValue="2024-01-01" />
                 </div>
                 <div className="filter-group">
-                  <label>Data Final:</label>
+                  <label style={{textAlign: 'left'}}>Data Final:</label>
                   <input type="date" defaultValue="2024-01-31" />
                 </div>
                 <div className="filter-group">
-                  <label>Status:</label>
+                  <label style={{textAlign: 'left'}}>Status:</label>
                   <select 
                     value={filtroStatus} 
                     onChange={(e) => setFiltroStatus(e.target.value)}
@@ -207,7 +207,7 @@ const RetornoServico = () => {
                   </select>
                 </div>
                 <div className="filter-group">
-                  <label>Tipo:</label>
+                  <label style={{textAlign: 'left'}}>Tipo:</label>
                   <select 
                     value={filtroTipo} 
                     onChange={(e) => setFiltroTipo(e.target.value)}
@@ -409,7 +409,7 @@ const RetornoServico = () => {
         title="Confirmar Exclusão"
       >
         <div className="delete-confirmation">
-          <p>Tem certeza que deseja excluir este retorno de serviço?</p>
+          <p style={{textAlign: 'left'}}>Tem certeza que deseja excluir este retorno de serviço?</p>
           {selectedRetorno && (
             <div className="retorno-info">
               <p><strong>Nº OS:</strong> {selectedRetorno.NumeroOS}</p>

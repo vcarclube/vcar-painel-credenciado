@@ -40,6 +40,19 @@ function Sidebar() {
           </div>
         </div>
 
+        {/* Usuários */}
+        <div className="sidebar-item" onClick={() => navigate('/usuarios')}>
+          <div className={`sidebar-link ${location.pathname === '/usuarios' ? 'active' : ''}`}>
+            <svg className="sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="8" cy="8" r="3"></circle>
+              <circle cx="16" cy="11" r="3"></circle>
+              <path d="M2 20c0-3.314 2.686-6 6-6h0"></path>
+              <path d="M12 20c0-3.314 2.686-6 6-6h0"></path>
+            </svg>
+            <span>Usuários</span>
+          </div>
+        </div>
+
         {/* Avaliações */}
         <div className="sidebar-item" onClick={() => navigate('/avaliacoes')}>
           <div className={`sidebar-link ${(location.pathname === '/avaliacoes') ? 'active' : ''}`}>
