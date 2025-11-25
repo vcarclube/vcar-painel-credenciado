@@ -5,7 +5,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './global.css';
 
-import { Login, PageNotFound, Loading, Privacy, Terms, Agenda, ExecucaoOS, Avaliacoes, RetornoServico, DadosBancarios, DadosCadastrais, EspelhoFinanceiro, Scanner, Suporte, Contratos, Usuarios } from './pages';
+import { Login, PageNotFound, Loading, Privacy, Terms, Agenda, ExecucaoOS, Avaliacoes, RetornoServico, DadosBancarios, DadosCadastrais, EspelhoFinanceiro, Scanner, Suporte, Contratos, Usuarios, ContratoModelo } from './pages';
 import Api from './Api';
 import { OpeningHoursRequiredModal, BankAccountRequiredModal } from './components';
 
@@ -242,6 +242,8 @@ function App() {
               </PrivateRoute>
             }
           />
+
+          <Route path="/contrato-modelo" element={<ContratoModelo />} />
 
           {/*<Route
             path="/suporte"

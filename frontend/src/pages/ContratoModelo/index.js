@@ -1,63 +1,22 @@
-import React, { useContext, useRef } from 'react';
-import { Header, Sidebar, BottomNavigation, Button } from '../../components';
-import '../Home/style.css';
-import './style.css';
-import { FiFileText, FiPrinter, FiDownload } from 'react-icons/fi';
-import { MainContext } from '../../helpers/MainContext';
+import React, { useRef } from 'react';
+import '../Contratos/style.css';
+import { FiFileText } from 'react-icons/fi';
 
-const Contratos = () => {
-  const { user } = useContext(MainContext);
-  const razaoSocial = user?.RazaoSocial || user?.Descricao || '';
-  const cnpj = user?.Cnpj || '';
-  const representanteNome = user?.Nome || '';
-  const representanteCargo = user?.Cargo || '';
-  const enderecoLinha1 = [user?.Endereco, user?.EnderecoComplemento].filter(v => v && String(v).trim() !== '').join(', ');
-  const enderecoLinha2 = [user?.EnderecoBairro, user?.EnderecoCidade && user?.EnderecoUf ? `${user.EnderecoCidade} - ${user.EnderecoUf}` : (user?.EnderecoCidade || user?.EnderecoUf || '')].filter(v => v && String(v).trim() !== '').join(', ');
-  const enderecoCep = user?.EnderecoCep ? `CEP ${user.EnderecoCep}` : '';
-
+const ContratoModelo = () => {
   const cardRef = useRef(null);
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleDownload = () => {
-    try {
-      const contentEl = cardRef.current?.querySelector('.contrato-content');
-      const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Contrato do Credenciado</title></head><body>${contentEl?.innerHTML || ''}</body></html>`;
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `contrato_credenciado.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (e) {}
-  };
+  
 
   return (
-    <div className="home-container">
-      <Sidebar />
-      <div className="main-content" style={{paddingBottom: '0px', marginBottom: '0px'}}>
-        <Header />
-        <center>
-          <div className="contratos-container">
-            <div className="contratos-card" ref={cardRef}>
+    <center>
+      <div className="contratos-container">
+        <div className="contratos-card" ref={cardRef}>
               <div className="contratos-header">
                 <div className="contratos-title">
                   <FiFileText className="contratos-icon" />
-                  <h1>Contrato do Credenciado</h1>
+                  <h1>Contrato Modelo</h1>
                 </div>
-                <div className="contratos-actions" style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-                  <Button variant="secondary" onClick={handlePrint}>
-                    <FiPrinter style={{ marginRight: 8 }} /> Imprimir
-                  </Button>
-                  <Button variant="primary" onClick={handleDownload}>
-                    <FiDownload style={{ marginRight: 8 }} /> Baixar contrato
-                  </Button>
-                </div>
+                
               </div>
               <div className="contrato-content">
                 <h1>CONTRATO DE CREDENCIAMENTO DE OFICINA/AUTOCENTER PARCEIRO VCAR CLUB</h1>
@@ -65,18 +24,18 @@ const Contratos = () => {
                 <h2>EMPRESA CREDENCIADORA</h2>
                 <p>
                   <strong>Razão Social:</strong> VCAR CLUB LTDA.<br />
-                  <strong>CNPJ:</strong> 54.310.846/0001-57<br />
+                  <strong>CNPJ:</strong> [Número do CNPJ]<br />
                   <strong>Sede:</strong> Brasil<br />
-                  <strong>Representada neste ato por:</strong> Ailton Valenca de Pontes, Proprietário<br />
+                  <strong>Representada neste ato por:</strong> [Nome do Representante Legal], [Cargo]<br />
                   doravante denominada <strong>CREDENCIADORA</strong>,
                 </p>
                 <p>e de outro lado:</p>
                 <h2>OFICINA/AUTO CENTER CREDENCIADO</h2>
                 <p>
-                  <strong>Razão Social:</strong> {razaoSocial}<br />
-                  <strong>CNPJ:</strong> {cnpj}<br />
-                  <strong>Endereço:</strong> {enderecoLinha1}{enderecoLinha1 && (enderecoLinha2 || enderecoCep) ? <><br /></> : null}{enderecoLinha2}{enderecoLinha2 && enderecoCep ? <><br /></> : null}{enderecoCep}<br />
-                  <strong>Representada neste ato por:</strong> {representanteNome}{representanteCargo ? `, ${representanteCargo}` : ''}<br />
+                  <strong>Razão Social:</strong> [Nome da Oficina]<br />
+                  <strong>CNPJ:</strong> [Número do CNPJ]<br />
+                  <strong>Endereço:</strong> [Endereço Completo]<br />
+                  <strong>Representada neste ato por:</strong> [Nome do Representante Legal], [Cargo]<br />
                   doravante denominada <strong>CREDENCIADA</strong>,
                 </p>
                 <p>têm entre si, justo e contratado, o seguinte:</p>
@@ -84,9 +43,9 @@ const Contratos = () => {
                 <h2>CLÁUSULA 1 – OBJETO</h2>
                 <p><strong>1.1.</strong> O presente contrato tem por objeto o credenciamento da CREDENCIADA para a prestação de serviços de manutenção e reparos em veículos de associados da CREDENCIADORA, conforme condições, serviços e padrões estabelecidos neste contrato e seus anexos.</p>
                 <p><strong>1.2.</strong> A CREDENCIADORA é uma plataforma tecnológica que intermedia a conexão entre associados e prestadores de serviços automotivos credenciados.</p>
-                <p><strong>1.3.</strong> O credenciamento não gera exclusividade para nenhuma das partes.</p>
+                <p><strong>1.3.</strong> O credenciamento não gera exclusividade para nenhuma das partes, podendo ambas manter relacionamentos comerciais com terceiros em suas respectivas áreas de atuação.</p>
                 <h2>CLÁUSULA 2 – ALINHAMENTO DE SERVIÇOS E CONDIÇÕES</h2>
-                <p><strong>2.1.</strong> O atendimento aos associados será realizado de acordo com os planos e regulamentações internas da CREDENCIADORA, utilizando exclusivamente as ferramentas sistêmicas disponibilizadas pela CREDENCIADORA para recebimento e acompanhamento das demandas.</p>
+                <p><strong>2.1.</strong> O atendimento aos associados será realizado de acordo com os planos e regulamentações internas da CREDENCIADORA, utilizando exclusivamente as ferramentas sistêmicas (plataformas digitais, aplicativo VCAR Club, etc.) disponibilizadas pela CREDENCIADORA para recebimento e acompanhamento das demandas.</p>
                 <p><strong>2.2.</strong> Em caso de indisponibilidade temporária do sistema da CREDENCIADORA, a CREDENCIADA poderá realizar o atendimento mediante abertura de chamado por meio dos canais disponíveis, devendo registrar posteriormente no sistema assim que este estiver disponível.</p>
                 <p><strong>2.3.</strong> A CREDENCIADA compromete-se a realizar os serviços previstos nos planos dos associados, conforme listagem expressa no Anexo I. Serviços fora dessa listagem estão estritamente vetados neste contrato.</p>
                 <p><strong>2.4.</strong> É vedada a cobrança de qualquer valor referente à mão de obra dos associados nos serviços cobertos pelo plano, salvo exceções previamente autorizadas e informadas via sistema pela CREDENCIADORA.</p>
@@ -148,20 +107,20 @@ const Contratos = () => {
                 <hr />
                 <h2>ANEXO I – SERVIÇOS COBERTOS E EXCLUÍDOS</h2>
                 <h3>Serviços cobertos pelo plano</h3>
-                <h4>Manutenção preventiva</h4>
+                <h4>Manutenção Preventiva</h4>
                 <ul>
                   <li>Troca de óleo e filtros (conforme periodicidade do plano)</li>
                   <li>Verificação e completamento de fluidos</li>
                   <li>Inspeção de componentes básicos</li>
                 </ul>
-                <h4>Sistema de freios</h4>
+                <h4>Sistema de Freios</h4>
                 <ul>
                   <li>Substituição de pastilhas e lonas de freio</li>
                   <li>Troca de discos e tambores de freio</li>
                   <li>Sangria e troca de fluido de freio</li>
                   <li>Substituição de mangueiras e conexões do sistema</li>
                 </ul>
-                <h4>Suspensão e direção</h4>
+                <h4>Suspensão e Direção</h4>
                 <ul>
                   <li>Alinhamento e balanceamento</li>
                   <li>Substituição de amortecedores e molas</li>
@@ -177,7 +136,7 @@ const Contratos = () => {
                   <li>Troca de bomba d'água</li>
                   <li>Limpeza de bicos injetores</li>
                 </ul>
-                <h4>Sistema elétrico básico</h4>
+                <h4>Sistema Elétrico Básico</h4>
                 <ul>
                   <li>Substituição de bateria</li>
                   <li>Troca de alternador e motor de partida</li>
@@ -185,13 +144,13 @@ const Contratos = () => {
                   <li>Reparo em sistema de iluminação</li>
                 </ul>
                 <h3>Serviços expressamente excluídos</h3>
-                <h4>Sistemas eletrônicos complexos</h4>
+                <h4>Sistemas Eletrônicos Complexos</h4>
                 <ul>
                   <li>Manutenção ou reparo de componentes do sistema ABS</li>
                   <li>Serviços em centrais eletrônicas (ECU, BCM, etc.)</li>
                   <li>Reprogramação de módulos eletrônicos</li>
                 </ul>
-                <h4>Reparos estruturais</h4>
+                <h4>Reparos Estruturais</h4>
                 <ul>
                   <li>Serviços em chassi empenado ou danificado</li>
                   <li>Soldas estruturais</li>
@@ -203,14 +162,14 @@ const Contratos = () => {
                   <li>Manutenção de câmbio automático ou manual</li>
                   <li>Reparo de diferencial</li>
                 </ul>
-                <h4>Motor (serviços complexos)</h4>
+                <h4>Motor (Serviços Complexos)</h4>
                 <ul>
                   <li>Retífica de motor</li>
                   <li>Troca de comando de válvulas</li>
                   <li>Substituição de correntes de comando</li>
                   <li>Reparo de cabeçote</li>
                 </ul>
-                <h4>Ar condicionado</h4>
+                <h4>Ar Condicionado</h4>
                 <ul>
                   <li>Recarga de gás refrigerante</li>
                   <li>Substituição de compressor</li>
@@ -224,25 +183,22 @@ const Contratos = () => {
                 <h3>CREDENCIADORA</h3>
                 <p>
                   <strong>VCAR CLUB LTDA.</strong><br />
-                  Ailton Valenca de Pontes<br />
-                  Proprietário<br />
+                  [Nome do Representante Legal]<br />
+                  [Cargo]<br />
                   (Assinado eletronicamente)
                 </p>
                 <h3>CREDENCIADA</h3>
                 <p>
-                  {razaoSocial}<br />
-                  {representanteNome}<br />
-                  {representanteCargo}<br />
+                  [Nome da Oficina/Autocenter]<br />
+                  [Nome do Representante Legal]<br />
+                  [Cargo]<br />
                   (Assinado eletronicamente)
                 </p>
               </div>
-            </div>
-          </div>
-        </center>
-        <BottomNavigation />
+        </div>
       </div>
-    </div>
+    </center>
   );
 };
 
-export default Contratos;
+export default ContratoModelo;
