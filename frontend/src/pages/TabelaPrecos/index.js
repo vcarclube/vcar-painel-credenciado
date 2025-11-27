@@ -454,6 +454,40 @@ Repasse: R$ 40,00"	SUV`;
               </tbody>
             </table>
             </div>
+            <div className="precos-card-list">
+              {filtered.map((row, idx) => (
+                <div key={idx} className="precos-card">
+                  <div className="precos-card-header">
+                    <div className="precos-title">{row['Descrição']}</div>
+                    <div className="precos-badges">
+                      <span className="badge badge-tipo">{row['Tipo']}</span>
+                      <span className="badge badge-veiculo">{row['Tipo Veículo']}</span>
+                    </div>
+                  </div>
+                  <div className="precos-values">
+                    <div className="precos-value">
+                      <div className="value-label">Valor Serviço</div>
+                      <div className="value-amount">{row['Valor Serviço']}</div>
+                    </div>
+                    <div className="precos-value">
+                      <div className="value-label">Valor Repasse</div>
+                      <div className="value-amount">{row['Valor Repasse']}</div>
+                    </div>
+                  </div>
+                  <div className="precos-meta">
+                    <div className="meta-item">
+                      <div className="meta-label">Garantia</div>
+                      <div className="meta-value">{row['Garantia Dias']}</div>
+                    </div>
+                    <div className="meta-item">
+                      <div className="meta-label">Limite</div>
+                      <div className="meta-value">{row['Limite Anual']}</div>
+                    </div>
+                  </div>
+                  <div className="precos-info" style={{ whiteSpace: 'pre-line' }}>{row['Informações']}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

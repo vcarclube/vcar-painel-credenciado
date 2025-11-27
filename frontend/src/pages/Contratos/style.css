@@ -140,8 +140,12 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .precos-table {
-    min-width: 700px;
+  .table-responsive {
+    display: none;
+  }
+  .precos-card-list {
+    display: grid;
+    gap: 12px;
   }
 }
 
@@ -166,4 +170,87 @@
   .contratos-header .contratos-actions {
     display: none !important;
   }
+}
+.precos-card-list {
+  display: none;
+}
+.precos-card {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  background: var(--white);
+  box-shadow: var(--shadow-sm);
+}
+.precos-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.precos-title {
+  font-weight: 600;
+  color: var(--gray-900);
+}
+.precos-badges {
+  display: flex;
+  gap: 6px;
+}
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--gray-200);
+}
+.badge-tipo {
+  background: #eef6ff;
+  border-color: #cfe3ff;
+}
+.badge-veiculo {
+  background: #f0fff4;
+  border-color: #c8f2d3;
+}
+.precos-values {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.precos-value {
+  border: 1px dashed var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 8px;
+}
+.value-label {
+  font-size: 0.8rem;
+  color: var(--gray-700);
+}
+.value-amount {
+  font-weight: 600;
+  color: var(--gray-900);
+}
+.precos-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.meta-item {
+  background: #fafafa;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 8px;
+}
+.meta-label {
+  font-size: 0.8rem;
+  color: var(--gray-700);
+}
+.meta-value {
+  font-weight: 500;
+  color: var(--gray-900);
+}
+.precos-info {
+  font-size: 0.9rem;
+  color: var(--gray-800);
 }
