@@ -16,3 +16,4 @@ export { default as Suporte } from './Suporte';
 export { default as Contratos } from './Contratos';
 export { default as Usuarios } from './Usuarios';
 export { default as ContratoModelo } from './ContratoModelo';
+export { default as TabelaPrecos } from './TabelaPrecos';
