@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import '../Contratos/style.css';
 import { FiTable } from 'react-icons/fi';
 
@@ -395,7 +395,22 @@ Repasse: R$ 40,00"	SUV`;
       return obj;
     });
   }, [rows, headers]);
-  const columns = headers;
+  const desiredOrder = ['Descrição','Tipo Veículo','Valor Serviço','Valor Repasse','Garantia Dias','Limite Anual','Informações'];
+  const columns = desiredOrder.filter((c) => headers.includes(c));
+  const tipos = useMemo(() => {
+    const set = new Set();
+    data.forEach((d) => { if (d['Tipo']) set.add(d['Tipo']); });
+    return Array.from(set);
+  }, [data]);
+  const [activeTipo, setActiveTipo] = useState('');
+  const [query, setQuery] = useState('');
+  const filtered = useMemo(() => {
+    return data.filter((d) => {
+      if (activeTipo && d['Tipo'] !== activeTipo) return false;
+      if (query && !(d['Descrição'] || '').toLowerCase().includes(query.toLowerCase())) return false;
+      return true;
+    });
+  }, [data, activeTipo, query]);
 
   return (
     <center>
@@ -408,6 +423,16 @@ Repasse: R$ 40,00"	SUV`;
             </div>
           </div>
           <div className="contrato-content">
+            <div className="precos-toolbar">
+              <div className="tipo-tabs">
+                <button className={`tipo-tab ${activeTipo === '' ? 'active' : ''}`} onClick={() => setActiveTipo('')}>Todos</button>
+                {tipos.map((t) => (
+                  <button key={t} className={`tipo-tab ${activeTipo === t ? 'active' : ''}`} onClick={() => setActiveTipo(t)}>{t}</button>
+                ))}
+              </div>
+              <input className="precos-search" placeholder="Buscar serviço" value={query} onChange={(e) => setQuery(e.target.value)} />
+            </div>
+            <div className="table-responsive">
             <table className="precos-table">
               <thead>
                 <tr>
@@ -417,7 +442,7 @@ Repasse: R$ 40,00"	SUV`;
                 </tr>
               </thead>
               <tbody>
-                {data.map((row, idx) => (
+                {filtered.map((row, idx) => (
                   <tr key={idx}>
                     {columns.map((c) => (
                       <td key={c} style={c === 'Informações' ? { whiteSpace: 'pre-line' } : undefined}>
@@ -428,6 +453,7 @@ Repasse: R$ 40,00"	SUV`;
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </div>
