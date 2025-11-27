@@ -171,9 +171,7 @@
     display: none !important;
   }
 }
-.precos-card-list {
-  display: none;
-}
+ 
 .precos-card {
   border: 1px solid var(--gray-200);
   border-radius: var(--radius-lg);
