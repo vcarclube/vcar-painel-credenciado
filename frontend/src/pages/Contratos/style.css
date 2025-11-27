@@ -110,11 +110,17 @@
 .table-responsive {
   width: 100%;
   overflow-x: auto;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-sm);
 }
 .precos-table {
   width: 100%;
   border-collapse: collapse;
   min-width: 800px;
+  font-size: 0.875rem;
 }
 .precos-table th,
 .precos-table td {
@@ -125,11 +131,16 @@
 .precos-table thead th {
   position: sticky;
   top: 0;
-  background: var(--white);
+  background: linear-gradient(180deg, var(--gray-100), var(--gray-200));
+  color: var(--gray-800);
   z-index: 1;
 }
 .precos-table tbody tr:nth-child(even) {
   background: #fafafa;
+}
+
+.precos-table tbody tr:hover {
+  background: var(--gray-50);
 }
 
 @media (max-width: 768px) {
@@ -141,11 +152,10 @@
     align-items: stretch;
   }
   .table-responsive {
-    display: none;
+    display: block;
   }
   .precos-card-list {
-    display: grid;
-    gap: 12px;
+    display: none;
   }
 }
 
