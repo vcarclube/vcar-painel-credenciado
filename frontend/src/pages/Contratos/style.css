@@ -153,9 +153,45 @@
   }
   .table-responsive {
     display: block;
+    padding: 0;
+    border: none;
+    box-shadow: none;
   }
-  .precos-card-list {
+  .precos-table {
+    min-width: unset;
+    border: none;
+  }
+  .precos-table thead {
     display: none;
+  }
+  .precos-table, .precos-table tbody, .precos-table tr, .precos-table td {
+    display: block;
+    width: 100%;
+  }
+  .precos-table tr {
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  .precos-table td {
+    border: none;
+    padding: 8px 0;
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 8px;
+    align-items: start;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .precos-table td:last-child {
+    border-bottom: none;
+  }
+  .precos-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--gray-700);
   }
 }
 

@@ -53,7 +53,7 @@ const TabelaPrecos = () => {
                 {dados.map((row, idx) => (
                   <tr key={idx}>
                     {colunas.map((c) => (
-                      <td key={c} style={c === 'Informações' ? { whiteSpace: 'pre-line' } : undefined}>
+                      <td key={c} data-label={c} style={c === 'Informações' ? { whiteSpace: 'pre-line' } : undefined}>
                         {row[c]}
                       </td>
                     ))}
