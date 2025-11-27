@@ -25,7 +25,7 @@ const dados = [
   { 'Tipo': 'PREVENTIVA DE MOTOR', 'Descrição': 'LIMPEZA DE BICOS INJETORES', 'Valor Serviço': 'R$ 180,00', 'Valor Repasse': 'R$ 56,00', 'Garantia Dias': '90', 'Limite Anual': '1x', 'Informações': 'Tempo Médio: 02:00\nServiço: R$ 180,00\nRepasse: R$ 56,00', 'Tipo Veículo': 'SUV' }
 ];
 
-const colunas = ['Tipo','Descrição','Tipo Veículo','Valor Serviço','Valor Repasse','Garantia Dias','Limite Anual','Informações'];
+const colunas = ['Tipo', 'Descrição', 'Valor Repasse', 'Tipo Veículo'];
 
 const TabelaPrecos = () => {
 
