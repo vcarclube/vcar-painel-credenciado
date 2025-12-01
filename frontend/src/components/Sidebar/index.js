@@ -157,6 +157,9 @@ function Sidebar() {
                 <div className="dropdown-item">
                   <span>Termos de Uso</span>
                 </div>
+                <div className="dropdown-item" onClick={() => navigate('/tabela-precos')}>
+                  <span>Tabela de Serviços</span>
+                </div>
               </div>
             )}
           </div>

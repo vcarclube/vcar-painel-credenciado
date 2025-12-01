@@ -91,7 +91,8 @@ const DrawerMenu = ({ isOpen, onClose }) => {
       subItems: [
         { id: 'contratos', label: 'Contratos', icon: FiFileText, path: '/contratos' },
         { id: 'policy', label: 'Política de Privacidade', icon: FiShield, path: '/policy' },
-        { id: 'terms', label: 'Termos de Uso', icon: FiBookOpen, path: '/terms' }
+        { id: 'terms', label: 'Termos de Uso', icon: FiBookOpen, path: '/terms' },
+        { id: 'tabeladeservicos', label: 'Tabela de Serviços', icon: FiBookOpen, path: '/tabela-precos' }
       ]
     }
   ];
